@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Axiom.IntegrationTests;
 
@@ -18,11 +19,6 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, configuration) =>
-            configuration.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Oidc:BackchannelAuthority"] = "http://localhost:5101"
-            }));
         builder.ConfigureTestServices(services =>
         {
             services.AddAuthentication(options =>
@@ -31,6 +27,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                     options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
                 })
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SCHEME, _ => { });
+            // 测试环境没有 AuthHub，用静态发现文档替换元数据获取，避免挑战阶段发起真实 HTTP 请求。
+            services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+                options.ConfigurationManager = new StaticOidcConfigurationManager());
             services.AddHttpClient<ReferenceDataClient>()
                 .ConfigurePrimaryHttpMessageHandler(() => new GatewayStubHandler());
         });
@@ -78,6 +77,26 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             }
 
             return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
+        }
+    }
+
+    private sealed class StaticOidcConfigurationManager : IConfigurationManager<OpenIdConnectConfiguration>
+    {
+        private static readonly OpenIdConnectConfiguration Configuration = new()
+        {
+            Issuer = "http://localhost:5101/",
+            AuthorizationEndpoint = "http://localhost:5101/connect/authorize",
+            TokenEndpoint = "http://localhost:5101/connect/token"
+        };
+
+        public Task<OpenIdConnectConfiguration> GetConfigurationAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Configuration);
+        }
+
+        public void RequestRefresh()
+        {
         }
     }
 }
