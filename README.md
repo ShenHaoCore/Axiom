@@ -63,6 +63,22 @@ dotnet test Axiom.slnx -c Release
 dotnet format Axiom.slnx --verify-no-changes
 ```
 
+## 分支与合并
+
+| 分支 | 用途 | 合并方式 |
+| --- | --- | --- |
+| `main` | 可发布版本 | 仅从 `develop` 或 `release/*` 通过 PR 合入 |
+| `develop` | 日常集成 | 功能与缺陷分支通过 PR 合入 |
+| `feature/*` | 单个功能开发 | PR → `develop` |
+| `bugfix/*` | 缺陷修复 | PR → `develop` |
+| `release/*` | 发版准备 | PR → `main`，并回合 `develop` |
+| `hotfix/*` | 线上紧急修复 | PR → `main`，并回合 `develop` |
+
+- 分支命名使用 `feature/<简述>`、`bugfix/<简述>`、`release/<版本号>`、`hotfix/<简述>`。
+- `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强制推送，必须通过 PR，仅允许线性历史（squash 或 rebase）。
+- 提交信息遵循 Conventional Commits：`feat:`、`fix:`、`chore:`、`docs:` 等。
+- PR 会自动执行 `.github/workflows/ci.yml`：restore、build、test、format 检查。
+
 ## 接口约定
 
 - 统一分页响应 `PagedResponse<T>`，列表按稳定排序返回。
