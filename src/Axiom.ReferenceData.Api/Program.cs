@@ -66,7 +66,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = authority;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.RequireHttpsMetadata = builder.Configuration.GetValue(
+            "Authentication:RequireHttpsMetadata",
+            !builder.Environment.IsDevelopment());
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {

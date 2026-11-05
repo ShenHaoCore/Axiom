@@ -6,3 +6,6 @@ TestResults/
 *.user
 *.suo
 .env
+.env.staging
+.env.production
+deploy/certs/

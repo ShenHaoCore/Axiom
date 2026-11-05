@@ -39,8 +39,9 @@ builder.Services.AddAuthentication(options =>
         options.ResponseType = OpenIdConnectResponseType.Code;
         options.UsePkce = true;
         options.SaveTokens = true;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment()
-            && !builder.Environment.IsEnvironment("Testing");
+        options.RequireHttpsMetadata = builder.Configuration.GetValue(
+            "Oidc:RequireHttpsMetadata",
+            !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"));
         options.MapInboundClaims = false;
         options.TokenValidationParameters.NameClaimType = "name";
         options.TokenValidationParameters.ValidIssuer = issuer;

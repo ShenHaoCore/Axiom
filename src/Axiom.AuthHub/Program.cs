@@ -1,4 +1,5 @@
 // 启动统一认证中心，提供 Identity 登录和 OIDC 授权码流程。
+using System.Security.Cryptography.X509Certificates;
 using Axiom.AuthHub.Data;
 using Axiom.AuthHub.Endpoints;
 using Axiom.Observability;
@@ -57,7 +58,9 @@ builder.Services.AddOpenIddict()
         }
         else
         {
-            throw new InvalidOperationException("非开发环境必须配置 OpenIddict 签名和加密证书。");
+            // 非开发环境从挂载的 PFX 证书加载签名与加密证书，证书密码只通过环境变量注入。
+            options.AddSigningCertificate(LoadCertificate(builder.Configuration, "Signing"));
+            options.AddEncryptionCertificate(LoadCertificate(builder.Configuration, "Encryption"));
         }
 
         options.UseAspNetCore()
@@ -86,5 +89,18 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check 
     .AllowAnonymous();
 
 await app.RunAsync();
+
+static X509Certificate2 LoadCertificate(IConfiguration configuration, string usage)
+{
+    var section = configuration.GetSection($"OpenIddict:Certificates:{usage}");
+    var path = section["Path"];
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        throw new InvalidOperationException(
+            $"非开发环境必须配置 OpenIddict:Certificates:{usage}:Path（PFX 证书路径）。");
+    }
+
+    return X509CertificateLoader.LoadPkcs12FromFile(path, section["Password"]);
+}
 
 public partial class Program;
