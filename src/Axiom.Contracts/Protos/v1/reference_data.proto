@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package axiom.referencedata.v1;
+
+option csharp_namespace = "Axiom.Contracts.ReferenceData.V1";
+
+service ReferenceDataQuery {
+  rpc ListAirports (ListAirportsRequest) returns (ListAirportsResponse);
+}
+
+message ListAirportsRequest {
+  string code = 1;
+  string name = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message ListAirportsResponse {
+  repeated Airport airports = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message Airport {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string country_code = 4;
+  optional string city = 5;
+  optional double latitude = 6;
+  optional double longitude = 7;
+}

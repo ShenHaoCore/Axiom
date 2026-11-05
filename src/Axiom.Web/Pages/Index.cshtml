@@ -1,0 +1,95 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "机场档案";
+}
+
+<h1 class="mb-4">机场档案</h1>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<section class="mb-5" aria-labelledby="create-airport-title">
+    <h2 class="h4" id="create-airport-title">新增机场</h2>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Code" class="form-label"></label>
+                <input asp-for="Input.Code" class="form-control" autocomplete="off">
+                <span asp-validation-for="Input.Code" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.Name" class="form-label"></label>
+                <input asp-for="Input.Name" class="form-control">
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.CountryCode" class="form-label"></label>
+                <input asp-for="Input.CountryCode" class="form-control" autocomplete="off">
+                <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.City" class="form-label"></label>
+                <input asp-for="Input.City" class="form-control">
+                <span asp-validation-for="Input.City" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Latitude" class="form-label"></label>
+                <input asp-for="Input.Latitude" class="form-control" step="any">
+                <span asp-validation-for="Input.Latitude" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Longitude" class="form-label"></label>
+                <input asp-for="Input.Longitude" class="form-control" step="any">
+                <span asp-validation-for="Input.Longitude" class="text-danger"></span>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">新增机场</button>
+    </form>
+</section>
+
+<section aria-labelledby="airport-list-title">
+    <h2 class="h4" id="airport-list-title">机场列表</h2>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">代码</th>
+                    <th scope="col">名称</th>
+                    <th scope="col">国家</th>
+                    <th scope="col">城市</th>
+                    <th scope="col">纬度</th>
+                    <th scope="col">经度</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var airport in Model.Airports)
+                {
+                    <tr>
+                        <td>@airport.Code</td>
+                        <td>@airport.Name</td>
+                        <td>@airport.CountryCode</td>
+                        <td>@airport.City</td>
+                        <td>@airport.Latitude</td>
+                        <td>@airport.Longitude</td>
+                    </tr>
+                }
+                @if (Model.Airports.Count == 0)
+                {
+                    <tr><td colspan="6">暂无机场档案。</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

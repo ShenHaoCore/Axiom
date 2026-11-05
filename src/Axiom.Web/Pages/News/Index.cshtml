@@ -1,0 +1,70 @@
+@page
+@model Axiom.Web.Pages.News.IndexModel
+@{
+    ViewData["Title"] = "新闻管理";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">新闻管理</h1>
+    <a class="btn btn-primary" asp-page="/News/Edit">新增新闻</a>
+</div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-auto">
+        <label class="form-label" for="status">状态</label>
+        <select class="form-select" id="status" name="status">
+            <option value="">全部</option>
+            <option value="Draft" selected="@(Model.StatusFilter == "Draft")">草稿</option>
+            <option value="Published" selected="@(Model.StatusFilter == "Published")">已发布</option>
+            <option value="Archived" selected="@(Model.StatusFilter == "Archived")">已归档</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">筛选</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th scope="col">标题</th>
+                <th scope="col">分类</th>
+                <th scope="col">状态</th>
+                <th scope="col">作者</th>
+                <th scope="col">发布时间</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var article in Model.Articles)
+            {
+                <tr>
+                    <td>@article.Title</td>
+                    <td>@article.Category</td>
+                    <td>@article.Status</td>
+                    <td>@article.Author</td>
+                    <td>@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" asp-page="/News/Detail" asp-route-id="@article.Id">查看</a>
+                    </td>
+                </tr>
+            }
+            @if (Model.Articles.Count == 0)
+            {
+                <tr><td colspan="6">暂无新闻。</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<p class="text-muted">共 @Model.TotalCount 条。</p>

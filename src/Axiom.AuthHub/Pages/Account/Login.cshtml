@@ -1,0 +1,33 @@
+@page
+@model Axiom.AuthHub.Pages.Account.LoginModel
+@{
+    Layout = null;
+}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Axiom 登录</title>
+</head>
+<body>
+    <main>
+        <h1>登录 Axiom</h1>
+        <form method="post">
+            <input type="hidden" asp-for="ReturnUrl">
+            <div asp-validation-summary="ModelOnly"></div>
+            <p>
+                <label asp-for="Input.UserName"></label>
+                <input asp-for="Input.UserName" autocomplete="username">
+                <span asp-validation-for="Input.UserName"></span>
+            </p>
+            <p>
+                <label asp-for="Input.Password"></label>
+                <input asp-for="Input.Password" autocomplete="current-password">
+                <span asp-validation-for="Input.Password"></span>
+            </p>
+            <button type="submit">登录</button>
+        </form>
+    </main>
+</body>
+</html>

@@ -1,0 +1,195 @@
+name: axiom
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: axiom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: axiom_auth
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U axiom -d axiom_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: axiom
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  authhub:
+    build:
+      context: .
+      dockerfile: src/Axiom.AuthHub/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Auth: Host=postgres;Port=5432;Database=axiom_auth;Username=axiom;Password=${POSTGRES_PASSWORD}
+      OpenIddict__Issuer: http://localhost:5101/
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+      SeedUser__Password: ${DEMO_USER_PASSWORD:-}
+    ports:
+      - "5101:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  reference-data:
+    build:
+      context: .
+      dockerfile: src/Axiom.ReferenceData.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Http__Url: http://+:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: http://+:8081
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      ConnectionStrings__ReferenceData: Host=postgres;Port=5432;Database=axiom_reference_data;Username=axiom;Password=${POSTGRES_PASSWORD}
+      Authentication__Authority: http://authhub:8080
+      Authentication__ValidIssuer: http://localhost:5101/
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Password: ${RABBITMQ_PASSWORD}
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authhub:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+
+  news-api:
+    build:
+      context: .
+      dockerfile: src/Axiom.News.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__News: Host=postgres;Port=5432;Database=axiom_news;Username=axiom;Password=${POSTGRES_PASSWORD}
+      Authentication__Authority: http://authhub:8080
+      Authentication__ValidIssuer: http://localhost:5101/
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+    ports:
+      - "5104:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authhub:
+        condition: service_started
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Axiom.ApiGateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Authentication__Authority: http://authhub:8080
+      Authentication__ValidIssuer: http://localhost:5101/
+      ReverseProxy__Clusters__reference-data__Destinations__primary__Address: http://reference-data:8080
+      ReverseProxy__Clusters__news__Destinations__primary__Address: http://news-api:8080
+      ReferenceDataGrpc__Address: http://reference-data:8081
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+    ports:
+      - "5100:8080"
+    depends_on:
+      reference-data:
+        condition: service_started
+      news-api:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Axiom.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Oidc__Authority: http://localhost:5101/
+      Oidc__ValidIssuer: http://localhost:5101/
+      Oidc__BackchannelAuthority: http://authhub:8080
+      ApiGateway__BaseAddress: http://gateway:8080
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+    ports:
+      - "3000:8080"
+    depends_on:
+      authhub:
+        condition: service_started
+      gateway:
+        condition: service_started
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.135.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./deploy/otel/collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - jaeger
+      - loki
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.74
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  loki:
+    image: grafana/loki:3
+
+  prometheus:
+    image: prom/prometheus:v3
+    volumes:
+      - ./deploy/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+
+  grafana:
+    image: grafana/grafana:12
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./deploy/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - jaeger
+      - loki
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  grafana-data:

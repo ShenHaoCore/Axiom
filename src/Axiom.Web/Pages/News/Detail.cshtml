@@ -1,0 +1,46 @@
+@page
+@model Axiom.Web.Pages.News.DetailModel
+@{
+    ViewData["Title"] = Model.Article?.Title ?? "新闻详情";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">@(Model.Article?.Title ?? "新闻详情")</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-page="/News/Index">返回列表</a>
+        @if (Model.Article is not null)
+        {
+            <a class="btn btn-outline-primary" asp-page="/News/Edit" asp-route-id="@Model.Article.Id">编辑</a>
+        }
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Article is { } article)
+{
+    <dl class="row">
+        <dt class="col-sm-2">分类</dt>
+        <dd class="col-sm-10">@article.Category</dd>
+        <dt class="col-sm-2">状态</dt>
+        <dd class="col-sm-10">@article.Status</dd>
+        <dt class="col-sm-2">作者</dt>
+        <dd class="col-sm-10">@article.Author</dd>
+        <dt class="col-sm-2">发布时间</dt>
+        <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "未发布")</dd>
+        <dt class="col-sm-2">摘要</dt>
+        <dd class="col-sm-10">@(article.Summary ?? "-")</dd>
+    </dl>
+
+    <hr />
+    <div class="mb-4" style="white-space: pre-wrap;">@article.Content</div>
+
+    <form method="post" asp-page-handler="Delete">
+        <input type="hidden" name="ArticleId" value="@article.Id" />
+        <input type="hidden" name="ETag" value="@Model.ETag" />
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('确定删除这条新闻吗？');">删除</button>
+    </form>
+}

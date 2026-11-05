@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Axiom.ApiGateway/Axiom.ApiGateway.csproj" />
+    <Project Path="src/Axiom.AuthHub/Axiom.AuthHub.csproj" />
+    <Project Path="src/Axiom.Contracts/Axiom.Contracts.csproj" />
+    <Project Path="src/Axiom.News.Api/Axiom.News.Api.csproj" />
+    <Project Path="src/Axiom.Observability/Axiom.Observability.csproj" />
+    <Project Path="src/Axiom.ReferenceData.Api/Axiom.ReferenceData.Api.csproj" />
+    <Project Path="src/Axiom.SharedKernel/Axiom.SharedKernel.csproj" />
+    <Project Path="src/Axiom.Web/Axiom.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Axiom.IntegrationTests/Axiom.IntegrationTests.csproj" />
+    <Project Path="tests/Axiom.ReferenceData.Tests/Axiom.ReferenceData.Tests.csproj" />
+  </Folder>
+</Solution>
