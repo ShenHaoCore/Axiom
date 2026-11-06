@@ -88,12 +88,6 @@ builder.Services.AddHealthChecks().AddDbContextCheck<NewsDbContext>("database");
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
-{
-    using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider.GetRequiredService<NewsDbContext>().Database.MigrateAsync();
-}
-
 app.UseExceptionHandler();
 app.UseStatusCodePages(async context =>
 {

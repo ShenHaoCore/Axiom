@@ -14,9 +14,7 @@ public static class AuthDataSeeder
         IConfiguration configuration,
         CancellationToken cancellationToken = default)
     {
-        var dbContext = services.GetRequiredService<AuthDbContext>();
-        await dbContext.Database.MigrateAsync(cancellationToken);
-
+        // 迁移由 Axiom.DbMigrator 在服务启动前完成，这里只负责幂等的种子数据。
         var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
         foreach (var client in ResolveClients(configuration))
         {

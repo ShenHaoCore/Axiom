@@ -4,6 +4,7 @@
     <Project Path="src/Axiom.AuthHub/Axiom.AuthHub.csproj" />
     <Project Path="src/Axiom.Bff/Axiom.Bff.csproj" />
     <Project Path="src/Axiom.Contracts/Axiom.Contracts.csproj" />
+    <Project Path="src/Axiom.DbMigrator/Axiom.DbMigrator.csproj" />
     <Project Path="src/Axiom.News.Api/Axiom.News.Api.csproj" />
     <Project Path="src/Axiom.News.Application/Axiom.News.Application.csproj" />
     <Project Path="src/Axiom.News.Domain/Axiom.News.Domain.csproj" />
