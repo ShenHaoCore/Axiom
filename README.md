@@ -85,6 +85,8 @@ dotnet test Axiom.slnx -c Release
 dotnet format Axiom.slnx --verify-no-changes
 ```
 
+- 集成测试默认使用 EF Core 内存库；设置 `AXIOM_TEST_POSTGRES` 指向可用 PostgreSQL 后，每个测试会创建并清理独立数据库，走真实 PostgreSQL（CI 已内置该服务容器）。本机可用 compose 实例：`Host=localhost;Port=5433;Database=postgres;Username=axiom;Password=<POSTGRES_PASSWORD>`。
+
 ## 分支与合并
 
 | 分支 | 用途 | 合并方式 |
