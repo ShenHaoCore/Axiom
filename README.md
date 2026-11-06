@@ -1,6 +1,50 @@
 # Axiom
 
+[![build-test](https://github.com/ShenHaoCore/Axiom/actions/workflows/ci.yml/badge.svg)](https://github.com/ShenHaoCore/Axiom/actions/workflows/ci.yml)
+[![codeql](https://github.com/ShenHaoCore/Axiom/actions/workflows/codeql.yml/badge.svg)](https://github.com/ShenHaoCore/Axiom/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/ShenHaoCore/Axiom/blob/main/LICENSE)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![EF Core](https://img.shields.io/badge/EF%20Core-10.0-blue.svg)](https://learn.microsoft.com/ef/core/)
+[![OpenIddict](https://img.shields.io/badge/OpenIddict-7.x-1f4e79.svg)](https://openiddict.com/)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+
 基于 .NET 10 的微服务练习项目，覆盖统一网关、OIDC 单点登录、REST 与 gRPC、Transactional Outbox/Inbox、乐观并发与 Docker Compose 本地运行。
+
+## 架构总览
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 浏览器                                                   │
+│ ┌─────────────┐  ┌──────────────────────────────────┐  │
+│ │ Razor Pages │  │ React SPA (/app/)                │  │
+│ │ :3000       │  │ :3002 (BFF 托管)                │  │
+│ └──────┬──────┘  └──────────────┬───────────────────┘  │
+│        │ Cookie Auth             │ Cookie + CSRF        │
+└────────┼────────────────────────┼──────────────────────┘
+         │                        │
+┌────────▼────────────────────────▼──────────────────────┐
+│              Axiom.Bff (:3002)                           │
+│        OIDC Cookie 会话 → Bearer Token 交换              │
+│        /bff/* REST 门面 + SPA 托管                       │
+└────────┬────────────────────────────────────────────────┘
+         │ Bearer JWT (scope 映射 audience)
+┌────────▼────────────────────────────────────────────────┐
+│           Axiom.ApiGateway (:5100)                       │
+│     YARP 反向代理 + JWT Bearer 验证                      │
+│     gRPC 直连 ReferenceData                              │
+└───┬──────────────┬──────────────────┬──────────────────┘
+    │              │                  │
+┌───▼───┐     ┌────▼─────┐    ┌──────▼──────┐
+│News   │     │Reference  │    │ Reference   │
+│Api    │     │Data REST │    │ Data gRPC   │
+│:5104  │     │:5102      │    │ :5103       │
+└───┬───┘     └────┬─────┘    └──────────────┘
+    │              │
+┌───▼──────────────▼──────────────────────────────────────┐
+│     PostgreSQL（每服务独立数据库）  +  RabbitMQ            │
+│     Outbox / Inbox 事务性消息                              │
+└──────────────────────────────────────────────────────────┘
+```
 
 ## 服务划分
 

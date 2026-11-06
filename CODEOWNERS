@@ -1,0 +1,16 @@
+# Axiom 仓库贡献者
+@ShenHaoCore/axiom-maintainers
+
+# 服务特定 Owner（如有团队）
+/src/Axiom.AuthHub/        @ShenHaoCore
+/src/Axiom.ApiGateway/     @ShenHaoCore
+/src/Axiom.ReferenceData.Api/  @ShenHaoCore
+/src/Axiom.News.Api/       @ShenHaoCore
+/src/Axiom.Bff/            @ShenHaoCore
+/src/Axiom.Web/            @ShenHaoCore
+/frontend/                 @ShenHaoCore
+
+# 基础设施 / CI
+/compose.yaml              @ShenHaoCore
+/Dockerfile*               @ShenHaoCore
+/.github/                  @ShenHaoCore
