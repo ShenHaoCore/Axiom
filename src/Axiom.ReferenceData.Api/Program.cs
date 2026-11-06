@@ -56,10 +56,13 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
 builder.Services.AddScoped<OutboxPublishProcessor>();
 builder.Services.AddScoped<InboxProcessor>();
+builder.Services.AddHttpClient<GeoNamesDownloader>(client =>
+    client.Timeout = TimeSpan.FromSeconds(15));
 if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddHostedService<OutboxPublisherWorker>();
     builder.Services.AddHostedService<RabbitMqConsumerWorker>();
+    builder.Services.AddHostedService<RegionSeedService>();
 }
 
 var authority = builder.Configuration["Authentication:Authority"] ?? "http://localhost:5101";
@@ -115,6 +118,7 @@ app.UseAuthorization();
 
 app.MapOpenApi("/openapi/v1.json").AllowAnonymous();
 app.MapReferenceLocationEndpoints();
+app.MapRegionEndpoints();
 app.MapGrpcService<ReferenceDataQueryGrpcService>().RequireAuthorization(ReferenceLocationEndpoints.READ_POLICY);
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions

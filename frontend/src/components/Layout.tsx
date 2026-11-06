@@ -20,6 +20,7 @@ export default function Layout({ user }: { user: CurrentUser }) {
             新闻列表
           </NavLink>
           <NavLink to="/news/new">新建新闻</NavLink>
+          <NavLink to="/regions">行政区</NavLink>
         </nav>
         <div className="user-box">
           <span>{user.name}</span>

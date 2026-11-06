@@ -207,3 +207,171 @@ h1 {
   padding: 24px 0;
   color: #52606d;
 }
+
+/* 行政区浏览页 */
+.region-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.region-panel,
+.region-detail {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #d9e2ec;
+  padding: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.region-detail h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.muted {
+  color: #829ab1;
+  font-size: 13px;
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.detail-list div {
+  display: contents;
+}
+
+.detail-list dt {
+  color: #52606d;
+}
+
+.detail-list dd {
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #d9e2ec;
+}
+
+.tabs button {
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #52606d;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabs button.active {
+  color: #0b69a3;
+  border-bottom-color: #0b69a3;
+  font-weight: 600;
+}
+
+.tree-node {
+  margin-bottom: 2px;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.tree-row:hover {
+  background: #eef3f8;
+}
+
+.tree-row.selected {
+  background: #d0e3f2;
+  font-weight: 500;
+}
+
+.tree-row .name {
+  flex: 1;
+}
+
+.toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 11px;
+  color: #52606d;
+  width: 16px;
+  text-align: center;
+}
+
+.toggle.placeholder {
+  visibility: hidden;
+}
+
+.tree-children {
+  padding-left: 16px;
+  border-left: 1px dashed #d9e2ec;
+  margin-left: 8px;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.level-badge.level-1 {
+  background: #d9e8ff;
+  color: #0b3d91;
+}
+
+.level-badge.level-2 {
+  background: #d9f2e6;
+  color: #1a7f4f;
+}
+
+.level-badge.level-3 {
+  background: #fde7d9;
+  color: #9d3d10;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.list-item:hover {
+  background: #eef3f8;
+}
+
+.list-item.selected {
+  background: #d0e3f2;
+  font-weight: 500;
+}

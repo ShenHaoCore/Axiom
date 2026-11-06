@@ -18,6 +18,8 @@ builder.AddAxiomObservability("Axiom.Bff");
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<NewsGatewayClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
+builder.Services.AddHttpClient<RegionGatewayClient>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
 builder.Services.AddScoped<RefreshCookieEvents>();
 
 builder.Services.AddAntiforgery(options =>
@@ -102,6 +104,7 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/app/"));
 app.MapAuthEndpoints();
 app.MapNewsEndpoints();
+app.MapRegionEndpoints();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Name == "authhub" })
     .AllowAnonymous();

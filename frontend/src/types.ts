@@ -33,3 +33,37 @@ export interface CurrentUser {
   name: string;
   csrfToken: string;
 }
+
+export interface Region {
+  id: string;
+  parentId: string | null;
+  level: number;
+  countryCode: string;
+  admin1Code: string | null;
+  code: string;
+  name: string;
+  asciiName: string | null;
+  localName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  population: number | null;
+  geoNameId: number | null;
+}
+
+export interface RegionTree {
+  id: string;
+  level: number;
+  countryCode: string;
+  admin1Code: string | null;
+  code: string;
+  name: string;
+  population: number | null;
+  children: RegionTree[];
+}
+
+export interface PagedRegions {
+  items: Region[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}

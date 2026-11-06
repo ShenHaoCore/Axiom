@@ -8,6 +8,7 @@ import ErrorBanner from './components/ErrorBanner';
 import NewsDetail from './pages/NewsDetail';
 import NewsForm from './pages/NewsForm';
 import NewsList from './pages/NewsList';
+import RegionExplorer from './pages/RegionExplorer';
 import type { CurrentUser } from './types';
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="news/new" element={<NewsForm mode="create" />} />
         <Route path="news/:id" element={<NewsDetail />} />
         <Route path="news/:id/edit" element={<NewsForm mode="edit" />} />
+        <Route path="regions" element={<RegionExplorer />} />
         <Route path="*" element={<ErrorBanner message="页面不存在。" />} />
       </Route>
     </Routes>
