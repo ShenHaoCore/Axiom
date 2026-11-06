@@ -18,17 +18,18 @@ public static class AuthDataSeeder
         await dbContext.Database.MigrateAsync(cancellationToken);
 
         var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
-        var clientId = configuration["Oidc:ClientId"] ?? "axiom-web";
-        var application = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);
-        if (application is null)
+        foreach (var client in ResolveClients(configuration))
         {
-            await applicationManager.CreateAsync(CreateClientDescriptor(configuration, clientId), cancellationToken);
-        }
-        else
-        {
+            var application = await applicationManager.FindByClientIdAsync(client.ClientId, cancellationToken);
+            if (application is null)
+            {
+                await applicationManager.CreateAsync(CreateClientDescriptor(client), cancellationToken);
+                continue;
+            }
+
             var descriptor = new OpenIddictApplicationDescriptor();
             await applicationManager.PopulateAsync(descriptor, application, cancellationToken);
-            if (EnsureRefreshTokenPermissions(descriptor))
+            if (EnsureDescriptor(descriptor, client))
             {
                 await applicationManager.UpdateAsync(application, descriptor, cancellationToken);
             }
@@ -37,21 +38,40 @@ public static class AuthDataSeeder
         await SeedUserAsync(services, configuration);
     }
 
-    private static OpenIddictApplicationDescriptor CreateClientDescriptor(
-        IConfiguration configuration,
-        string clientId)
+    // 支持 Oidc:Clients 数组配置多客户端，同时兼容旧的单客户端配置键。
+    private static IReadOnlyList<OidcClientConfiguration> ResolveClients(IConfiguration configuration)
+    {
+        var configured = configuration.GetSection("Oidc:Clients").Get<OidcClientConfiguration[]>();
+        if (configured is { Length: > 0 })
+        {
+            return configured;
+        }
+
+        var clientId = configuration["Oidc:ClientId"] ?? "axiom-web";
+        var redirectUris = configuration.GetSection("Oidc:RedirectUris").Get<string[]>()
+            ?? ["http://localhost:3000/callback"];
+        return
+        [
+            new OidcClientConfiguration
+            {
+                ClientId = clientId,
+                DisplayName = "Axiom Web",
+                RedirectUris = redirectUris
+            }
+        ];
+    }
+
+    private static OpenIddictApplicationDescriptor CreateClientDescriptor(OidcClientConfiguration client)
     {
         var descriptor = new OpenIddictApplicationDescriptor
         {
-            ClientId = clientId,
+            ClientId = client.ClientId,
             ClientType = ClientTypes.Public,
             ConsentType = ConsentTypes.Implicit,
-            DisplayName = "Axiom Web"
+            DisplayName = client.DisplayName ?? client.ClientId
         };
 
-        var redirectUris = configuration.GetSection("Oidc:RedirectUris").Get<string[]>()
-            ?? ["http://localhost:3000/callback"];
-        foreach (var redirectUri in redirectUris)
+        foreach (var redirectUri in client.RedirectUris)
         {
             descriptor.RedirectUris.Add(new Uri(redirectUri));
         }
@@ -72,22 +92,33 @@ public static class AuthDataSeeder
         return descriptor;
     }
 
-    // 已有客户端需要补齐续期权限，避免重建数据库才能生效。
-    private static bool EnsureRefreshTokenPermissions(OpenIddictApplicationDescriptor descriptor)
+    // 已有客户端需要补齐续期权限与新增回调地址，避免重建数据库才能生效。
+    private static bool EnsureDescriptor(
+        OpenIddictApplicationDescriptor descriptor,
+        OidcClientConfiguration client)
     {
-        var required = new[]
+        var changed = false;
+        var requiredPermissions = new[]
         {
             Permissions.GrantTypes.RefreshToken,
             Permissions.Prefixes.Scope + Scopes.OfflineAccess
         };
-        var added = false;
-        foreach (var permission in required.Where(permission => !descriptor.Permissions.Contains(permission)))
+        foreach (var permission in requiredPermissions.Where(permission => !descriptor.Permissions.Contains(permission)))
         {
             descriptor.Permissions.Add(permission);
-            added = true;
+            changed = true;
         }
 
-        return added;
+        foreach (var redirectUri in client.RedirectUris.Select(uri => new Uri(uri)))
+        {
+            if (descriptor.RedirectUris.All(existing => existing != redirectUri))
+            {
+                descriptor.RedirectUris.Add(redirectUri);
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     private static async Task SeedUserAsync(IServiceProvider services, IConfiguration configuration)
@@ -131,4 +162,14 @@ public static class AuthDataSeeder
             }
         }
     }
+}
+
+// 描述一个需要由 AuthHub 初始化或补齐的 OIDC 客户端。
+public sealed class OidcClientConfiguration
+{
+    public string ClientId { get; set; } = string.Empty;
+
+    public string? DisplayName { get; set; }
+
+    public string[] RedirectUris { get; set; } = [];
 }

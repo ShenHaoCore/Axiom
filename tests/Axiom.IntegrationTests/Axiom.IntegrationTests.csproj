@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axiom.ApiGateway\Axiom.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\src\Axiom.Bff\Axiom.Bff.csproj" />
     <ProjectReference Include="..\..\src\Axiom.ReferenceData.Api\Axiom.ReferenceData.Api.csproj" />
     <ProjectReference Include="..\..\src\Axiom.Web\Axiom.Web.csproj" />
   </ItemGroup>

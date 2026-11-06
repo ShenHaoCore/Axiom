@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Axiom.ApiGateway/Axiom.ApiGateway.csproj" />
     <Project Path="src/Axiom.AuthHub/Axiom.AuthHub.csproj" />
+    <Project Path="src/Axiom.Bff/Axiom.Bff.csproj" />
     <Project Path="src/Axiom.Contracts/Axiom.Contracts.csproj" />
     <Project Path="src/Axiom.News.Api/Axiom.News.Api.csproj" />
     <Project Path="src/Axiom.Observability/Axiom.Observability.csproj" />

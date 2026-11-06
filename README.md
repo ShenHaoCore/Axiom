@@ -11,6 +11,8 @@
 | `Axiom.ReferenceData.Api` | 5102 REST / 5103 gRPC | 基础档案管理、地点事件发布与幂等消费 |
 | `Axiom.News.Api` | 5104 | 新闻稿管理、筛选分页、ETag 乐观并发 |
 | `Axiom.Web` | 3000 | Razor Pages 客户端、SSO 会话、机场与新闻管理 |
+| `Axiom.Bff` | 3002 | 独立 BFF、OIDC 会话、`/bff` JSON 接口、托管 React SPA |
+| `frontend` | 3003（开发） | React + TypeScript + Vite，只调用 `/bff` |
 | PostgreSQL / RabbitMQ | 5432 / 5672、15672 | 每服务独立数据库、集成事件总线 |
 
 ## 技术栈
@@ -30,9 +32,11 @@ src/
   Axiom.ReferenceData.Api/  基础档案服务
   Axiom.News.Api/           新闻服务
   Axiom.Web/                Razor Pages 前端
+  Axiom.Bff/                独立 BFF 与 SPA 托管
   Axiom.Contracts/          跨服务契约
   Axiom.SharedKernel/       共享内核与权限常量
   Axiom.Observability/      可观测性注册
+frontend/                   React + TypeScript + Vite 前端
 tests/
   Axiom.UnitTests/
   Axiom.IntegrationTests/
@@ -51,9 +55,20 @@ Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-默认端口：Postgres `5432`、RabbitMQ `5672`、管理台 `15672`、Gateway `5100`、AuthHub `5101`、News.Api `5104`、Web `3000`。端口被占用时通过 `POSTGRES_PORT`、`RABBITMQ_PORT`、`RABBITMQ_MANAGEMENT_PORT`、`AUTHHUB_PORT`、`GATEWAY_PORT`、`NEWS_PORT`、`WEB_PORT` 覆盖。
+默认端口：Postgres `5432`、RabbitMQ `5672`、管理台 `15672`、Gateway `5100`、AuthHub `5101`、News.Api `5104`、Web `3000`、BFF `3002`。端口被占用时通过 `POSTGRES_PORT`、`RABBITMQ_PORT`、`RABBITMQ_MANAGEMENT_PORT`、`AUTHHUB_PORT`、`GATEWAY_PORT`、`NEWS_PORT`、`WEB_PORT`、`BFF_PORT` 覆盖。
 
-浏览器访问 `http://localhost:3000`，使用 `.env` 中配置的演示账号登录。
+浏览器访问 `http://localhost:3000` 使用 Razor Pages 客户端，或访问 `http://localhost:3002/app/` 使用 SPA，均使用 `.env` 中配置的演示账号登录。
+
+前端开发：
+
+```powershell
+npm ci --prefix frontend
+npm run dev --prefix frontend   # http://localhost:3003/app/，/bff 代理到 BFF 5200
+npm run lint --prefix frontend          # ESLint
+npm run format:check --prefix frontend  # Prettier 校验
+```
+
+SPA 的会话 Cookie 只发给 `/bff` 路径且为 HttpOnly，浏览器不持有访问令牌；写操作需携带 `/bff/me` 下发的 `X-CSRF-Token`。
 
 ## 多环境启动
 
