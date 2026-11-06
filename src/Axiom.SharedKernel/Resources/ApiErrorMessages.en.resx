@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Request.BodyRequired" xml:space="preserve"><value>Request body is required.</value></data>
+  <data name="Request.MissingIfMatch" xml:space="preserve"><value>The If-Match header is required.</value></data>
+  <data name="Request.InvalidIfMatch" xml:space="preserve"><value>If-Match must contain the strong ETag returned by the resource.</value></data>
+  <data name="Validation.Failed" xml:space="preserve"><value>The request does not satisfy the business rules.</value></data>
+  <data name="Validation.FieldRequired" xml:space="preserve"><value>{0} is required.</value></data>
+  <data name="Validation.FieldTooLong" xml:space="preserve"><value>{0} must not exceed {1} characters.</value></data>
+  <data name="Validation.PageOutOfRange" xml:space="preserve"><value>Page must be greater than or equal to 1.</value></data>
+  <data name="Validation.PageSizeOutOfRange" xml:space="preserve"><value>Page size must be between 1 and {0}.</value></data>
+  <data name="Localization.InvalidCulture" xml:space="preserve"><value>Invalid language tag: {0}.</value></data>
+  <data name="Localization.UnsupportedCulture" xml:space="preserve"><value>Unsupported language: {0}.</value></data>
+  <data name="Localization.UnsupportedField" xml:space="preserve"><value>Field {0} is not translatable.</value></data>
+  <data name="Server.InternalError" xml:space="preserve"><value>The server encountered an error while processing the request.</value></data>
+  <data name="Gateway.Timeout" xml:space="preserve"><value>The reference data query timed out.</value></data>
+  <data name="Gateway.Unavailable" xml:space="preserve"><value>The reference data service is unavailable.</value></data>
+  <data name="News.Article.NotFound" xml:space="preserve"><value>News article not found: {0}.</value></data>
+  <data name="News.Article.ConcurrencyConflict" xml:space="preserve"><value>The article was modified by another request. Reload and try again.</value></data>
+  <data name="News.Validation.InvalidStatus" xml:space="preserve"><value>Status must be Draft, Published or Archived.</value></data>
+  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>Region not found: {0}.</value></data>
+  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>A region with the same country, level and code already exists: {0}/L{1}/{2}.</value></data>
+  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>Region {0} has children and cannot be deleted.</value></data>
+  <data name="ReferenceData.Region.CountryNotFound" xml:space="preserve"><value>Country {0} was not found.</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidLevel" xml:space="preserve"><value>Level must be Country, Admin1 or City.</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
+  <data name="ReferenceData.Region.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="ReferenceData.Region.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>Location not found: {0}.</value></data>
+  <data name="ReferenceData.Location.CodeConflict" xml:space="preserve"><value>A location of the same type with code {0} already exists.</value></data>
+  <data name="ReferenceData.Location.ConcurrencyConflict" xml:space="preserve"><value>The location was modified by another request. Reload and try again.</value></data>
+  <data name="ReferenceData.Location.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
+  <data name="ReferenceData.Location.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="ReferenceData.Location.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="ReferenceData.Location.Validation.AirportCodeFormat" xml:space="preserve"><value>Airport code must be three letters.</value></data>
+  <data name="ReferenceData.Location.Validation.SeaportCodeFormat" xml:space="preserve"><value>Seaport code must be a 5-character UN/LOCODE of letters or digits.</value></data>
+  <data name="ReferenceData.Location.Validation.RailStationCodeFormat" xml:space="preserve"><value>Rail station code may contain only letters, digits and hyphens, and must not exceed 20 characters.</value></data>
+  <data name="ReferenceData.Location.Validation.UnsupportedType" xml:space="preserve"><value>Unsupported reference data type.</value></data>
+</root>

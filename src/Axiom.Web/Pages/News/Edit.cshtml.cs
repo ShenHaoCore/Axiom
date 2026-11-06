@@ -2,12 +2,16 @@
 using System.Net;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages.News;
 
-public sealed class EditModel(NewsClient newsClient) : PageModel
+public sealed class EditModel(
+    NewsClient newsClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     [BindProperty]
     public NewsInput Input { get; set; } = new();
@@ -48,7 +52,7 @@ public sealed class EditModel(NewsClient newsClient) : PageModel
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = "无法加载新闻内容，请稍后重试。";
+            ErrorMessage = localizer["News.Edit.LoadFailed"].Value;
             return Page();
         }
 
@@ -74,7 +78,7 @@ public sealed class EditModel(NewsClient newsClient) : PageModel
         {
             if (ETag is null)
             {
-                ErrorMessage = "缺少并发令牌，请刷新页面后重试。";
+                ErrorMessage = localizer["Common.MissingETag"].Value;
                 return Page();
             }
 
@@ -95,24 +99,26 @@ public sealed class EditModel(NewsClient newsClient) : PageModel
 
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
-                ErrorMessage = "新闻已被其他请求修改，请刷新后重试。";
+                ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
                 return Page();
             }
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
             {
-                ErrorMessage = "提交内容未通过服务端校验，请检查后重试。";
+                ErrorMessage = localizer["Common.ValidationFailed"].Value;
                 return Page();
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "保存新闻失败，请稍后重试。";
+                ErrorMessage = localizer["News.Edit.SaveFailed"].Value;
                 return Page();
             }
         }
 
-        TempData["StatusMessage"] = ArticleId is null ? "新闻已创建。" : "新闻已更新。";
+        TempData["StatusMessage"] = ArticleId is null
+            ? localizer["News.Edit.Created"].Value
+            : localizer["News.Edit.Updated"].Value;
         return RedirectToPage("/News/Index");
     }
 }

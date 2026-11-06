@@ -1,4 +1,5 @@
 // 使用当前 SSO 会话的访问令牌调用基础数据网关。
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Authentication;
@@ -30,6 +31,7 @@ public sealed class ReferenceDataClient(HttpClient httpClient, IHttpContextAcces
 
         using var request = new HttpRequestMessage(method, AIRPORTS_PATH);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.TryAddWithoutValidation("Accept-Language", CultureInfo.CurrentUICulture.Name);
         request.Content = content;
         return await httpClient.SendAsync(request, cancellationToken);
     }

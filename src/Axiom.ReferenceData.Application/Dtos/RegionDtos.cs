@@ -1,7 +1,5 @@
 // Application 层 DTO：行政区。
 // Entity 在 Domain 层，DTO 在 Application 层，职责分离。
-using Axiom.ReferenceData.Domain.Entities;
-
 namespace Axiom.ReferenceData.Application.Dtos;
 
 public sealed record RegionDto(
@@ -59,3 +57,9 @@ public sealed record RegionListQuery(
     string? Keyword = null,
     int Page = 1,
     int PageSize = 50);
+
+/// <summary>某个实体在单一语言下的翻译集合（字段名 → 译文）。</summary>
+public sealed record TranslationDto(string Culture, IReadOnlyDictionary<string, string> Values);
+
+/// <summary>整语言翻译的写入体：未出现在 Values 中的字段会被删除。</summary>
+public sealed record SaveTranslationsInput(IReadOnlyDictionary<string, string> Values);

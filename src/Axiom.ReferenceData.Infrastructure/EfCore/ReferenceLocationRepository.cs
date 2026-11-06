@@ -95,6 +95,82 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
         }
     }
 
+    public async Task<List<ReferenceLocationTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> locationIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default)
+    {
+        if (locationIds.Count == 0 || cultures.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = locationIds.ToArray();
+        var cultureTags = cultures.ToArray();
+
+        return await dbContext.ReferenceLocationTranslations
+            .AsNoTracking()
+            .Where(translation => ids.Contains(translation.ReferenceLocationId) && cultureTags.Contains(translation.Culture))
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<ReferenceLocationTranslation>> GetTranslationsAsync(
+        Guid locationId,
+        string culture,
+        CancellationToken ct = default) =>
+        await dbContext.ReferenceLocationTranslations
+            .AsNoTracking()
+            .Where(translation => translation.ReferenceLocationId == locationId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+    public async Task ReplaceTranslationsAsync(
+        Guid locationId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default)
+    {
+        var existing = await dbContext.ReferenceLocationTranslations
+            .Where(translation => translation.ReferenceLocationId == locationId && translation.Culture == culture)
+            .ToDictionaryAsync(translation => translation.Field, ct);
+
+        foreach (var (field, value) in values)
+        {
+            if (existing.TryGetValue(field, out var translation))
+            {
+                translation.ChangeValue(value);
+            }
+            else
+            {
+                dbContext.ReferenceLocationTranslations.Add(
+                    new ReferenceLocationTranslation(locationId, culture, field, value));
+            }
+        }
+
+        var removed = existing
+            .Where(entry => !values.ContainsKey(entry.Key))
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        dbContext.ReferenceLocationTranslations.RemoveRange(removed);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> DeleteTranslationsAsync(Guid locationId, string culture, CancellationToken ct = default)
+    {
+        var existing = await dbContext.ReferenceLocationTranslations
+            .Where(translation => translation.ReferenceLocationId == locationId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+        if (existing.Count == 0)
+        {
+            return false;
+        }
+
+        dbContext.ReferenceLocationTranslations.RemoveRange(existing);
+        await dbContext.SaveChangesAsync(ct);
+        return true;
+    }
+
     // ---------- 私有：构造 OutboxMessage ----------
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

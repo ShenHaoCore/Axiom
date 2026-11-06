@@ -4,12 +4,16 @@ using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages.News;
 
-public sealed class IndexModel(NewsClient newsClient) : PageModel
+public sealed class IndexModel(
+    NewsClient newsClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     public IReadOnlyList<NewsArticleView> Articles { get; private set; } = [];
 
@@ -39,7 +43,7 @@ public sealed class IndexModel(NewsClient newsClient) : PageModel
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = "无法加载新闻列表，请稍后重试。";
+            ErrorMessage = localizer["News.LoadFailed"].Value;
             return Page();
         }
 

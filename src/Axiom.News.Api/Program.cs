@@ -5,9 +5,11 @@ using Axiom.News.HttpApi.Endpoints;
 using Axiom.News.Infrastructure;
 using Axiom.News.Infrastructure.EfCore;
 using Axiom.Observability;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +18,26 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.News.Api");
+
+// 国际化：默认语言与受支持语言来自 Localization 配置节，供语言协商与 AppService 回退链使用。
+var localizationOptions = builder.Configuration.GetSection(AxiomLocalizationOptions.SECTION)
+    .Get<AxiomLocalizationOptions>() ?? new AxiomLocalizationOptions();
+builder.Services.AddSingleton(localizationOptions);
+builder.Services.AddLocalization();
+builder.Services.AddRequestLocalization(options =>
+{
+    options.SetDefaultCulture(localizationOptions.DefaultCulture);
+    options.AddSupportedCultures(localizationOptions.SupportedCultures);
+    options.AddSupportedUICultures(localizationOptions.SupportedCultures);
+    options.FallBackToParentCultures = true;
+    options.FallBackToParentUICultures = true;
+    options.RequestCultureProviders =
+    [
+        new QueryStringRequestCultureProvider(),
+        new CookieRequestCultureProvider(),
+        new AcceptLanguageHeaderRequestCultureProvider()
+    ];
+});
 
 // Infrastructure：DbContext + Repository（由 Infrastructure 层自身注册）
 builder.Services.AddNewsInfrastructure(builder.Configuration);
@@ -88,6 +110,7 @@ builder.Services.AddHealthChecks().AddDbContextCheck<NewsDbContext>("database");
 
 var app = builder.Build();
 
+app.UseRequestLocalization();
 app.UseExceptionHandler();
 app.UseStatusCodePages(async context =>
 {

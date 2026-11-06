@@ -126,6 +126,38 @@ namespace Axiom.ReferenceData.Infrastructure.Migrations
                     b.ToTable("reference_locations", (string)null);
                 });
 
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.ReferenceLocationTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Culture")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("ReferenceLocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceLocationId", "Culture", "Field")
+                        .IsUnique();
+
+                    b.ToTable("reference_location_translations", (string)null);
+                });
+
             modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.Region", b =>
                 {
                     b.Property<Guid>("Id")
@@ -188,6 +220,56 @@ namespace Axiom.ReferenceData.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("regions", (string)null);
+                });
+
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.RegionTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Culture")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("RegionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RegionId", "Culture", "Field")
+                        .IsUnique();
+
+                    b.ToTable("region_translations", (string)null);
+                });
+
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.ReferenceLocationTranslation", b =>
+                {
+                    b.HasOne("Axiom.ReferenceData.Domain.Entities.ReferenceLocation", null)
+                        .WithMany()
+                        .HasForeignKey("ReferenceLocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.RegionTranslation", b =>
+                {
+                    b.HasOne("Axiom.ReferenceData.Domain.Entities.Region", null)
+                        .WithMany()
+                        .HasForeignKey("RegionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

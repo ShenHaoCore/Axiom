@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Request.BodyRequired" xml:space="preserve"><value>请求正文不能为空。</value></data>
+  <data name="Request.MissingIfMatch" xml:space="preserve"><value>缺少 If-Match 请求头。</value></data>
+  <data name="Request.InvalidIfMatch" xml:space="preserve"><value>If-Match 必须使用当前资源返回的强 ETag。</value></data>
+  <data name="Validation.Failed" xml:space="preserve"><value>请求数据不符合业务规则。</value></data>
+  <data name="Validation.FieldRequired" xml:space="preserve"><value>该字段不能为空。</value></data>
+  <data name="Validation.FieldTooLong" xml:space="preserve"><value>长度不能超过 {1} 个字符。</value></data>
+  <data name="Validation.PageOutOfRange" xml:space="preserve"><value>页码必须大于或等于 1。</value></data>
+  <data name="Validation.PageSizeOutOfRange" xml:space="preserve"><value>页大小必须在 1 到 {0} 之间。</value></data>
+  <data name="Localization.InvalidCulture" xml:space="preserve"><value>语言标签格式不正确：{0}。</value></data>
+  <data name="Localization.UnsupportedCulture" xml:space="preserve"><value>不支持的语言：{0}。</value></data>
+  <data name="Localization.UnsupportedField" xml:space="preserve"><value>不支持翻译该字段：{0}。</value></data>
+  <data name="Server.InternalError" xml:space="preserve"><value>服务器处理请求时发生错误。</value></data>
+  <data name="Gateway.Timeout" xml:space="preserve"><value>基础数据查询超时。</value></data>
+  <data name="Gateway.Unavailable" xml:space="preserve"><value>基础数据服务暂不可用。</value></data>
+  <data name="News.Article.NotFound" xml:space="preserve"><value>指定的新闻不存在：{0:N}。</value></data>
+  <data name="News.Article.ConcurrencyConflict" xml:space="preserve"><value>新闻已被其他请求修改，请重新获取后再操作。</value></data>
+  <data name="News.Validation.InvalidStatus" xml:space="preserve"><value>状态必须是 Draft、Published 或 Archived。</value></data>
+  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>指定的行政区不存在：{0:N}。</value></data>
+  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>相同国家+层级+代码的行政区已存在：{0}/L{1}/{2}。</value></data>
+  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>行政区 {0:N} 存在下级，无法删除。</value></data>
+  <data name="ReferenceData.Region.CountryNotFound" xml:space="preserve"><value>国家 {0} 不存在。</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidLevel" xml:space="preserve"><value>level 必须是 Country/Admin1/City。</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="ReferenceData.Region.Validation.LatitudeOutOfRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
+  <data name="ReferenceData.Region.Validation.LongitudeOutOfRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
+  <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>指定的地点不存在：{0:N}。</value></data>
+  <data name="ReferenceData.Location.CodeConflict" xml:space="preserve"><value>相同类型的地点代码已存在：{0}。</value></data>
+  <data name="ReferenceData.Location.ConcurrencyConflict" xml:space="preserve"><value>地点已被其他请求修改，请重新获取后再操作。</value></data>
+  <data name="ReferenceData.Location.Validation.InvalidCountryCode" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="ReferenceData.Location.Validation.LatitudeOutOfRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
+  <data name="ReferenceData.Location.Validation.LongitudeOutOfRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
+  <data name="ReferenceData.Location.Validation.AirportCodeFormat" xml:space="preserve"><value>机场代码必须是 3 个英文字母。</value></data>
+  <data name="ReferenceData.Location.Validation.SeaportCodeFormat" xml:space="preserve"><value>港口代码必须是 5 位字母或数字组成的 UN/LOCODE。</value></data>
+  <data name="ReferenceData.Location.Validation.RailStationCodeFormat" xml:space="preserve"><value>火车站代码只能包含字母、数字和连字符，且不能超过 20 个字符。</value></data>
+  <data name="ReferenceData.Location.Validation.UnsupportedType" xml:space="preserve"><value>不支持的基础档案类型。</value></data>
+</root>

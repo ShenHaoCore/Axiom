@@ -81,7 +81,7 @@ public sealed class Region
     {
         if (!string.IsNullOrWhiteSpace(name))
         {
-            Name = RequiredText(name, nameof(Name), MaxNameLength, "名称不能为空。");
+            Name = RequiredText(name, nameof(Name), MaxNameLength);
         }
 
         if (!string.IsNullOrWhiteSpace(code))
@@ -138,11 +138,11 @@ public sealed class Region
         var normalizedCountry = NormalizeCode(countryCode ?? string.Empty);
         if (normalizedCountry.Length != 2 || !normalizedCountry.All(char.IsAsciiLetter))
         {
-            throw new RegionValidationException(nameof(CountryCode), "国家代码必须是 2 个英文字母。");
+            throw RegionValidationException.InvalidCountryCode();
         }
 
         CountryCode = normalizedCountry;
-        Name = RequiredText(name, nameof(Name), MaxNameLength, "名称不能为空。");
+        Name = RequiredText(name, nameof(Name), MaxNameLength);
         Code = string.IsNullOrWhiteSpace(code) ? Name : NormalizeCode(code);
         Admin1Code = OptionalText(admin1Code, nameof(Admin1Code), MaxAdmin1CodeLength);
         AsciiName = OptionalText(asciiName, nameof(AsciiName), MaxNameLength);
@@ -161,7 +161,7 @@ public sealed class Region
     {
         if (latitude is < -90 or > 90)
         {
-            throw new RegionValidationException(nameof(Latitude), "纬度必须位于 -90 到 90 之间。");
+            throw RegionValidationException.LatitudeOutOfRange();
         }
     }
 
@@ -169,21 +169,21 @@ public sealed class Region
     {
         if (longitude is < -180 or > 180)
         {
-            throw new RegionValidationException(nameof(Longitude), "经度必须位于 -180 到 180 之间。");
+            throw RegionValidationException.LongitudeOutOfRange();
         }
     }
 
-    private static string RequiredText(string? value, string field, int maxLength, string emptyMessage)
+    private static string RequiredText(string? value, string field, int maxLength)
     {
         var trimmed = (value ?? string.Empty).Trim();
         if (trimmed.Length == 0)
         {
-            throw new RegionValidationException(field, emptyMessage);
+            throw RegionValidationException.Required(field);
         }
 
         if (trimmed.Length > maxLength)
         {
-            throw new RegionValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw RegionValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;
@@ -199,7 +199,7 @@ public sealed class Region
         var trimmed = value.Trim();
         if (trimmed.Length > maxLength)
         {
-            throw new RegionValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw RegionValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;

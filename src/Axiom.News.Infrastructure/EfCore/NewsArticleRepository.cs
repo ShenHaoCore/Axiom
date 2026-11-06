@@ -83,4 +83,79 @@ public sealed class NewsArticleRepository(NewsDbContext dbContext) : INewsArticl
             throw new NewsArticleConcurrencyConflictException(article.Id);
         }
     }
+
+    public async Task<List<NewsArticleTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> articleIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default)
+    {
+        if (articleIds.Count == 0 || cultures.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = articleIds.ToArray();
+        var cultureTags = cultures.ToArray();
+
+        return await dbContext.NewsArticleTranslations
+            .AsNoTracking()
+            .Where(translation => ids.Contains(translation.NewsArticleId) && cultureTags.Contains(translation.Culture))
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<NewsArticleTranslation>> GetTranslationsAsync(
+        Guid articleId,
+        string culture,
+        CancellationToken ct = default) =>
+        await dbContext.NewsArticleTranslations
+            .AsNoTracking()
+            .Where(translation => translation.NewsArticleId == articleId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+    public async Task ReplaceTranslationsAsync(
+        Guid articleId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default)
+    {
+        var existing = await dbContext.NewsArticleTranslations
+            .Where(translation => translation.NewsArticleId == articleId && translation.Culture == culture)
+            .ToDictionaryAsync(translation => translation.Field, ct);
+
+        foreach (var (field, value) in values)
+        {
+            if (existing.TryGetValue(field, out var translation))
+            {
+                translation.ChangeValue(value);
+            }
+            else
+            {
+                dbContext.NewsArticleTranslations.Add(new NewsArticleTranslation(articleId, culture, field, value));
+            }
+        }
+
+        var removed = existing
+            .Where(entry => !values.ContainsKey(entry.Key))
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        dbContext.NewsArticleTranslations.RemoveRange(removed);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> DeleteTranslationsAsync(Guid articleId, string culture, CancellationToken ct = default)
+    {
+        var existing = await dbContext.NewsArticleTranslations
+            .Where(translation => translation.NewsArticleId == articleId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+        if (existing.Count == 0)
+        {
+            return false;
+        }
+
+        dbContext.NewsArticleTranslations.RemoveRange(existing);
+        await dbContext.SaveChangesAsync(ct);
+        return true;
+    }
 }

@@ -28,4 +28,26 @@ public interface IRegionRepository
     Task AddAsync(Region region, CancellationToken ct = default);
     Task UpdateAsync(Region region, CancellationToken ct = default);
     Task RemoveAsync(Region region, CancellationToken ct = default);
+
+    /// <summary>批量读取指定行政区在若干语言下的翻译，供列表/层级树一次性合并。</summary>
+    Task<List<RegionTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> regionIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default);
+
+    /// <summary>读取单个行政区在指定语言下的全部已翻译字段。</summary>
+    Task<List<RegionTranslation>> GetTranslationsAsync(
+        Guid regionId,
+        string culture,
+        CancellationToken ct = default);
+
+    /// <summary>全量替换某个行政区在指定语言下的翻译集合（未出现在 values 中的字段会被删除）。</summary>
+    Task ReplaceTranslationsAsync(
+        Guid regionId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default);
+
+    /// <summary>删除某个行政区在指定语言下的全部翻译；返回是否确实删除了记录。</summary>
+    Task<bool> DeleteTranslationsAsync(Guid regionId, string culture, CancellationToken ct = default);
 }

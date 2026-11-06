@@ -1,14 +1,18 @@
 // 将未处理异常转换为不泄露内部细节的标准 ProblemDetails 响应（HttpApi 层）。
 using System.Diagnostics;
 using Axiom.News.Domain.Exceptions;
+using Axiom.SharedKernel.Errors;
+using Axiom.SharedKernel.Resources;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.News.HttpApi;
 
 public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
-    IProblemDetailsService problemDetailsService) : IExceptionHandler
+    IProblemDetailsService problemDetailsService,
+    IStringLocalizer<ApiErrorMessages> localizer) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -23,8 +27,8 @@ public sealed class GlobalExceptionHandler(
             var validationDetails = new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "请求数据不符合业务规则。",
-                Detail = validation.Message
+                Title = localizer[ApiErrorCodes.VALIDATION_FAILED].Value,
+                Detail = localizer[validation.ErrorCode, validation.Args].Value
             };
             validationDetails.Extensions["field"] = validation.Field;
             validationDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
@@ -42,7 +46,7 @@ public sealed class GlobalExceptionHandler(
         var problemDetails = new ProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
-            Title = "服务器处理请求时发生错误。"
+            Title = localizer[ApiErrorCodes.SERVER_INTERNAL_ERROR].Value
         };
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

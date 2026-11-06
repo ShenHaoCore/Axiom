@@ -1,18 +1,24 @@
 // 行政区应用服务实现（Application 层）。
 // 包含层级树构建、唯一键冲突检查、删除子节点检查等业务规则。
+// 读取时按语言回退链合并翻译子表；没有译文则回退到主表默认语言原值。
 using Axiom.ReferenceData.Application.Dtos;
 using Axiom.ReferenceData.Application.ObjectMapping;
+using Axiom.ReferenceData.Domain.Constants;
 using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Domain.Exceptions;
 using Axiom.ReferenceData.Domain.Repositories;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Models;
 
 namespace Axiom.ReferenceData.Application.Services;
 
-public sealed class RegionAppService(IRegionRepository repository) : IRegionAppService
+public sealed class RegionAppService(
+    IRegionRepository repository,
+    AxiomLocalizationOptions localization) : IRegionAppService
 {
     public async Task<PagedResponse<RegionDto>> ListAsync(
         RegionListQuery query,
+        string? culture = null,
         CancellationToken ct = default)
     {
         var paged = await repository.ListAsync(
@@ -24,8 +30,15 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
             query.Keyword,
             ct);
 
+        var chain = localization.CultureChain(culture);
+        var translations = await repository.ListTranslationsAsync(
+            paged.Items.Select(region => region.Id).ToArray(),
+            chain,
+            ct);
+        var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
+
         return new PagedResponse<RegionDto>(
-            paged.Items.Select(RegionMapper.ToDto).ToList(),
+            paged.Items.Select(region => RegionMapper.ToDto(region, lookup)).ToList(),
             paged.TotalCount,
             paged.Page,
             paged.PageSize);
@@ -34,9 +47,15 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
     public async Task<RegionTreeDto?> GetTreeAsync(
         string countryCode,
         int depth,
+        string? culture = null,
         CancellationToken ct = default)
     {
         var cc = NormalizeCountryCode(countryCode);
+        if (cc is null)
+        {
+            throw new RegionCountryNotFoundException(countryCode);
+        }
+
         depth = Math.Clamp(depth, 1, 3);
 
         var regions = await repository.ListForTreeAsync(cc, depth, ct);
@@ -46,18 +65,34 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
             throw new RegionCountryNotFoundException(cc);
         }
 
+        var chain = localization.CultureChain(culture);
+        var translations = await repository.ListTranslationsAsync(
+            regions.Select(region => region.Id).ToArray(),
+            chain,
+            ct);
+        var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
+
         var byParent = regions
             .Where(r => r.ParentId.HasValue)
             .GroupBy(r => r.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        return BuildTree(country, byParent);
+        return BuildTree(country, byParent, lookup);
     }
 
-    public async Task<RegionDto?> GetAsync(Guid id, CancellationToken ct = default)
+    public async Task<RegionDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsNoTrackingAsync(id, ct);
-        return entity is null ? null : RegionMapper.ToDto(entity);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var chain = localization.CultureChain(culture);
+        var translations = await repository.ListTranslationsAsync([id], chain, ct);
+        var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
+
+        return RegionMapper.ToDto(entity, lookup);
     }
 
     public async Task<(RegionDto Dto, Uri LocationUri)> CreateAsync(
@@ -122,27 +157,104 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
         await repository.RemoveAsync(entity, ct);
     }
 
+    public async Task<TranslationDto?> GetTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken ct = default)
+    {
+        if (await repository.GetByIdAsNoTrackingAsync(id, ct) is null)
+        {
+            return null;
+        }
+
+        var rows = await repository.GetTranslationsAsync(id, culture, ct);
+        return new TranslationDto(culture, rows.ToDictionary(row => row.Field, row => row.Value));
+    }
+
+    public async Task<TranslationDto?> SaveTranslationsAsync(
+        Guid id,
+        string culture,
+        SaveTranslationsInput input,
+        CancellationToken ct = default)
+    {
+        if (await repository.GetByIdAsNoTrackingAsync(id, ct) is null)
+        {
+            return null;
+        }
+
+        var values = ValidateTranslationValues(input.Values);
+        await repository.ReplaceTranslationsAsync(id, culture, values, ct);
+        return new TranslationDto(culture, values);
+    }
+
+    public async Task DeleteTranslationsAsync(Guid id, string culture, CancellationToken ct = default)
+    {
+        if (await repository.GetByIdAsNoTrackingAsync(id, ct) is null)
+        {
+            throw new RegionNotFoundException(id);
+        }
+
+        await repository.DeleteTranslationsAsync(id, culture, ct);
+    }
+
     // ---------- 私有辅助方法 ----------
 
-    private RegionTreeDto BuildTree(Region node, Dictionary<Guid, List<Region>> byParent)
+    private RegionTreeDto BuildTree(
+        Region node,
+        Dictionary<Guid, List<Region>> byParent,
+        TranslationLookup lookup)
     {
         if (!byParent.TryGetValue(node.Id, out var children))
         {
-            return RegionMapper.ToTreeNode(node, children: []);
+            return RegionMapper.ToTreeNode(node, children: [], lookup);
         }
 
         var childNodes = children
             .OrderBy(r => r.Code)
-            .Select(child => BuildTree(child, byParent))
+            .Select(child => BuildTree(child, byParent, lookup))
             .ToList();
 
-        return RegionMapper.ToTreeNode(node, childNodes);
+        return RegionMapper.ToTreeNode(node, childNodes, lookup);
+    }
+
+    private static TranslationValue ToTranslationValue(RegionTranslation row) =>
+        new(row.RegionId, row.Culture, row.Field, row.Value);
+
+    private static Dictionary<string, string> ValidateTranslationValues(IReadOnlyDictionary<string, string> values)
+    {
+        var normalized = new Dictionary<string, string>();
+        foreach (var (field, value) in values)
+        {
+            if (!RegionTranslationFields.IsKnown(field))
+            {
+                throw RegionValidationException.UnknownTranslatableField(field);
+            }
+
+            var trimmed = value.Trim();
+            if (trimmed.Length == 0)
+            {
+                throw RegionValidationException.Required(field);
+            }
+
+            var maxLength = RegionTranslationFields.MaxLength(field);
+            if (trimmed.Length > maxLength)
+            {
+                throw RegionValidationException.TooLong(field, maxLength);
+            }
+
+            normalized[field] = trimmed;
+        }
+
+        return normalized;
     }
 
     private static RegionLevel ParseLevel(string level)
     {
         if (!Enum.TryParse<RegionLevel>(level.Trim(), ignoreCase: true, out var parsed))
-            throw new RegionValidationException(nameof(level), "level 必须是 Country/Admin1/City。");
+        {
+            throw RegionValidationException.InvalidLevel();
+        }
+
         return parsed;
     }
 

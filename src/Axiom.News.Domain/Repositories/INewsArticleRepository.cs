@@ -26,4 +26,26 @@ public interface INewsArticleRepository
 
     /// <summary>带并发检查的删除。</summary>
     Task RemoveWithETagAsync(NewsArticle article, Guid expectedVersion, CancellationToken ct = default);
+
+    /// <summary>批量读取指定文章在若干语言下的翻译，供列表一次性合并。</summary>
+    Task<List<NewsArticleTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> articleIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default);
+
+    /// <summary>读取单篇文章在指定语言下的全部已翻译字段。</summary>
+    Task<List<NewsArticleTranslation>> GetTranslationsAsync(
+        Guid articleId,
+        string culture,
+        CancellationToken ct = default);
+
+    /// <summary>全量替换某篇文章在指定语言下的翻译集合（未出现在 values 中的字段会被删除）。</summary>
+    Task ReplaceTranslationsAsync(
+        Guid articleId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default);
+
+    /// <summary>删除某篇文章在指定语言下的全部翻译；返回是否确实删除了记录。</summary>
+    Task<bool> DeleteTranslationsAsync(Guid articleId, string culture, CancellationToken ct = default);
 }

@@ -78,6 +78,70 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         response.Headers.Location?.OriginalString.Should().Be("/");
     }
 
+    [Fact]
+    public async Task Get_with_english_accept_language_renders_english_ui()
+    {
+        using var request = CreateRequest(HttpMethod.Get, "/");
+        request.Headers.Add("Accept-Language", "en");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        content.Should().Contain("Airport list").And.Contain("Create airport");
+        content.Should().NotContain("机场列表");
+    }
+
+    [Fact]
+    public async Task Post_invalid_form_with_english_accept_language_shows_localized_validation()
+    {
+        using var getRequest = CreateRequest(HttpMethod.Get, "/");
+        getRequest.Headers.Add("Accept-Language", "en");
+        using var getResponse = await _client.SendAsync(getRequest);
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = await getResponse.Content.ReadAsStringAsync();
+        var tokenMatch = Regex.Match(
+            html,
+            "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"",
+            RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
+        tokenMatch.Success.Should().BeTrue();
+
+        using var postRequest = CreateRequest(HttpMethod.Post, "/");
+        postRequest.Headers.Add("Accept-Language", "en");
+        postRequest.Content = new FormUrlEncodedContent(
+        [
+            new("__RequestVerificationToken", WebUtility.HtmlDecode(tokenMatch.Groups[1].Value)),
+            new("Input.Name", "Shanghai Pudong International Airport"),
+            new("Input.CountryCode", "CN")
+        ]);
+
+        using var response = await _client.SendAsync(postRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        content.Should().Contain("The airport code is required.");
+    }
+
+    [Fact]
+    public async Task Culture_endpoint_sets_culture_cookie()
+    {
+        using var response = await _client.GetAsync("/culture?culture=en&returnUrl=%2F");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location?.OriginalString.Should().Be("/");
+        var cookie = response.Headers.GetValues("Set-Cookie").Single();
+        cookie.Should().Contain(".AspNetCore.Culture=c%3Den%7Cuic%3Den");
+    }
+
+    [Fact]
+    public async Task Culture_endpoint_rejects_unsupported_culture()
+    {
+        using var response = await _client.GetAsync("/culture?culture=fr&returnUrl=%2F");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri)
     {
         var request = new HttpRequestMessage(method, uri);

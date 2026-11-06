@@ -4,12 +4,16 @@ using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages.Regions;
 
-public sealed class IndexModel(RegionClient regionClient) : PageModel
+public sealed class IndexModel(
+    RegionClient regionClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     // 国家下拉列表
     public IReadOnlyList<RegionView> Countries { get; private set; } = [];
@@ -39,7 +43,7 @@ public sealed class IndexModel(RegionClient regionClient) : PageModel
         {
             ErrorMessage = countriesResponse.StatusCode == HttpStatusCode.Unauthorized
                 ? null // 让 Challenge 处理
-                : "无法加载国家列表。";
+                : localizer["Regions.LoadCountriesFailed"].Value;
             return HandleStatus(countriesResponse.StatusCode);
         }
 
@@ -62,7 +66,7 @@ public sealed class IndexModel(RegionClient regionClient) : PageModel
             {
                 ErrorMessage = searchResponse.StatusCode == HttpStatusCode.Unauthorized
                     ? null
-                    : "搜索行政区失败。";
+                    : localizer["Regions.SearchFailed"].Value;
                 return HandleStatus(searchResponse.StatusCode);
             }
 
@@ -83,7 +87,7 @@ public sealed class IndexModel(RegionClient regionClient) : PageModel
         {
             ErrorMessage = treeResponse.StatusCode == HttpStatusCode.Unauthorized
                 ? null
-                : $"无法加载 {SelectedCountryCode} 的行政区层级。";
+                : localizer["Regions.LoadTreeFailed", SelectedCountryCode].Value;
             return HandleStatus(treeResponse.StatusCode);
         }
 

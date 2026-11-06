@@ -1,4 +1,5 @@
 // 使用当前 SSO 会话的访问令牌调用新闻网关。
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Authentication;
@@ -67,6 +68,7 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
 
         using var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.TryAddWithoutValidation("Accept-Language", CultureInfo.CurrentUICulture.Name);
         if (eTag is not null)
         {
             request.Headers.TryAddWithoutValidation("If-Match", eTag);

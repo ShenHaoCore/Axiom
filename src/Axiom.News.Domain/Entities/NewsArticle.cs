@@ -130,12 +130,12 @@ public sealed class NewsArticle
         var trimmed = value.Trim();
         if (trimmed.Length == 0)
         {
-            throw new NewsArticleValidationException(field, "该字段不能为空。");
+            throw NewsArticleValidationException.Required(field);
         }
 
         if (trimmed.Length > maxLength)
         {
-            throw new NewsArticleValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw NewsArticleValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;
@@ -151,7 +151,7 @@ public sealed class NewsArticle
 
         if (trimmed.Length > maxLength)
         {
-            throw new NewsArticleValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw NewsArticleValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;

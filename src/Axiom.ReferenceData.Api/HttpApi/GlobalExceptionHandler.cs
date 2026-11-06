@@ -1,14 +1,17 @@
 // 将未处理异常转换为不泄露内部细节的标准 ProblemDetails 响应（HttpApi 层）。
 using System.Diagnostics;
-using Axiom.ReferenceData.Domain.Exceptions;
+using Axiom.SharedKernel.Errors;
+using Axiom.SharedKernel.Resources;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.ReferenceData.HttpApi;
 
 public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
-    IProblemDetailsService problemDetailsService) : IExceptionHandler
+    IProblemDetailsService problemDetailsService,
+    IStringLocalizer<ApiErrorMessages> localizer) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -18,22 +21,22 @@ public sealed class GlobalExceptionHandler(
         logger.LogError(exception, "处理请求 {TraceIdentifier} 时发生未处理异常。", httpContext.TraceIdentifier);
 
         // 领域不变量被破坏时返回 400，而不是掩盖成 500。
-        var (field, message) = exception switch
+        var validation = exception switch
         {
-            RegionValidationException region => (region.Field, region.Message),
-            ReferenceLocationValidationException location => (location.Field, location.Message),
-            _ => (null, null)
+            Domain.Exceptions.RegionValidationException region => (region.Field, region.ErrorCode, region.Args),
+            Domain.Exceptions.ReferenceLocationValidationException location => (location.Field, location.ErrorCode, location.Args),
+            _ => (null, null, Array.Empty<object>())
         };
 
-        if (field is not null)
+        if (validation.ErrorCode is not null)
         {
             var validationDetails = new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "请求数据不符合业务规则。",
-                Detail = message
+                Title = localizer[ApiErrorCodes.VALIDATION_FAILED].Value,
+                Detail = localizer[validation.ErrorCode, validation.Args].Value
             };
-            validationDetails.Extensions["field"] = field;
+            validationDetails.Extensions["field"] = validation.Field;
             validationDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -49,7 +52,7 @@ public sealed class GlobalExceptionHandler(
         var problemDetails = new ProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
-            Title = "服务器处理请求时发生错误。"
+            Title = localizer[ApiErrorCodes.SERVER_INTERNAL_ERROR].Value
         };
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

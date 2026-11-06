@@ -1,36 +1,37 @@
 // 承载并校验新闻编辑页面的用户输入。
+// ErrorMessage 与 Display(Name) 都使用 SharedResource 的资源键，由 DataAnnotations 本地化。
 using System.ComponentModel.DataAnnotations;
 
 namespace Axiom.Web.Models;
 
 public sealed class NewsInput
 {
-    [Required(ErrorMessage = "标题必填。")]
-    [StringLength(200, ErrorMessage = "标题不能超过 200 个字符。")]
-    [Display(Name = "标题")]
+    [Required(ErrorMessage = "Validation.News.TitleRequired")]
+    [StringLength(200, ErrorMessage = "Validation.News.TitleTooLong")]
+    [Display(Name = "Field.News.Title")]
     public string? Title { get; set; }
 
-    [StringLength(500, ErrorMessage = "摘要不能超过 500 个字符。")]
-    [Display(Name = "摘要")]
+    [StringLength(500, ErrorMessage = "Validation.News.SummaryTooLong")]
+    [Display(Name = "Field.News.Summary")]
     public string? Summary { get; set; }
 
-    [Required(ErrorMessage = "正文必填。")]
-    [StringLength(50000, ErrorMessage = "正文不能超过 50000 个字符。")]
-    [Display(Name = "正文")]
+    [Required(ErrorMessage = "Validation.News.ContentRequired")]
+    [StringLength(50000, ErrorMessage = "Validation.News.ContentTooLong")]
+    [Display(Name = "Field.News.Content")]
     public string? Content { get; set; }
 
-    [Required(ErrorMessage = "分类必填。")]
-    [StringLength(50, ErrorMessage = "分类不能超过 50 个字符。")]
-    [Display(Name = "分类")]
+    [Required(ErrorMessage = "Validation.News.CategoryRequired")]
+    [StringLength(50, ErrorMessage = "Validation.News.CategoryTooLong")]
+    [Display(Name = "Field.News.Category")]
     public string? Category { get; set; }
 
-    [Required(ErrorMessage = "作者必填。")]
-    [StringLength(100, ErrorMessage = "作者不能超过 100 个字符。")]
-    [Display(Name = "作者")]
+    [Required(ErrorMessage = "Validation.News.AuthorRequired")]
+    [StringLength(100, ErrorMessage = "Validation.News.AuthorTooLong")]
+    [Display(Name = "Field.News.Author")]
     public string? Author { get; set; }
 
-    [RegularExpression("^(Draft|Published|Archived)$", ErrorMessage = "状态必须为 Draft、Published 或 Archived。")]
-    [Display(Name = "状态")]
+    [RegularExpression("^(Draft|Published|Archived)$", ErrorMessage = "Validation.News.StatusInvalid")]
+    [Display(Name = "Field.News.Status")]
     public string Status { get; set; } = "Draft";
 
     public static NewsInput From(NewsArticleView? article) => article is null

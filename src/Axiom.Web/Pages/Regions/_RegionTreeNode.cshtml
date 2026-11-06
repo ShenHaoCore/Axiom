@@ -33,8 +33,8 @@
 </div>
 
 @functions {
-    static string LevelLabel(int level) =>
-        level == 1 ? "国家" : level == 2 ? "省/州" : level == 3 ? "市" : $"L{level}";
+    string LevelLabel(int level) =>
+        level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{level}"].Value : $"L{level}";
 
     static string LevelColor(int level) =>
         level == 1 ? "#0b3d91" : level == 2 ? "#1a7f4f" : level == 3 ? "#9d3d10" : "#52606d";

@@ -292,6 +292,50 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         problem!.Errors.Should().NotBeEmpty();
     }
 
+    [Fact]
+    public async Task Translations_are_merged_by_request_culture_and_fall_back_to_default()
+    {
+        var input = ValidAirport() with { Code = "TRN", Name = "翻译测试机场" };
+        using var createRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/reference-data/airports",
+            ManagePermissions,
+            input);
+        var createResponse = await _client.SendAsync(createRequest);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var location = createResponse.Headers.Location!.OriginalString;
+
+        using var saveRequest = CreateRequest(HttpMethod.Put, $"{location}/translations/en", ManagePermissions);
+        saveRequest.Content = JsonContent.Create(
+            new SaveTranslationsInput(new Dictionary<string, string> { ["Name"] = "Translation Test Airport" }));
+        var saveResponse = await _client.SendAsync(saveRequest);
+        saveResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var saved = await saveResponse.Content.ReadFromJsonAsync<TranslationDto>();
+        saved!.Values["Name"].Should().Be("Translation Test Airport");
+
+        var defaultResponse = await _client.SendAsync(
+            CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
+        var defaultDto = await defaultResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        defaultDto!.Name.Should().Be("翻译测试机场");
+
+        using var englishRequest = CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ);
+        englishRequest.Headers.Add("Accept-Language", "en");
+        var englishResponse = await _client.SendAsync(englishRequest);
+        var englishDto = await englishResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        englishDto!.Name.Should().Be("Translation Test Airport");
+
+        using var deleteTranslationRequest =
+            CreateRequest(HttpMethod.Delete, $"{location}/translations/en", ManagePermissions);
+        var deleteTranslationResponse = await _client.SendAsync(deleteTranslationRequest);
+        deleteTranslationResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var afterDeleteRequest = CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ);
+        afterDeleteRequest.Headers.Add("Accept-Language", "en");
+        var afterDeleteResponse = await _client.SendAsync(afterDeleteRequest);
+        var afterDeleteDto = await afterDeleteResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        afterDeleteDto!.Name.Should().Be("翻译测试机场");
+    }
+
     private static string ManagePermissions =>
         $"{ReferenceDataPermissions.READ},{ReferenceDataPermissions.MANAGE}";
 

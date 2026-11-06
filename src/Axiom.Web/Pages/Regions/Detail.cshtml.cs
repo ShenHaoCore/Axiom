@@ -3,12 +3,16 @@ using System.Net;
 using System.Net.Http.Json;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages.Regions;
 
-public sealed class DetailModel(RegionClient regionClient) : PageModel
+public sealed class DetailModel(
+    RegionClient regionClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     public RegionView? Region { get; private set; }
 
@@ -23,7 +27,7 @@ public sealed class DetailModel(RegionClient regionClient) : PageModel
             HttpStatusCode.Unauthorized => Challenge(),
             HttpStatusCode.Forbidden => StatusCode(StatusCodes.Status403Forbidden),
             HttpStatusCode.NotFound => NotFound(),
-            { } when !response.IsSuccessStatusCode => PageWithError("无法加载行政区详情。"),
+            { } when !response.IsSuccessStatusCode => PageWithError(localizer["Regions.Detail.LoadFailed"].Value),
             _ => await LoadSuccessAsync(response, cancellationToken)
         };
     }

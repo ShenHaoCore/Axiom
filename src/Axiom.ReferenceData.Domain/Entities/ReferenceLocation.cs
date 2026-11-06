@@ -1,6 +1,7 @@
 // 地点档案实体（Domain 层）：聚合根，承载代码格式、国家代码与坐标范围等不变量。
 // ConcurrencyToken 是 EF Core rowversion 级别的并发令牌。
 using Axiom.ReferenceData.Domain.Exceptions;
+using Axiom.SharedKernel.Errors;
 
 namespace Axiom.ReferenceData.Domain.Entities;
 
@@ -70,13 +71,22 @@ public sealed class ReferenceLocation
         _ => false
     };
 
-    /// <summary>返回按类型对应的代码格式提示，供接口层构造校验错误。</summary>
+    /// <summary>返回未处理异常（供日志与测试使用）的默认语言文本。</summary>
     public static string GetCodeFormatError(ReferenceLocationType type) => type switch
     {
         ReferenceLocationType.Airport => "机场代码必须是 3 个英文字母。",
         ReferenceLocationType.Seaport => "港口代码必须是 5 位字母或数字组成的 UN/LOCODE。",
         ReferenceLocationType.RailStation => "火车站代码只能包含字母、数字和连字符，且不能超过 20 个字符。",
         _ => "不支持的基础档案类型。"
+    };
+
+    /// <summary>返回按类型对应的代码格式错误码，供接口层本地化。</summary>
+    public static string GetCodeFormatErrorCode(ReferenceLocationType type) => type switch
+    {
+        ReferenceLocationType.Airport => ApiErrorCodes.LOCATION_AIRPORT_CODE_FORMAT,
+        ReferenceLocationType.Seaport => ApiErrorCodes.LOCATION_SEAPORT_CODE_FORMAT,
+        ReferenceLocationType.RailStation => ApiErrorCodes.LOCATION_RAIL_STATION_CODE_FORMAT,
+        _ => ApiErrorCodes.LOCATION_UNSUPPORTED_TYPE
     };
 
     /// <summary>代码规范化：去空格并转大写。</summary>
@@ -93,17 +103,20 @@ public sealed class ReferenceLocation
         var normalizedCode = NormalizeCode(code ?? string.Empty);
         if (!IsValidCode(Type, normalizedCode))
         {
-            throw new ReferenceLocationValidationException(nameof(Code), GetCodeFormatError(Type));
+            throw new ReferenceLocationValidationException(
+                nameof(Code),
+                GetCodeFormatErrorCode(Type),
+                GetCodeFormatError(Type));
         }
 
         var normalizedCountry = NormalizeCode(countryCode ?? string.Empty);
         if (normalizedCountry.Length != 2 || !normalizedCountry.All(char.IsAsciiLetter))
         {
-            throw new ReferenceLocationValidationException(nameof(CountryCode), "国家代码必须是 2 个英文字母。");
+            throw ReferenceLocationValidationException.InvalidCountryCode();
         }
 
         Code = normalizedCode;
-        Name = RequiredText(name, nameof(Name), MaxNameLength, "名称必填。");
+        Name = RequiredText(name, nameof(Name), MaxNameLength);
         CountryCode = normalizedCountry;
         City = OptionalText(city, nameof(City), MaxCityLength);
         EnsureCoordinates(latitude, longitude);
@@ -115,26 +128,26 @@ public sealed class ReferenceLocation
     {
         if (latitude is < -90 or > 90)
         {
-            throw new ReferenceLocationValidationException(nameof(Latitude), "纬度必须位于 -90 到 90 之间。");
+            throw ReferenceLocationValidationException.LatitudeOutOfRange();
         }
 
         if (longitude is < -180 or > 180)
         {
-            throw new ReferenceLocationValidationException(nameof(Longitude), "经度必须位于 -180 到 180 之间。");
+            throw ReferenceLocationValidationException.LongitudeOutOfRange();
         }
     }
 
-    private static string RequiredText(string? value, string field, int maxLength, string emptyMessage)
+    private static string RequiredText(string? value, string field, int maxLength)
     {
         var trimmed = (value ?? string.Empty).Trim();
         if (trimmed.Length == 0)
         {
-            throw new ReferenceLocationValidationException(field, emptyMessage);
+            throw ReferenceLocationValidationException.Required(field);
         }
 
         if (trimmed.Length > maxLength)
         {
-            throw new ReferenceLocationValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw ReferenceLocationValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;
@@ -150,7 +163,7 @@ public sealed class ReferenceLocation
         var trimmed = value.Trim();
         if (trimmed.Length > maxLength)
         {
-            throw new ReferenceLocationValidationException(field, $"长度不能超过 {maxLength} 个字符。");
+            throw ReferenceLocationValidationException.TooLong(field, maxLength);
         }
 
         return trimmed;

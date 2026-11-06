@@ -1,5 +1,6 @@
 // Application 层 DTO：地点档案。
 using Axiom.ReferenceData.Domain.Entities;
+using Axiom.SharedKernel.Errors;
 
 namespace Axiom.ReferenceData.Application.Dtos;
 
@@ -29,40 +30,54 @@ public sealed record ReferenceLocationListQuery(
     int PageSize = 20);
 
 // 输入校验（按 ABP 约定：校验逻辑归 Application 层 DTO）。
+// 只产出错误码与参数，具体文案由接口层按语言渲染。
 public static class ReferenceLocationInputValidator
 {
-    public const int MaxNameLength = 200;
-    public const int MaxCityLength = 100;
-
-    public static Dictionary<string, string[]> Validate(
+    public static Dictionary<string, ValidationError[]> Validate(
         ReferenceLocationType type,
         UpsertReferenceLocationInput input,
         bool isCreate)
     {
-        var errors = new Dictionary<string, string[]>();
+        var errors = new Dictionary<string, ValidationError[]>();
 
         var code = input.Code?.Trim() ?? string.Empty;
         if (!ReferenceLocation.IsValidCode(type, code))
-            errors["code"] = [ReferenceLocation.GetCodeFormatError(type)];
+        {
+            errors["code"] = [new ValidationError(ReferenceLocation.GetCodeFormatErrorCode(type))];
+        }
 
         var name = input.Name?.Trim() ?? string.Empty;
         if (isCreate && string.IsNullOrWhiteSpace(name))
-            errors["name"] = [$"名称必填且不能超过 {ReferenceLocation.MaxNameLength} 个字符。"];
+        {
+            errors["name"] = [new ValidationError(ApiErrorCodes.VALIDATION_FIELD_REQUIRED, "name")];
+        }
         else if (name.Length > ReferenceLocation.MaxNameLength)
-            errors["name"] = [$"名称必填且不能超过 {ReferenceLocation.MaxNameLength} 个字符。"];
+        {
+            errors["name"] = [new ValidationError(
+                ApiErrorCodes.VALIDATION_FIELD_TOO_LONG, "name", ReferenceLocation.MaxNameLength)];
+        }
 
         var countryCode = input.CountryCode?.Trim() ?? string.Empty;
         if (countryCode.Length != 2 || !countryCode.All(char.IsAsciiLetter))
-            errors["countryCode"] = ["国家代码必须是 2 个英文字母。"];
+        {
+            errors["countryCode"] = [new ValidationError(ApiErrorCodes.LOCATION_INVALID_COUNTRY_CODE)];
+        }
 
         if (input.City is { Length: > ReferenceLocation.MaxCityLength })
-            errors["city"] = [$"城市名称不能超过 {ReferenceLocation.MaxCityLength} 个字符。"];
+        {
+            errors["city"] = [new ValidationError(
+                ApiErrorCodes.VALIDATION_FIELD_TOO_LONG, "city", ReferenceLocation.MaxCityLength)];
+        }
 
         if (input.Latitude is < -90 or > 90)
-            errors["latitude"] = ["纬度必须位于 -90 到 90 之间。"];
+        {
+            errors["latitude"] = [new ValidationError(ApiErrorCodes.LOCATION_LATITUDE_OUT_OF_RANGE)];
+        }
 
         if (input.Longitude is < -180 or > 180)
-            errors["longitude"] = ["经度必须位于 -180 到 180 之间。"];
+        {
+            errors["longitude"] = [new ValidationError(ApiErrorCodes.LOCATION_LONGITUDE_OUT_OF_RANGE)];
+        }
 
         return errors;
     }

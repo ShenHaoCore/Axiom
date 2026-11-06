@@ -10,6 +10,8 @@ public sealed class NewsDbContext(DbContextOptions<NewsDbContext> options) : DbC
 {
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
 
+    public DbSet<NewsArticleTranslation> NewsArticleTranslations => Set<NewsArticleTranslation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<NewsArticle>(entity =>
@@ -26,6 +28,24 @@ public sealed class NewsDbContext(DbContextOptions<NewsDbContext> options) : DbC
             entity.HasIndex(article => article.Status);
             entity.HasIndex(article => article.Category);
             entity.HasIndex(article => new { article.Status, article.PublishedAt });
+        });
+
+        modelBuilder.Entity<NewsArticleTranslation>(entity =>
+        {
+            entity.ToTable("news_article_translations");
+            entity.HasKey(translation => translation.Id);
+            entity.Property(translation => translation.Culture).HasMaxLength(16).IsRequired();
+            entity.Property(translation => translation.Field).HasMaxLength(32).IsRequired();
+            // 值列按最长字段（正文）建列，具体字段长度由应用层校验。
+            entity.Property(translation => translation.Value)
+                .HasMaxLength(NewsArticleLengths.MaxContentLength)
+                .IsRequired();
+            entity.HasIndex(translation => new { translation.NewsArticleId, translation.Culture, translation.Field })
+                .IsUnique();
+            entity.HasOne<NewsArticle>()
+                .WithMany()
+                .HasForeignKey(translation => translation.NewsArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

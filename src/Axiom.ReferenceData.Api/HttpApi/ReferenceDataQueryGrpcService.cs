@@ -1,5 +1,6 @@
 // gRPC 查询端点（HttpApi 层）。
 // 走 Application 层的 IReferenceLocationAppService，不直接操作 DbContext。
+using System.Globalization;
 using Axiom.Contracts.ReferenceData;
 using Axiom.Contracts.ReferenceData.V1;
 using Axiom.ReferenceData.Application.Dtos;
@@ -27,7 +28,9 @@ public sealed class ReferenceDataQueryGrpcService(IReferenceLocationAppService a
 
         try
         {
-            var paged = await app.ListAsync(ReferenceLocationType.Airport, query, context.CancellationToken);
+            // gRPC 请求头同样经过 RequestLocalization，按调用方声明的语言合并译文。
+            var culture = CultureInfo.CurrentUICulture.Name;
+            var paged = await app.ListAsync(ReferenceLocationType.Airport, query, culture, context.CancellationToken);
             var response = new ListAirportsResponse
             {
                 TotalCount = paged.TotalCount,

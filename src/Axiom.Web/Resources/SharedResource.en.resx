@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Layout / navigation -->
+  <data name="Nav.Airports" xml:space="preserve"><value>Airports</value></data>
+  <data name="Nav.News" xml:space="preserve"><value>News</value></data>
+  <data name="Nav.Regions" xml:space="preserve"><value>Regions</value></data>
+  <data name="Layout.Footer" xml:space="preserve"><value>Axiom Reference Data Management</value></data>
+  <data name="Culture.Select" xml:space="preserve"><value>Select language</value></data>
+  <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Culture.en" xml:space="preserve"><value>English</value></data>
+
+  <!-- Common -->
+  <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common.View" xml:space="preserve"><value>View</value></data>
+  <data name="Common.Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Common.Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common.Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Common.Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="Common.Filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="Common.BackToList" xml:space="preserve"><value>Back to list</value></data>
+  <data name="Common.TotalCount" xml:space="preserve"><value>{0} in total.</value></data>
+  <data name="Common.MissingETag" xml:space="preserve"><value>The concurrency token is missing. Please refresh the page and try again.</value></data>
+  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>The content was modified by another request. Please refresh and try again.</value></data>
+  <data name="Common.ValidationFailed" xml:space="preserve"><value>The submitted content failed server-side validation. Please check it and try again.</value></data>
+  <data name="Common.LoadFailed" xml:space="preserve"><value>Failed to load data. Please try again later.</value></data>
+
+  <!-- Airports -->
+  <data name="Airports.Title" xml:space="preserve"><value>Airports</value></data>
+  <data name="Airports.CreateHeading" xml:space="preserve"><value>Create airport</value></data>
+  <data name="Airports.ListHeading" xml:space="preserve"><value>Airport list</value></data>
+  <data name="Airports.Column.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Airports.Column.Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Airports.Column.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="Airports.Column.City" xml:space="preserve"><value>City</value></data>
+  <data name="Airports.Column.Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Airports.Column.Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Airports.Empty" xml:space="preserve"><value>No airports yet.</value></data>
+  <data name="Airports.Created" xml:space="preserve"><value>The airport has been created.</value></data>
+  <data name="Airports.LoadFailed" xml:space="preserve"><value>Failed to load the airport list. Please try again later.</value></data>
+  <data name="Airports.CodeConflict" xml:space="preserve"><value>An airport with this code already exists.</value></data>
+  <data name="Airports.CreateFailed" xml:space="preserve"><value>Failed to create the airport. Please try again later.</value></data>
+
+  <!-- News -->
+  <data name="News.Title" xml:space="preserve"><value>News</value></data>
+  <data name="News.New" xml:space="preserve"><value>New article</value></data>
+  <data name="News.Status.All" xml:space="preserve"><value>All</value></data>
+  <data name="News.Status.Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="News.Status.Published" xml:space="preserve"><value>Published</value></data>
+  <data name="News.Status.Archived" xml:space="preserve"><value>Archived</value></data>
+  <data name="News.Column.Title" xml:space="preserve"><value>Title</value></data>
+  <data name="News.Column.Category" xml:space="preserve"><value>Category</value></data>
+  <data name="News.Column.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="News.Column.Author" xml:space="preserve"><value>Author</value></data>
+  <data name="News.Column.PublishedAt" xml:space="preserve"><value>Published at</value></data>
+  <data name="News.Empty" xml:space="preserve"><value>No articles yet.</value></data>
+  <data name="News.LoadFailed" xml:space="preserve"><value>Failed to load the news list. Please try again later.</value></data>
+  <data name="News.Detail.Title" xml:space="preserve"><value>Article detail</value></data>
+  <data name="News.Detail.Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="News.Detail.Unpublished" xml:space="preserve"><value>Not published</value></data>
+  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this article?</value></data>
+  <data name="News.Detail.Deleted" xml:space="preserve"><value>The article has been deleted.</value></data>
+  <data name="News.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the article. Please try again later.</value></data>
+  <data name="News.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the article. Please try again later.</value></data>
+  <data name="News.Edit.EditTitle" xml:space="preserve"><value>Edit article</value></data>
+  <data name="News.Edit.CreateTitle" xml:space="preserve"><value>New article</value></data>
+  <data name="News.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the article content. Please try again later.</value></data>
+  <data name="News.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the article. Please try again later.</value></data>
+  <data name="News.Edit.Created" xml:space="preserve"><value>The article has been created.</value></data>
+  <data name="News.Edit.Updated" xml:space="preserve"><value>The article has been updated.</value></data>
+
+  <!-- Regions -->
+  <data name="Regions.Title" xml:space="preserve"><value>Browse regions</value></data>
+  <data name="Regions.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="Regions.SelectCountry" xml:space="preserve"><value>-- Select a country --</value></data>
+  <data name="Regions.SearchLabel" xml:space="preserve"><value>Search regions</value></data>
+  <data name="Regions.SearchPlaceholder" xml:space="preserve"><value>Search by name…</value></data>
+  <data name="Regions.SearchResults" xml:space="preserve"><value>Search results</value></data>
+  <data name="Regions.SearchTotal" xml:space="preserve"><value>{0} in total</value></data>
+  <data name="Regions.NoMatch" xml:space="preserve"><value>No regions match "{0}".</value></data>
+  <data name="Regions.TreeTitle" xml:space="preserve"><value>Region hierarchy</value></data>
+  <data name="Regions.Column.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="Regions.Column.Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Regions.Column.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Regions.Column.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="Regions.Column.Admin1" xml:space="preserve"><value>Admin1</value></data>
+  <data name="Regions.Column.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="Regions.Level.1" xml:space="preserve"><value>Country</value></data>
+  <data name="Regions.Level.2" xml:space="preserve"><value>Province/State</value></data>
+  <data name="Regions.Level.3" xml:space="preserve"><value>City</value></data>
+  <data name="Regions.LoadCountriesFailed" xml:space="preserve"><value>Failed to load the country list.</value></data>
+  <data name="Regions.SearchFailed" xml:space="preserve"><value>Failed to search regions.</value></data>
+  <data name="Regions.LoadTreeFailed" xml:space="preserve"><value>Failed to load the region hierarchy for {0}.</value></data>
+
+  <!-- Region detail -->
+  <data name="Regions.Detail.Title" xml:space="preserve"><value>Region detail</value></data>
+  <data name="Regions.Detail.BackToTree" xml:space="preserve"><value>Back to hierarchy</value></data>
+  <data name="Regions.Detail.BasicInfo" xml:space="preserve"><value>Basic information</value></data>
+  <data name="Regions.Detail.GeoData" xml:space="preserve"><value>Geographical data</value></data>
+  <data name="Regions.Detail.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="Regions.Detail.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Regions.Detail.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="Regions.Detail.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
+  <data name="Regions.Detail.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
+  <data name="Regions.Detail.GeoNameId" xml:space="preserve"><value>GeoNames ID</value></data>
+  <data name="Regions.Detail.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="Regions.Detail.Coordinates" xml:space="preserve"><value>Coordinates</value></data>
+  <data name="Regions.Detail.ParentId" xml:space="preserve"><value>Parent node ID</value></data>
+  <data name="Regions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
+  <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the region detail.</value></data>
+
+  <!-- Field labels -->
+  <data name="Field.Airport.Code" xml:space="preserve"><value>Airport code</value></data>
+  <data name="Field.Airport.Name" xml:space="preserve"><value>Airport name</value></data>
+  <data name="Field.Airport.CountryCode" xml:space="preserve"><value>Country code</value></data>
+  <data name="Field.Airport.City" xml:space="preserve"><value>City</value></data>
+  <data name="Field.Airport.Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Field.Airport.Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Field.News.Title" xml:space="preserve"><value>Title</value></data>
+  <data name="Field.News.Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Field.News.Content" xml:space="preserve"><value>Content</value></data>
+  <data name="Field.News.Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Field.News.Author" xml:space="preserve"><value>Author</value></data>
+  <data name="Field.News.Status" xml:space="preserve"><value>Status</value></data>
+
+  <!-- Validation -->
+  <data name="Validation.Airport.CodeRequired" xml:space="preserve"><value>The airport code is required.</value></data>
+  <data name="Validation.Airport.CodeFormat" xml:space="preserve"><value>The airport code must be 3 letters.</value></data>
+  <data name="Validation.Airport.NameRequired" xml:space="preserve"><value>The airport name is required.</value></data>
+  <data name="Validation.Airport.NameTooLong" xml:space="preserve"><value>The airport name cannot exceed 200 characters.</value></data>
+  <data name="Validation.Airport.CountryCodeRequired" xml:space="preserve"><value>The country code is required.</value></data>
+  <data name="Validation.Airport.CountryCodeFormat" xml:space="preserve"><value>The country code must be 2 letters.</value></data>
+  <data name="Validation.Airport.CityTooLong" xml:space="preserve"><value>The city name cannot exceed 100 characters.</value></data>
+  <data name="Validation.Airport.LatitudeRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="Validation.Airport.LongitudeRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="Validation.News.TitleRequired" xml:space="preserve"><value>The title is required.</value></data>
+  <data name="Validation.News.TitleTooLong" xml:space="preserve"><value>The title cannot exceed 200 characters.</value></data>
+  <data name="Validation.News.SummaryTooLong" xml:space="preserve"><value>The summary cannot exceed 500 characters.</value></data>
+  <data name="Validation.News.ContentRequired" xml:space="preserve"><value>The content is required.</value></data>
+  <data name="Validation.News.ContentTooLong" xml:space="preserve"><value>The content cannot exceed 50000 characters.</value></data>
+  <data name="Validation.News.CategoryRequired" xml:space="preserve"><value>The category is required.</value></data>
+  <data name="Validation.News.CategoryTooLong" xml:space="preserve"><value>The category cannot exceed 50 characters.</value></data>
+  <data name="Validation.News.AuthorRequired" xml:space="preserve"><value>The author is required.</value></data>
+  <data name="Validation.News.AuthorTooLong" xml:space="preserve"><value>The author cannot exceed 100 characters.</value></data>
+  <data name="Validation.News.StatusInvalid" xml:space="preserve"><value>The status must be Draft, Published, or Archived.</value></data>
+
+  <!-- Error page -->
+  <data name="Error.Title" xml:space="preserve"><value>Error</value></data>
+  <data name="Error.Heading" xml:space="preserve"><value>Error.</value></data>
+  <data name="Error.Message" xml:space="preserve"><value>An error occurred while processing your request.</value></data>
+  <data name="Error.RequestId" xml:space="preserve"><value>Request ID:</value></data>
+  <data name="Error.DevelopmentMode" xml:space="preserve"><value>Development mode</value></data>
+  <data name="Error.DevelopmentDetail" xml:space="preserve"><value>Switching to the Development environment displays detailed information about the error.</value></data>
+  <data name="Error.DevelopmentWarningTitle" xml:space="preserve"><value>The Development environment should not be enabled for deployed applications.</value></data>
+  <data name="Error.DevelopmentWarning" xml:space="preserve"><value>It can result in displaying sensitive information from exceptions to end users. For local debugging, set the ASPNETCORE_ENVIRONMENT environment variable to Development and restart the app.</value></data>
+</root>

@@ -80,6 +80,47 @@ namespace Axiom.News.Infrastructure.Migrations
 
                     b.ToTable("news_articles", (string)null);
                 });
+
+            modelBuilder.Entity("Axiom.News.Domain.Entities.NewsArticleTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Culture")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("NewsArticleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(50000)
+                        .HasColumnType("character varying(50000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewsArticleId", "Culture", "Field")
+                        .IsUnique();
+
+                    b.ToTable("news_article_translations", (string)null);
+                });
+
+            modelBuilder.Entity("Axiom.News.Domain.Entities.NewsArticleTranslation", b =>
+                {
+                    b.HasOne("Axiom.News.Domain.Entities.NewsArticle", null)
+                        .WithMany()
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 #pragma warning restore 612, 618
         }
     }

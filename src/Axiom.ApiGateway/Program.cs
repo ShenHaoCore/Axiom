@@ -3,13 +3,35 @@ using Axiom.ApiGateway;
 using Axiom.ApiGateway.Health;
 using Axiom.Contracts.ReferenceData.V1;
 using Axiom.Observability;
+using Axiom.SharedKernel.Localization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.ApiGateway");
+
+// 国际化：错误消息按请求语言协商输出，转发时 Bearer/Accept-Language 原样透传。
+var localizationOptions = builder.Configuration.GetSection(AxiomLocalizationOptions.SECTION)
+    .Get<AxiomLocalizationOptions>() ?? new AxiomLocalizationOptions();
+builder.Services.AddSingleton(localizationOptions);
+builder.Services.AddLocalization();
+builder.Services.AddRequestLocalization(options =>
+{
+    options.SetDefaultCulture(localizationOptions.DefaultCulture);
+    options.AddSupportedCultures(localizationOptions.SupportedCultures);
+    options.AddSupportedUICultures(localizationOptions.SupportedCultures);
+    options.FallBackToParentCultures = true;
+    options.FallBackToParentUICultures = true;
+    options.RequestCultureProviders =
+    [
+        new QueryStringRequestCultureProvider(),
+        new CookieRequestCultureProvider(),
+        new AcceptLanguageHeaderRequestCultureProvider()
+    ];
+});
 builder.Services.AddReverseProxy().LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 builder.Services.AddGrpcClient<ReferenceDataQuery.ReferenceDataQueryClient>(options =>
     options.Address = new Uri(builder.Configuration["ReferenceDataGrpc:Address"] ?? "http://localhost:5103"));
@@ -37,6 +59,7 @@ builder.Services.AddHealthChecks().AddCheck<UpstreamHealthCheck>("upstreams");
 
 var app = builder.Build();
 
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 

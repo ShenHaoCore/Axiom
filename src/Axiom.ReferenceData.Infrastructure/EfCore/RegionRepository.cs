@@ -76,4 +76,79 @@ public sealed class RegionRepository(ReferenceDataDbContext dbContext) : IRegion
         dbContext.Regions.Remove(region);
         await dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task<List<RegionTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> regionIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default)
+    {
+        if (regionIds.Count == 0 || cultures.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = regionIds.ToArray();
+        var cultureTags = cultures.ToArray();
+
+        return await dbContext.RegionTranslations
+            .AsNoTracking()
+            .Where(translation => ids.Contains(translation.RegionId) && cultureTags.Contains(translation.Culture))
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<RegionTranslation>> GetTranslationsAsync(
+        Guid regionId,
+        string culture,
+        CancellationToken ct = default) =>
+        await dbContext.RegionTranslations
+            .AsNoTracking()
+            .Where(translation => translation.RegionId == regionId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+    public async Task ReplaceTranslationsAsync(
+        Guid regionId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default)
+    {
+        var existing = await dbContext.RegionTranslations
+            .Where(translation => translation.RegionId == regionId && translation.Culture == culture)
+            .ToDictionaryAsync(translation => translation.Field, ct);
+
+        foreach (var (field, value) in values)
+        {
+            if (existing.TryGetValue(field, out var translation))
+            {
+                translation.ChangeValue(value);
+            }
+            else
+            {
+                dbContext.RegionTranslations.Add(new RegionTranslation(regionId, culture, field, value));
+            }
+        }
+
+        var removed = existing
+            .Where(entry => !values.ContainsKey(entry.Key))
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        dbContext.RegionTranslations.RemoveRange(removed);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> DeleteTranslationsAsync(Guid regionId, string culture, CancellationToken ct = default)
+    {
+        var existing = await dbContext.RegionTranslations
+            .Where(translation => translation.RegionId == regionId && translation.Culture == culture)
+            .ToListAsync(ct);
+
+        if (existing.Count == 0)
+        {
+            return false;
+        }
+
+        dbContext.RegionTranslations.RemoveRange(existing);
+        await dbContext.SaveChangesAsync(ct);
+        return true;
+    }
 }

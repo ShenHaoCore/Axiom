@@ -10,6 +10,8 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
 {
     public DbSet<ReferenceLocation> ReferenceLocations => Set<ReferenceLocation>();
     public DbSet<Region> Regions => Set<Region>();
+    public DbSet<ReferenceLocationTranslation> ReferenceLocationTranslations => Set<ReferenceLocationTranslation>();
+    public DbSet<RegionTranslation> RegionTranslations => Set<RegionTranslation>();
 
     // Messaging：Outbox 消息，由 Messaging 基础设施层定义，这里注册 DbSet。
     // OutboxMessage/InboxMessage 类型在 Messaging 基础设施层，但我们需要 Set<> 来访问。
@@ -47,6 +49,38 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
             entity.HasIndex(region => region.GeoNameId).IsUnique();
             entity.HasIndex(region => new { region.CountryCode, region.Level, region.Code }).IsUnique();
             entity.HasIndex(region => new { region.CountryCode, region.Level });
+        });
+
+        modelBuilder.Entity<RegionTranslation>(entity =>
+        {
+            entity.ToTable("region_translations");
+            entity.HasKey(translation => translation.Id);
+            entity.Property(translation => translation.Culture).HasMaxLength(16).IsRequired();
+            entity.Property(translation => translation.Field).HasMaxLength(32).IsRequired();
+            entity.Property(translation => translation.Value).HasMaxLength(Region.MaxNameLength).IsRequired();
+            entity.HasIndex(translation => new { translation.RegionId, translation.Culture, translation.Field })
+                .IsUnique();
+            entity.HasOne<Region>()
+                .WithMany()
+                .HasForeignKey(translation => translation.RegionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReferenceLocationTranslation>(entity =>
+        {
+            entity.ToTable("reference_location_translations");
+            entity.HasKey(translation => translation.Id);
+            entity.Property(translation => translation.Culture).HasMaxLength(16).IsRequired();
+            entity.Property(translation => translation.Field).HasMaxLength(32).IsRequired();
+            entity.Property(translation => translation.Value)
+                .HasMaxLength(ReferenceLocation.MaxNameLength)
+                .IsRequired();
+            entity.HasIndex(translation => new { translation.ReferenceLocationId, translation.Culture, translation.Field })
+                .IsUnique();
+            entity.HasOne<ReferenceLocation>()
+                .WithMany()
+                .HasForeignKey(translation => translation.ReferenceLocationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OutboxMessage>(entity =>
