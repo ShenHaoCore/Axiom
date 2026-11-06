@@ -2,7 +2,7 @@
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
-namespace Axiom.Web;
+namespace Axiom.Web.Authentication;
 
 public sealed class PublicAuthorizationEndpointConfigurationManager(
     IConfigurationManager<OpenIdConnectConfiguration> inner,

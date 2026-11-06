@@ -1,8 +1,9 @@
 // 使用当前 SSO 会话的访问令牌调用行政区网关。
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authentication;
+using Axiom.Web.Models;
 
-namespace Axiom.Web;
+namespace Axiom.Web.Clients;
 
 public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
 {

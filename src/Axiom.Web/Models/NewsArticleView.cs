@@ -1,5 +1,5 @@
 // 定义新闻列表与详情从新闻 API 返回的数据结构。
-namespace Axiom.Web;
+namespace Axiom.Web.Models;
 
 public sealed record NewsArticleView(
     Guid Id,

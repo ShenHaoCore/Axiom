@@ -1,5 +1,7 @@
 // 新增或编辑新闻，编辑时携带 ETag 完成乐观并发更新。
 using System.Net;
+using Axiom.Web.Clients;
+using Axiom.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 

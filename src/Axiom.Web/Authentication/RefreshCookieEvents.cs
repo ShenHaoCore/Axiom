@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace Axiom.Web;
+namespace Axiom.Web.Authentication;
 
 public sealed class RefreshCookieEvents(
     IConfiguration configuration,

@@ -1,7 +1,8 @@
 // 启动 Web 客户端，处理 SSO 会话并通过网关访问基础数据。
 using Axiom.Observability;
 using Axiom.SharedKernel.Security;
-using Axiom.Web;
+using Axiom.Web.Authentication;
+using Axiom.Web.Clients;
 using Axiom.Web.Health;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;

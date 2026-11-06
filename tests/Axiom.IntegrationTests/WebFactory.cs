@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
 using Axiom.Web;
+using Axiom.Web.Clients;
+using Axiom.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;

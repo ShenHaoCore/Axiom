@@ -2,6 +2,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
+using Axiom.Web.Clients;
+using Axiom.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 

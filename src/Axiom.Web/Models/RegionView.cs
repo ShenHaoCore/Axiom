@@ -1,5 +1,5 @@
 // 行政区列表 / 详情 DTO，映射网关返回的 JSON。
-namespace Axiom.Web;
+namespace Axiom.Web.Models;
 
 public sealed record RegionView(
     Guid Id,

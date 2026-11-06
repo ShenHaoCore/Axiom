@@ -1,7 +1,7 @@
 // 承载并校验新增机场页面的用户输入。
 using System.ComponentModel.DataAnnotations;
 
-namespace Axiom.Web;
+namespace Axiom.Web.Models;
 
 public sealed class AirportInput
 {
