@@ -31,7 +31,8 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
             entity.HasKey(message => message.Id);
             entity.Property(message => message.EventType).HasMaxLength(150).IsRequired();
             entity.Property(message => message.Payload).HasColumnType("jsonb").IsRequired();
-            entity.HasIndex(message => new { message.PublishedAtUtc, message.OccurredAtUtc });
+            entity.Property(message => message.LastError).HasMaxLength(500);
+            entity.HasIndex(message => new { message.PublishedAtUtc, message.NextAttemptAtUtc });
         });
 
         modelBuilder.Entity<InboxMessage>(entity =>

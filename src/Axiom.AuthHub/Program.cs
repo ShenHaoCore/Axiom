@@ -36,15 +36,18 @@ builder.Services.AddOpenIddict()
         options.SetAuthorizationEndpointUris("connect/authorize");
         options.SetTokenEndpointUris("connect/token");
         options.AllowAuthorizationCodeFlow();
+        options.AllowRefreshTokenFlow();
         options.RequireProofKeyForCodeExchange();
         options.RegisterScopes(
             Scopes.OpenId,
             Scopes.Profile,
+            Scopes.OfflineAccess,
             ReferenceDataPermissions.READ,
             ReferenceDataPermissions.MANAGE,
             NewsPermissions.READ,
             NewsPermissions.MANAGE);
         options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
         options.DisableAccessTokenEncryption();
 
         if (builder.Environment.IsDevelopment())

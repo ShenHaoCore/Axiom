@@ -3,6 +3,7 @@ using Axiom.ReferenceData.Api.Data;
 using Axiom.ReferenceData.Api.Messaging;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Axiom.IntegrationTests;
 
@@ -11,7 +12,8 @@ public sealed class MessagingProcessorTests
     [Fact]
     public async Task Outbox_publish_marks_only_confirmed_messages()
     {
-        var options = CreateOptions();
+        await using var testContext = await ReferenceDataTestContext.CreateAsync();
+        var options = testContext.Options;
         var pending = CreateMessage();
         var published = CreateMessage();
         published.PublishedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
@@ -21,21 +23,26 @@ public sealed class MessagingProcessorTests
         var publisher = new RecordingPublisher();
 
         await using var context = new ReferenceDataDbContext(options);
-        var processor = new OutboxPublishProcessor(context, publisher);
+        var processor = new OutboxPublishProcessor(
+            context,
+            publisher,
+            NullLogger<OutboxPublishProcessor>.Instance);
         var count = await processor.PublishPendingAsync();
 
         count.Should().Be(1);
         publisher.MessageIds.Should().ContainSingle().Which.Should().Be(pending.Id);
         (await context.OutboxMessages.SingleAsync(message => message.Id == pending.Id))
             .PublishedAtUtc.Should().NotBeNull();
+        // PostgreSQL timestamptz 只保留微秒精度，按毫秒容差比较。
         (await context.OutboxMessages.SingleAsync(message => message.Id == published.Id))
-            .PublishedAtUtc.Should().Be(published.PublishedAtUtc);
+            .PublishedAtUtc.Should().BeCloseTo(published.PublishedAtUtc!.Value, TimeSpan.FromMilliseconds(1));
     }
 
     [Fact]
-    public async Task Outbox_publish_failure_leaves_message_pending()
+    public async Task Outbox_publish_failure_schedules_retry_with_backoff()
     {
-        var options = CreateOptions();
+        await using var testContext = await ReferenceDataTestContext.CreateAsync();
+        var options = testContext.Options;
         var message = CreateMessage();
         await using var arrangeContext = new ReferenceDataDbContext(options);
         arrangeContext.OutboxMessages.Add(message);
@@ -43,18 +50,51 @@ public sealed class MessagingProcessorTests
         var publisher = new RecordingPublisher { ShouldFail = true };
 
         await using var context = new ReferenceDataDbContext(options);
-        var processor = new OutboxPublishProcessor(context, publisher);
-        var publish = () => processor.PublishPendingAsync();
+        var processor = new OutboxPublishProcessor(
+            context,
+            publisher,
+            NullLogger<OutboxPublishProcessor>.Instance);
 
-        await publish.Should().ThrowAsync<InvalidOperationException>();
-        (await context.OutboxMessages.SingleAsync(item => item.Id == message.Id))
-            .PublishedAtUtc.Should().BeNull();
+        var count = await processor.PublishPendingAsync();
+
+        count.Should().Be(1);
+        var stored = await context.OutboxMessages.SingleAsync(item => item.Id == message.Id);
+        stored.PublishedAtUtc.Should().BeNull();
+        stored.AttemptCount.Should().Be(1);
+        stored.LastError.Should().Contain("Publisher Confirm");
+        stored.NextAttemptAtUtc.Should().BeAfter(DateTimeOffset.UtcNow);
+        publisher.MessageIds.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Outbox_skips_message_until_retry_delay_elapses()
+    {
+        await using var testContext = await ReferenceDataTestContext.CreateAsync();
+        var options = testContext.Options;
+        var message = CreateMessage();
+        message.NextAttemptAtUtc = DateTimeOffset.UtcNow.AddMinutes(1);
+        await using var arrangeContext = new ReferenceDataDbContext(options);
+        arrangeContext.OutboxMessages.Add(message);
+        await arrangeContext.SaveChangesAsync();
+        var publisher = new RecordingPublisher();
+
+        await using var context = new ReferenceDataDbContext(options);
+        var processor = new OutboxPublishProcessor(
+            context,
+            publisher,
+            NullLogger<OutboxPublishProcessor>.Instance);
+
+        var count = await processor.PublishPendingAsync();
+
+        count.Should().Be(0);
+        publisher.MessageIds.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Inbox_duplicate_event_is_processed_once()
     {
-        await using var context = new ReferenceDataDbContext(CreateOptions());
+        await using var testContext = await ReferenceDataTestContext.CreateAsync();
+        await using var context = new ReferenceDataDbContext(testContext.Options);
         var processor = new InboxProcessor(context);
         var eventId = Guid.NewGuid();
 
@@ -66,17 +106,13 @@ public sealed class MessagingProcessorTests
         (await context.InboxMessages.CountAsync()).Should().Be(1);
     }
 
-    private static DbContextOptions<ReferenceDataDbContext> CreateOptions() =>
-        new DbContextOptionsBuilder<ReferenceDataDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
     private static OutboxMessage CreateMessage() => new()
     {
         Id = Guid.NewGuid(),
         EventType = OutboxMessage.LOCATION_CREATED,
         Payload = "{}",
-        OccurredAtUtc = DateTimeOffset.UtcNow
+        OccurredAtUtc = DateTimeOffset.UtcNow,
+        NextAttemptAtUtc = DateTimeOffset.UtcNow
     };
 
     private sealed class RecordingPublisher : IMessagePublisher

@@ -108,9 +108,10 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ReferenceDataDbContext>();
-        var outbox = await dbContext.OutboxMessages.AsNoTracking()
-            .Where(message => message.Payload.Contains(created.Id.ToString()))
-            .ToListAsync();
+        // Payload 在 PostgreSQL 中是 jsonb，无法直接翻译 LIKE，改在内存中过滤。
+        var outbox = (await dbContext.OutboxMessages.AsNoTracking().ToListAsync())
+            .Where(message => message.Payload.Contains(created.Id.ToString(), StringComparison.Ordinal))
+            .ToList();
         outbox.Select(message => message.EventType).Should().BeEquivalentTo(
             OutboxMessage.LOCATION_CREATED,
             OutboxMessage.LOCATION_UPDATED,

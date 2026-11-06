@@ -13,6 +13,21 @@ namespace Axiom.IntegrationTests;
 
 public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDataApplicationMarker>
 {
+    private readonly PostgresTestDatabase? database;
+
+    public ReferenceDataApiFactory()
+    {
+        database = PostgresTestDatabase.CreateAsync().GetAwaiter().GetResult();
+        if (database is not null)
+        {
+            using var context = new ReferenceDataDbContext(
+                new DbContextOptionsBuilder<ReferenceDataDbContext>()
+                    .UseNpgsql(database.ConnectionString)
+                    .Options);
+            context.Database.EnsureCreatedAsync().GetAwaiter().GetResult();
+        }
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -22,13 +37,31 @@ public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDat
             services.RemoveAll(typeof(DbContextOptions<ReferenceDataDbContext>));
             services.RemoveAll(typeof(DbContextOptions));
             services.RemoveAll(typeof(IDbContextOptionsConfiguration<ReferenceDataDbContext>));
-            services.AddDbContext<ReferenceDataDbContext>(options =>
-                options.UseInMemoryDatabase("AxiomReferenceDataTests"));
+
+            if (database is null)
+            {
+                services.AddDbContext<ReferenceDataDbContext>(options =>
+                    options.UseInMemoryDatabase("AxiomReferenceDataTests"));
+            }
+            else
+            {
+                services.AddDbContext<ReferenceDataDbContext>(options =>
+                    options.UseNpgsql(database.ConnectionString));
+            }
 
             services.AddAuthentication(TestAuthHandler.SCHEME)
                 .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(
                     TestAuthHandler.SCHEME,
                     _ => { });
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+        {
+            database?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
     }
 }
