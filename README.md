@@ -51,9 +51,31 @@ Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-默认端口：Postgres `5432`、RabbitMQ `5672`、管理台 `15672`、Gateway `5100`、AuthHub `5101`、News.Api `5104`、Web `3000`。端口被占用时通过 `POSTGRES_PORT`、`RABBITMQ_PORT`、`RABBITMQ_MANAGEMENT_PORT` 覆盖。
+默认端口：Postgres `5432`、RabbitMQ `5672`、管理台 `15672`、Gateway `5100`、AuthHub `5101`、News.Api `5104`、Web `3000`。端口被占用时通过 `POSTGRES_PORT`、`RABBITMQ_PORT`、`RABBITMQ_MANAGEMENT_PORT`、`AUTHHUB_PORT`、`GATEWAY_PORT`、`NEWS_PORT`、`WEB_PORT` 覆盖。
 
 浏览器访问 `http://localhost:3000`，使用 `.env` 中配置的演示账号登录。
+
+## 多环境启动
+
+服务通过 `ASPNETCORE_ENVIRONMENT` 选择配置：`appsettings.json` 提供公共默认值，`appsettings.{Environment}.json` 覆盖该环境的日志级别；连接串、对外地址、证书等敏感或环境相关的值一律由环境变量注入，不写入配置文件。
+
+| 环境 | 应用配置 | 编排与变量 | 启动方式 |
+| --- | --- | --- | --- |
+| Development | `appsettings.Development.json` | `compose.yaml`、`.env` | `docker compose up -d --build` |
+| Staging | `appsettings.Staging.json` | `compose.staging.yaml`、`.env.staging` | `docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d --build` |
+| Production | `appsettings.Production.json` | `compose.production.yaml`、`.env.production` | `docker compose --env-file .env.production -f compose.yaml -f compose.production.yaml up -d --build` |
+
+```powershell
+Copy-Item .env.staging.example .env.staging
+# 填写数据库、RabbitMQ、证书密码与对外域名
+New-Item -ItemType Directory -Force deploy/certs
+# 将 signing.pfx 与 encryption.pfx 放入 deploy/certs
+```
+
+- 非开发环境启动时 AuthHub 从 `OpenIddict:Certificates:{Signing|Encryption}:Path` 加载 PFX 证书，密码由 `OPENIDDICT_CERT_PASSWORD` 注入；缺少证书会直接启动失败。
+- 对外地址：`PUBLIC_AUTH_ISSUER`（AuthHub issuer、Web 授权地址）与 `PUBLIC_WEB_CALLBACK_URL`（回调地址）；内部调用使用 `INTERNAL_AUTH_URL`、`INTERNAL_GATEWAY_URL`。
+- 内部链路走 HTTP 时保持 `AUTH_REQUIRE_HTTPS_METADATA=false`；启用内部 TLS 后改为 `true`。
+- `.env.staging`、`.env.production` 与 `deploy/certs/` 已被忽略，证书和密码不入库。
 
 ## 构建与测试
 
