@@ -45,10 +45,20 @@ namespace Axiom.ReferenceData.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("EventType")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("OccurredAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -62,7 +72,7 @@ namespace Axiom.ReferenceData.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PublishedAtUtc", "OccurredAtUtc");
+                    b.HasIndex("PublishedAtUtc", "NextAttemptAtUtc");
 
                     b.ToTable("outbox_messages", (string)null);
                 });

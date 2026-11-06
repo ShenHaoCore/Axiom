@@ -17,6 +17,9 @@ public sealed class OutboxMessage
     public required string Payload { get; set; }
     public DateTimeOffset OccurredAtUtc { get; set; }
     public DateTimeOffset? PublishedAtUtc { get; set; }
+    public int AttemptCount { get; set; }
+    public DateTimeOffset NextAttemptAtUtc { get; set; }
+    public string? LastError { get; set; }
 
     public static OutboxMessage FromLocation(ReferenceLocation location, string eventType)
     {
@@ -35,7 +38,8 @@ public sealed class OutboxMessage
             Id = eventId,
             EventType = eventType,
             Payload = JsonSerializer.Serialize(payload, JsonOptions),
-            OccurredAtUtc = occurredAtUtc
+            OccurredAtUtc = occurredAtUtc,
+            NextAttemptAtUtc = occurredAtUtc
         };
     }
 }
