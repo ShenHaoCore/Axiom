@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Axiom.News.Application\Axiom.News.Application.csproj" />
     <ProjectReference Include="..\Axiom.News.Domain\Axiom.News.Domain.csproj" />
     <ProjectReference Include="..\Axiom.SharedKernel\Axiom.SharedKernel.csproj" />
   </ItemGroup>
