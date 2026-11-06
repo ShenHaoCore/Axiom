@@ -1,5 +1,6 @@
 // 启动统一 API 网关，在转发请求前验证访问令牌。
 using Axiom.ApiGateway;
+using Axiom.ApiGateway.Health;
 using Axiom.Contracts.ReferenceData.V1;
 using Axiom.Observability;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,7 +32,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
-builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
+builder.Services.AddHealthChecks().AddCheck<UpstreamHealthCheck>("upstreams");
 
 var app = builder.Build();
 
@@ -40,8 +42,9 @@ app.UseAuthorization();
 
 app.MapReferenceDataGrpcEndpoints();
 app.MapReverseProxy().RequireAuthorization();
-app.MapHealthChecks("/health/live").AllowAnonymous();
-app.MapHealthChecks("/health/ready").AllowAnonymous();
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Name == "upstreams" })
+    .AllowAnonymous();
 
 await app.RunAsync();
 

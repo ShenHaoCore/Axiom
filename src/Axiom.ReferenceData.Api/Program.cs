@@ -3,6 +3,7 @@ using Axiom.Observability;
 using Axiom.ReferenceData.Api;
 using Axiom.ReferenceData.Api.Data;
 using Axiom.ReferenceData.Api.Endpoints;
+using Axiom.ReferenceData.Api.Health;
 using Axiom.ReferenceData.Api.Messaging;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -87,7 +88,9 @@ builder.Services.AddAuthorizationBuilder()
         .RequireAuthenticatedUser()
         .RequireClaim(AxiomClaimTypes.PERMISSION, ReferenceDataPermissions.MANAGE));
 
-builder.Services.AddHealthChecks().AddDbContextCheck<ReferenceDataDbContext>("database");
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ReferenceDataDbContext>("database")
+    .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: ["broker"]);
 
 var app = builder.Build();
 
@@ -114,7 +117,10 @@ app.MapOpenApi("/openapi/v1.json").AllowAnonymous();
 app.MapReferenceLocationEndpoints();
 app.MapGrpcService<ReferenceDataQueryGrpcService>().RequireAuthorization(ReferenceLocationEndpoints.READ_POLICY);
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
-app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Name == "database" })
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Name is "database" or "rabbitmq"
+})
     .AllowAnonymous();
 
 await app.RunAsync();
