@@ -1,6 +1,6 @@
 // 为 API 集成测试替换数据库和外部 JWT 认证边界。
 using Axiom.ReferenceData.Api;
-using Axiom.ReferenceData.Api.Data;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;

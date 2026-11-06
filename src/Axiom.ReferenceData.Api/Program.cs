@@ -1,14 +1,11 @@
 // 启动基础数据 API，配置 ABP 风格分层依赖注入、JWT 鉴权、OpenAPI 和健康检查（HttpApi 层）。
-// Messaging + Seed：暂时保留旧 namespace，后续统一迁移
-using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Messaging;
 using Axiom.Observability;
 using Axiom.ReferenceData.Application.Services;
-using Axiom.ReferenceData.Domain.Repositories;
-using Axiom.ReferenceData.Api.Health;
+using Axiom.ReferenceData.Infrastructure;
+using Axiom.ReferenceData.Infrastructure.EfCore;
+using Axiom.ReferenceData.Infrastructure.Health;
 using Axiom.ReferenceData.HttpApi;
 using Axiom.ReferenceData.HttpApi.Endpoints;
-using Axiom.ReferenceData.Infrastructure.EfCore;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -21,28 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.ReferenceData.Api");
 
-// Infrastructure：DbContext + Repository
-builder.Services.AddDbContext<ReferenceDataDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ReferenceData")));
-builder.Services.AddScoped<IRegionRepository, RegionRepository>();
-builder.Services.AddScoped<IReferenceLocationRepository, ReferenceLocationRepository>();
+// Infrastructure：DbContext + 仓储 + 事务性消息 + 种子（由 Infrastructure 层自身注册）
+builder.Services.AddReferenceDataInfrastructure(builder.Configuration, builder.Environment);
 
 // Application：AppService
 builder.Services.AddScoped<IRegionAppService, RegionAppService>();
 builder.Services.AddScoped<IReferenceLocationAppService, ReferenceLocationAppService>();
-
-// Messaging：保持原有注册（Outbox/Inbox/RabbitMQ 是 Infrastructure 子系统）
-builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
-builder.Services.AddScoped<OutboxPublishProcessor>();
-builder.Services.AddScoped<InboxProcessor>();
-builder.Services.AddHttpClient<GeoNamesDownloader>(client =>
-    client.Timeout = TimeSpan.FromSeconds(15));
-if (!builder.Environment.IsEnvironment("Testing"))
-{
-    builder.Services.AddHostedService<OutboxPublisherWorker>();
-    builder.Services.AddHostedService<RabbitMqConsumerWorker>();
-    builder.Services.AddHostedService<RegionSeedService>();
-}
 
 builder.Services.AddGrpc();
 builder.Services.AddProblemDetails();

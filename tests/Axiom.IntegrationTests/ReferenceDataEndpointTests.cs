@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Axiom.ReferenceData.Api.Data;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using Axiom.ReferenceData.Application.Dtos;
 using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Infrastructure.EfCore;
