@@ -18,6 +18,8 @@ builder.Services.AddHttpClient<ReferenceDataClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
 builder.Services.AddHttpClient<NewsClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
+builder.Services.AddHttpClient<RegionClient>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
 builder.Services.AddScoped<RefreshCookieEvents>();
 
 builder.Services.AddAuthentication(options =>

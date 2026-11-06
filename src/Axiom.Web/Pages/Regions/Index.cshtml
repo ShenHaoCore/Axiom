@@ -1,0 +1,118 @@
+@page
+@model Axiom.Web.Pages.Regions.IndexModel
+@{
+    ViewData["Title"] = "行政区浏览";
+}
+
+<h1 class="mb-4">行政区浏览</h1>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<!-- 顶部工具栏 -->
+<form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-md-3">
+        <label class="form-label" for="countryCode">国家</label>
+        <select class="form-select" id="countryCode" name="countryCode" onchange="this.form.submit()">
+            <option value="">-- 选择国家 --</option>
+            @foreach (var c in Model.Countries)
+            {
+                <option value="@c.CountryCode" selected="@(Model.SelectedCountryCode == c.CountryCode)">
+                    @c.Name (@c.CountryCode)
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-md-5">
+        <label class="form-label" for="q">搜索行政区</label>
+        <div class="input-group">
+            <input type="text" class="form-control" id="q" name="q" placeholder="按名称搜索…"
+                   value="@Model.SearchQuery" />
+            <button type="submit" class="btn btn-primary">搜索</button>
+            @if (!string.IsNullOrEmpty(Model.SearchQuery))
+            {
+                <a asp-page="/Regions/Index" asp-route-countryCode="@Model.SelectedCountryCode"
+                   class="btn btn-outline-secondary">清除</a>
+            }
+        </div>
+    </div>
+</form>
+
+<!-- 搜索结果 -->
+@if (Model.SearchResults.Count > 0)
+{
+    <section aria-labelledby="search-title">
+        <h2 class="h4 mb-3" id="search-title">
+            搜索结果 <span class="text-muted">(共 @Model.SearchTotalCount 条)</span>
+        </h2>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">层级</th>
+                        <th scope="col">名称</th>
+                        <th scope="col">代码</th>
+                        <th scope="col">国家</th>
+                        <th scope="col">Admin1</th>
+                        <th scope="col">人口</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.SearchResults)
+                    {
+                        <tr>
+                            <td>
+                                @{
+                                    var label = r.Level == 1 ? "国家" : r.Level == 2 ? "省/州" : r.Level == 3 ? "市" : $"L{r.Level}";
+                                    var color = r.Level == 1 ? "#0b3d91" : r.Level == 2 ? "#1a7f4f" : r.Level == 3 ? "#9d3d10" : "#52606d";
+                                }
+                                <span class="badge" style="background:@color">@label</span>
+                            </td>
+                            <td>@r.Name</td>
+                            <td class="text-muted">@r.Code</td>
+                            <td>@r.CountryCode</td>
+                            <td class="text-muted">@r.Admin1Code</td>
+                            <td>@(r.Population?.ToString("N0") ?? "-")</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-page="/Regions/Detail" asp-route-id="@r.Id">查看</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+else if (!string.IsNullOrEmpty(Model.SearchQuery))
+{
+    <div class="text-muted mb-4">未找到匹配 "@Model.SearchQuery" 的行政区。</div>
+}
+
+<!-- 层级树 -->
+@if (Model.Tree is not null)
+{
+    <section aria-labelledby="tree-title">
+        <h2 class="h4 mb-3" id="tree-title">
+            @Model.Tree.Name <span class="text-muted">(@Model.Tree.CountryCode)</span> 行政区层级
+        </h2>
+        <div class="card">
+            <div class="card-body">
+                <partial name="_RegionTreeNode" model="@Model.Tree" />
+            </div>
+        </div>
+    </section>
+}
+
+<style>
+.region-node { margin-bottom: 4px; }
+.region-row { padding: 4px 0; }
+.region-children { border-left: 1px dashed #dee2e6; }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
