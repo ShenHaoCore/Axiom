@@ -126,14 +126,12 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ReferenceDataDbContext>();
-        dbContext.ReferenceLocations.AddRange(Enumerable.Range(0, 25).Select(index => new ReferenceLocation
-        {
-            Id = Guid.NewGuid(),
-            Type = ReferenceLocationType.Airport,
-            Code = $"P{index:00}",
-            Name = $"分页测试机场 {index:00}",
-            CountryCode = "CN"
-        }));
+        dbContext.ReferenceLocations.AddRange(Enumerable.Range(0, 25).Select(index =>
+            ReferenceLocation.Create(
+                ReferenceLocationType.Airport,
+                $"AA{(char)('A' + index)}",
+                $"分页测试机场 {index:00}",
+                "CN")));
         await dbContext.SaveChangesAsync();
         var name = Uri.EscapeDataString("分页测试");
 
@@ -157,15 +155,15 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var lastResponse = await _client.SendAsync(lastRequest);
         var lastPage = await lastResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         lastPage!.Items.Should().HaveCount(5);
-        lastPage.Items.First().Code.Should().Be("P20");
+        lastPage.Items.First().Code.Should().Be("AAU");
 
         using var codeRequest = CreateRequest(
             HttpMethod.Get,
-            "/api/reference-data/airports?code=p07",
+            "/api/reference-data/airports?code=aah",
             ReferenceDataPermissions.READ);
         var codeResponse = await _client.SendAsync(codeRequest);
         var codeResult = await codeResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
-        codeResult!.Items.Should().ContainSingle(item => item.Code == "P07");
+        codeResult!.Items.Should().ContainSingle(item => item.Code == "AAH");
     }
 
     [Fact]

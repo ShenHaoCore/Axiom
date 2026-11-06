@@ -116,18 +116,12 @@ public sealed class RegionSeedService(
                 continue;
             }
 
-            var region = new Region
-            {
-                Id = Guid.NewGuid(),
-                ParentId = null,
-                Level = RegionLevel.Country,
-                CountryCode = country.Code,
-                Admin1Code = null,
-                Code = country.Code,
-                Name = country.Name,
-                AsciiName = country.Name,
-                GeoNameId = null
-            };
+            var region = Region.Create(
+                RegionLevel.Country,
+                country.Code,
+                country.Name,
+                code: country.Code,
+                asciiName: country.Name);
             toAdd.Add(region);
             codeToId[country.Code] = region.Id;
         }
@@ -183,18 +177,15 @@ public sealed class RegionSeedService(
                 continue;
             }
 
-            var region = new Region
-            {
-                Id = Guid.NewGuid(),
-                ParentId = countryId,
-                Level = RegionLevel.Admin1,
-                CountryCode = row.CountryCode,
-                Admin1Code = row.Admin1Code,
-                Code = row.Admin1Code,
-                Name = row.Name,
-                AsciiName = row.AsciiName,
-                GeoNameId = row.GeoNameId
-            };
+            var region = Region.Create(
+                RegionLevel.Admin1,
+                row.CountryCode,
+                row.Name,
+                admin1Code: row.Admin1Code,
+                code: row.Admin1Code,
+                asciiName: row.AsciiName,
+                parentId: countryId,
+                geoNameId: row.GeoNameId);
             toAdd.Add(region);
             keyToId[key] = region.Id;
         }
@@ -236,22 +227,19 @@ public sealed class RegionSeedService(
                 }
             }
 
-            var region = new Region
-            {
-                Id = Guid.NewGuid(),
-                ParentId = parentId,
-                Level = RegionLevel.City,
-                CountryCode = city.CountryCode,
-                Admin1Code = city.Admin1Code,
-                Code = city.GeoNameId.ToString(),
-                Name = city.Name,
-                AsciiName = city.AsciiName,
-                LocalName = ExtractLocalName(city.AlternateNames),
-                Latitude = city.Latitude,
-                Longitude = city.Longitude,
-                Population = city.Population,
-                GeoNameId = city.GeoNameId
-            };
+            var region = Region.Create(
+                RegionLevel.City,
+                city.CountryCode,
+                city.Name,
+                admin1Code: city.Admin1Code,
+                code: city.GeoNameId.ToString(),
+                asciiName: city.AsciiName,
+                localName: ExtractLocalName(city.AlternateNames),
+                latitude: city.Latitude,
+                longitude: city.Longitude,
+                population: city.Population,
+                parentId: parentId,
+                geoNameId: city.GeoNameId);
             toAdd.Add(region);
         }
 

@@ -65,35 +65,22 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
         CancellationToken ct = default)
     {
         var level = ParseLevel(input.Level);
-        var countryCode = NormalizeCountryCode(input.CountryCode);
-        var code = string.IsNullOrWhiteSpace(input.Code)
-            ? input.Name!.Trim()
-            : input.Code.Trim().ToUpperInvariant();
+        var entity = Region.Create(
+            level,
+            input.CountryCode,
+            input.Name,
+            admin1Code: input.Admin1Code,
+            code: input.Code,
+            asciiName: input.AsciiName,
+            localName: input.LocalName,
+            latitude: input.Latitude,
+            longitude: input.Longitude,
+            population: input.Population,
+            parentId: input.ParentId);
 
-        if (await repository.AnyByUniqueKeyAsync(level, countryCode, code, ct))
+        if (await repository.AnyByUniqueKeyAsync(level, entity.CountryCode, entity.Code, ct))
         {
-            throw new RegionUniqueKeyConflictException(countryCode, (int)level, code);
-        }
-
-        var entity = new Region
-        {
-            Id = Guid.NewGuid(),
-            Level = level,
-            CountryCode = countryCode,
-            Admin1Code = string.IsNullOrWhiteSpace(input.Admin1Code) ? null : input.Admin1Code.Trim(),
-            Code = code,
-            Name = input.Name!.Trim(),
-            AsciiName = string.IsNullOrWhiteSpace(input.AsciiName) ? null : input.AsciiName.Trim(),
-            LocalName = string.IsNullOrWhiteSpace(input.LocalName) ? null : input.LocalName.Trim(),
-            Latitude = input.Latitude,
-            Longitude = input.Longitude,
-            Population = input.Population,
-            GeoNameId = null
-        };
-
-        if (level != RegionLevel.Country && input.ParentId.HasValue)
-        {
-            entity.ParentId = input.ParentId;
+            throw new RegionUniqueKeyConflictException(entity.CountryCode, (int)level, entity.Code);
         }
 
         await repository.AddAsync(entity, ct);
@@ -108,14 +95,15 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new RegionNotFoundException(id);
 
-        if (!string.IsNullOrWhiteSpace(input.Name)) entity.Name = input.Name.Trim();
-        if (!string.IsNullOrWhiteSpace(input.AsciiName)) entity.AsciiName = input.AsciiName.Trim();
-        if (!string.IsNullOrWhiteSpace(input.LocalName)) entity.LocalName = input.LocalName.Trim();
-        if (!string.IsNullOrWhiteSpace(input.Code)) entity.Code = input.Code.Trim().ToUpperInvariant();
-        if (input.Latitude.HasValue) entity.Latitude = input.Latitude;
-        if (input.Longitude.HasValue) entity.Longitude = input.Longitude;
-        if (input.Population.HasValue) entity.Population = input.Population;
-        if (input.ParentId.HasValue) entity.ParentId = input.ParentId;
+        entity.Update(
+            input.Name,
+            input.AsciiName,
+            input.LocalName,
+            input.Code,
+            input.Latitude,
+            input.Longitude,
+            input.Population,
+            input.ParentId);
 
         await repository.UpdateAsync(entity, ct);
         return RegionMapper.ToDto(entity);
@@ -154,7 +142,7 @@ public sealed class RegionAppService(IRegionRepository repository) : IRegionAppS
     private static RegionLevel ParseLevel(string level)
     {
         if (!Enum.TryParse<RegionLevel>(level.Trim(), ignoreCase: true, out var parsed))
-            throw new ArgumentException("level 必须是 Country/Admin1/City。", nameof(level));
+            throw new RegionValidationException(nameof(level), "level 必须是 Country/Admin1/City。");
         return parsed;
     }
 

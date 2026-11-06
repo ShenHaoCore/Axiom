@@ -12,3 +12,11 @@ public sealed class RegionHasChildrenException(Guid id)
 
 public sealed class RegionCountryNotFoundException(string countryCode)
     : Exception($"国家 {countryCode} 不存在。");
+
+/// <summary>行政区的领域不变量被破坏（国家代码、名称、坐标范围等）。</summary>
+public sealed class RegionValidationException(string field, string message)
+    : Exception(message)
+{
+    /// <summary>触发校验失败的字段名，供接口层构造 ProblemDetails。</summary>
+    public string Field { get; } = field;
+}

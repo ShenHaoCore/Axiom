@@ -42,21 +42,21 @@ public static class ReferenceLocationInputValidator
         var errors = new Dictionary<string, string[]>();
 
         var code = input.Code?.Trim() ?? string.Empty;
-        if (!IsValidCode(type, code))
-            errors["code"] = [GetCodeError(type)];
+        if (!ReferenceLocation.IsValidCode(type, code))
+            errors["code"] = [ReferenceLocation.GetCodeFormatError(type)];
 
         var name = input.Name?.Trim() ?? string.Empty;
         if (isCreate && string.IsNullOrWhiteSpace(name))
-            errors["name"] = ["名称必填且不能超过 200 个字符。"];
-        else if (name.Length > MaxNameLength)
-            errors["name"] = ["名称必填且不能超过 200 个字符。"];
+            errors["name"] = [$"名称必填且不能超过 {ReferenceLocation.MaxNameLength} 个字符。"];
+        else if (name.Length > ReferenceLocation.MaxNameLength)
+            errors["name"] = [$"名称必填且不能超过 {ReferenceLocation.MaxNameLength} 个字符。"];
 
         var countryCode = input.CountryCode?.Trim() ?? string.Empty;
         if (countryCode.Length != 2 || !countryCode.All(char.IsAsciiLetter))
             errors["countryCode"] = ["国家代码必须是 2 个英文字母。"];
 
-        if (input.City is { Length: > MaxCityLength })
-            errors["city"] = ["城市名称不能超过 100 个字符。"];
+        if (input.City is { Length: > ReferenceLocation.MaxCityLength })
+            errors["city"] = [$"城市名称不能超过 {ReferenceLocation.MaxCityLength} 个字符。"];
 
         if (input.Latitude is < -90 or > 90)
             errors["latitude"] = ["纬度必须位于 -90 到 90 之间。"];
@@ -66,21 +66,4 @@ public static class ReferenceLocationInputValidator
 
         return errors;
     }
-
-    private static bool IsValidCode(ReferenceLocationType type, string code) => type switch
-    {
-        ReferenceLocationType.Airport => code.Length == 3 && code.All(char.IsAsciiLetter),
-        ReferenceLocationType.Seaport => code.Length == 5 && code.All(char.IsAsciiLetterOrDigit),
-        ReferenceLocationType.RailStation => code.Length is >= 1 and <= 20 &&
-            code.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'),
-        _ => false
-    };
-
-    private static string GetCodeError(ReferenceLocationType type) => type switch
-    {
-        ReferenceLocationType.Airport => "机场代码必须是 3 个英文字母。",
-        ReferenceLocationType.Seaport => "港口代码必须是 5 位字母或数字组成的 UN/LOCODE。",
-        ReferenceLocationType.RailStation => "火车站代码只能包含字母、数字和连字符，且不能超过 20 个字符。",
-        _ => "不支持的基础档案类型。"
-    };
 }

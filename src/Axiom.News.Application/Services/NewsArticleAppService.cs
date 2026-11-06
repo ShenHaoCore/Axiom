@@ -45,7 +45,13 @@ public sealed class NewsArticleAppService(INewsArticleRepository repository) : I
         CancellationToken ct = default)
     {
         var status = ParseStatus(input.Status, NewsArticleStatus.Draft);
-        var entity = NewsArticleMapper.ToEntity(input, status);
+        var entity = NewsArticle.Create(
+            input.Title,
+            input.Summary,
+            input.Content,
+            input.Category,
+            input.Author,
+            status);
 
         await repository.AddAsync(entity, ct);
 
@@ -62,7 +68,16 @@ public sealed class NewsArticleAppService(INewsArticleRepository repository) : I
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new NewsArticleNotFoundException(id);
 
-        ApplyUpdate(entity, input);
+        var nextStatus = input.Status is null
+            ? (NewsArticleStatus?)null
+            : ParseStatus(input.Status, entity.Status);
+        entity.Update(
+            input.Title,
+            input.Summary,
+            input.Content,
+            input.Category,
+            input.Author,
+            nextStatus);
 
         await repository.UpdateWithETagAsync(entity, expectedETag, ct);
 
@@ -80,32 +95,7 @@ public sealed class NewsArticleAppService(INewsArticleRepository repository) : I
 
     // ---------- 私有辅助方法 ----------
 
-    private static void ApplyUpdate(NewsArticle entity, UpdateNewsArticleInput input)
-    {
-        if (input.Title is not null) entity.Title = input.Title.Trim();
-        if (input.Summary is not null) entity.Summary = NormalizeNullable(input.Summary);
-        if (input.Content is not null) entity.Content = input.Content.Trim();
-        if (input.Category is not null) entity.Category = input.Category.Trim();
-        if (input.Author is not null) entity.Author = input.Author.Trim();
-
-        if (input.Status is { } statusStr)
-        {
-            var newStatus = ParseStatus(statusStr, entity.Status);
-            if (newStatus == NewsArticleStatus.Published && entity.Status != NewsArticleStatus.Published)
-            {
-                entity.PublishedAt = DateTimeOffset.UtcNow;
-            }
-            entity.Status = newStatus;
-        }
-
-        entity.ConcurrencyToken = Guid.NewGuid();
-        entity.UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
     private static string? NormalizeString(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static string? NormalizeNullable(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static NewsArticleStatus ParseStatus(string? value, NewsArticleStatus fallback)

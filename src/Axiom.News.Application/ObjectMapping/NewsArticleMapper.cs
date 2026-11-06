@@ -19,19 +19,4 @@ public static class NewsArticleMapper
         CreatedAt: entity.CreatedAt,
         UpdatedAt: entity.UpdatedAt,
         ConcurrencyToken: entity.ConcurrencyToken);
-
-    public static NewsArticle ToEntity(CreateNewsArticleInput input, NewsArticleStatus status) => new()
-    {
-        Id = Guid.NewGuid(),
-        Title = input.Title.Trim(),
-        Summary = NormalizeNullable(input.Summary),
-        Content = input.Content.Trim(),
-        Category = input.Category.Trim(),
-        Author = input.Author.Trim(),
-        Status = status,
-        PublishedAt = status == NewsArticleStatus.Published ? DateTimeOffset.UtcNow : null
-    };
-
-    private static string? NormalizeNullable(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

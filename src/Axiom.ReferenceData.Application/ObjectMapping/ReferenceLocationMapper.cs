@@ -17,18 +17,14 @@ public static class ReferenceLocationMapper
         Latitude: entity.Latitude,
         Longitude: entity.Longitude);
 
-    public static ReferenceLocation ToEntity(ReferenceLocationType type, UpsertReferenceLocationInput input) => new()
-    {
-        Id = Guid.NewGuid(),
-        Type = type,
-        Code = input.Code.Trim().ToUpperInvariant(),
-        Name = input.Name.Trim(),
-        CountryCode = input.CountryCode.Trim().ToUpperInvariant(),
-        City = NormalizeNullable(input.City),
-        Latitude = input.Latitude,
-        Longitude = input.Longitude
-    };
-
-    private static string? NormalizeNullable(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    public static ReferenceLocation ToEntity(
+        ReferenceLocationType type,
+        UpsertReferenceLocationInput input) => ReferenceLocation.Create(
+            type,
+            input.Code,
+            input.Name,
+            input.CountryCode,
+            input.City,
+            input.Latitude,
+            input.Longitude);
 }

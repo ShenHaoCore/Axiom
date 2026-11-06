@@ -14,3 +14,11 @@ public sealed class NewsArticleConcurrencyConflictException(Guid id)
 /// <summary>缺少或格式不正确的 If-Match 头（428 / 400）。</summary>
 public sealed class MissingOrInvalidETagException(string message)
     : Exception(message);
+
+/// <summary>领域不变量被破坏——字段为空、超长或状态非法（400）。</summary>
+public sealed class NewsArticleValidationException(string field, string message)
+    : Exception(message)
+{
+    /// <summary>触发校验失败的字段名，供接口层构造 ProblemDetails 时使用。</summary>
+    public string Field { get; } = field;
+}

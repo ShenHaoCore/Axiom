@@ -64,7 +64,6 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
         CancellationToken ct = default)
     {
         dbContext.Entry(location).Property(l => l.ConcurrencyToken).OriginalValue = expectedVersion;
-        location.ConcurrencyToken = Guid.NewGuid();
 
         try
         {

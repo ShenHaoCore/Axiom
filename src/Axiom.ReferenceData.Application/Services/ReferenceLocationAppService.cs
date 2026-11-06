@@ -48,13 +48,12 @@ public sealed class ReferenceLocationAppService(IReferenceLocationRepository rep
         UpsertReferenceLocationInput input,
         CancellationToken ct = default)
     {
-        var normalizedCode = NormalizeCode(input.Code);
-        if (await repository.CodeExistsAsync(type, normalizedCode, excludedId: null, ct))
+        var entity = ReferenceLocationMapper.ToEntity(type, input);
+        if (await repository.CodeExistsAsync(type, entity.Code, excludedId: null, ct))
         {
-            throw new ReferenceLocationCodeConflictException(normalizedCode, (int)type);
+            throw new ReferenceLocationCodeConflictException(entity.Code, (int)type);
         }
 
-        var entity = ReferenceLocationMapper.ToEntity(type, input);
         await repository.AddAsync(entity, ct);
 
         var dto = ReferenceLocationMapper.ToDto(entity);
@@ -74,18 +73,19 @@ public sealed class ReferenceLocationAppService(IReferenceLocationRepository rep
         if (entity.Type != type)
             throw new ReferenceLocationNotFoundException(id);
 
-        var normalizedCode = NormalizeCode(input.Code);
+        var normalizedCode = ReferenceLocation.NormalizeCode(input.Code);
         if (await repository.CodeExistsAsync(type, normalizedCode, excludedId: id, ct))
         {
             throw new ReferenceLocationCodeConflictException(normalizedCode, (int)type);
         }
 
-        entity.Code = normalizedCode;
-        entity.Name = input.Name.Trim();
-        entity.CountryCode = NormalizeCode(input.CountryCode);
-        entity.City = NormalizeNullable(input.City);
-        entity.Latitude = input.Latitude;
-        entity.Longitude = input.Longitude;
+        entity.Update(
+            input.Code,
+            input.Name,
+            input.CountryCode,
+            input.City,
+            input.Latitude,
+            input.Longitude);
 
         await repository.UpdateWithETagAsync(entity, expectedETag, ct);
 
@@ -108,11 +108,6 @@ public sealed class ReferenceLocationAppService(IReferenceLocationRepository rep
     }
 
     // ---------- 私有辅助方法 ----------
-
-    private static string NormalizeCode(string value) => value.Trim().ToUpperInvariant();
-
-    private static string? NormalizeNullable(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string TypeToPlural(ReferenceLocationType type) => type switch
     {
