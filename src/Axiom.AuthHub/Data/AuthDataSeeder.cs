@@ -19,9 +19,19 @@ public static class AuthDataSeeder
 
         var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
         var clientId = configuration["Oidc:ClientId"] ?? "axiom-web";
-        if (await applicationManager.FindByClientIdAsync(clientId, cancellationToken) is null)
+        var application = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);
+        if (application is null)
         {
             await applicationManager.CreateAsync(CreateClientDescriptor(configuration, clientId), cancellationToken);
+        }
+        else
+        {
+            var descriptor = new OpenIddictApplicationDescriptor();
+            await applicationManager.PopulateAsync(descriptor, application, cancellationToken);
+            if (EnsureRefreshTokenPermissions(descriptor))
+            {
+                await applicationManager.UpdateAsync(application, descriptor, cancellationToken);
+            }
         }
 
         await SeedUserAsync(services, configuration);
@@ -49,8 +59,10 @@ public static class AuthDataSeeder
         descriptor.Permissions.Add(Permissions.Endpoints.Authorization);
         descriptor.Permissions.Add(Permissions.Endpoints.Token);
         descriptor.Permissions.Add(Permissions.GrantTypes.AuthorizationCode);
+        descriptor.Permissions.Add(Permissions.GrantTypes.RefreshToken);
         descriptor.Permissions.Add(Permissions.ResponseTypes.Code);
         descriptor.Permissions.Add(Permissions.Prefixes.Scope + Scopes.OpenId);
+        descriptor.Permissions.Add(Permissions.Prefixes.Scope + Scopes.OfflineAccess);
         descriptor.Permissions.Add(Permissions.Scopes.Profile);
         descriptor.Permissions.Add(Permissions.Prefixes.Scope + ReferenceDataPermissions.READ);
         descriptor.Permissions.Add(Permissions.Prefixes.Scope + ReferenceDataPermissions.MANAGE);
@@ -58,6 +70,24 @@ public static class AuthDataSeeder
         descriptor.Permissions.Add(Permissions.Prefixes.Scope + NewsPermissions.MANAGE);
         descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
         return descriptor;
+    }
+
+    // 已有客户端需要补齐续期权限，避免重建数据库才能生效。
+    private static bool EnsureRefreshTokenPermissions(OpenIddictApplicationDescriptor descriptor)
+    {
+        var required = new[]
+        {
+            Permissions.GrantTypes.RefreshToken,
+            Permissions.Prefixes.Scope + Scopes.OfflineAccess
+        };
+        var added = false;
+        foreach (var permission in required.Where(permission => !descriptor.Permissions.Contains(permission)))
+        {
+            descriptor.Permissions.Add(permission);
+            added = true;
+        }
+
+        return added;
     }
 
     private static async Task SeedUserAsync(IServiceProvider services, IConfiguration configuration)

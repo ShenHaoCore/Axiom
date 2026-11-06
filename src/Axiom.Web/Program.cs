@@ -2,6 +2,7 @@
 using Axiom.Observability;
 using Axiom.SharedKernel.Security;
 using Axiom.Web;
+using Axiom.Web.Health;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -17,6 +18,7 @@ builder.Services.AddHttpClient<ReferenceDataClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
 builder.Services.AddHttpClient<NewsClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100"));
+builder.Services.AddScoped<RefreshCookieEvents>();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -28,6 +30,7 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.EventsType = typeof(RefreshCookieEvents);
     })
     .AddOpenIdConnect(options =>
     {
@@ -48,6 +51,7 @@ builder.Services.AddAuthentication(options =>
         options.Scope.Clear();
         options.Scope.Add("openid");
         options.Scope.Add("profile");
+        options.Scope.Add("offline_access");
         options.Scope.Add(ReferenceDataPermissions.READ);
         options.Scope.Add(ReferenceDataPermissions.MANAGE);
         options.Scope.Add(NewsPermissions.READ);
@@ -69,7 +73,11 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddHealthChecks();
+var healthChecks = builder.Services.AddHealthChecks();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    healthChecks.AddCheck<AuthHubHealthCheck>("authhub");
+}
 
 var app = builder.Build();
 
@@ -87,6 +95,7 @@ app.MapRazorPages()
     .RequireAuthorization()
     .WithStaticAssets();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
-app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Name == "authhub" })
+    .AllowAnonymous();
 
 await app.RunAsync();
