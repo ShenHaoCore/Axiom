@@ -5,6 +5,9 @@
     <Project Path="src/Axiom.Bff/Axiom.Bff.csproj" />
     <Project Path="src/Axiom.Contracts/Axiom.Contracts.csproj" />
     <Project Path="src/Axiom.News.Api/Axiom.News.Api.csproj" />
+    <Project Path="src/Axiom.News.Application/Axiom.News.Application.csproj" />
+    <Project Path="src/Axiom.News.Domain/Axiom.News.Domain.csproj" />
+    <Project Path="src/Axiom.News.Infrastructure/Axiom.News.Infrastructure.csproj" />
     <Project Path="src/Axiom.Observability/Axiom.Observability.csproj" />
     <Project Path="src/Axiom.ReferenceData.Api/Axiom.ReferenceData.Api.csproj" />
     <Project Path="src/Axiom.SharedKernel/Axiom.SharedKernel.csproj" />

@@ -32,6 +32,9 @@ Axiom 是一个用于练习 C# 微服务开发的项目。当前交付一条最�
 | `Axiom.ApiGateway` | 统一入口、JWT 验证、机场列表 gRPC 调用和其他 REST 请求转发 |
 | `Axiom.ReferenceData.Api` | 基础档案管理、gRPC 查询、地点事件发布与幂等消费示例 |
 | `Axiom.News.Api` | 新闻稿管理、状态流转、筛选分页与乐观并发 |
+| `Axiom.News.Domain` | 新闻实体、仓储接口、领域异常与长度常量，无框架依赖 |
+| `Axiom.News.Application` | 新闻应用服务、DTO 与手工对象映射，只依赖 Domain |
+| `Axiom.News.Infrastructure` | 新闻 EF Core DbContext、仓储实现与迁移，依赖 Domain + Application |
 | `Axiom.Contracts` | 按版本目录组织的 Protobuf 契约和生成的客户端/服务端类型 |
 | `Axiom.SharedKernel` | 跨服务共享的声明类型和权限名称 |
 | `Axiom.Observability` | 统一配置 OpenTelemetry 日志、指标和链路导出 |

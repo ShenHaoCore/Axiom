@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Axiom.News.Api.Data.Migrations
+namespace Axiom.News.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

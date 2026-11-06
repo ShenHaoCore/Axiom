@@ -2,8 +2,8 @@
 using Axiom.News.Application.Services;
 using Axiom.News.HttpApi;
 using Axiom.News.HttpApi.Endpoints;
+using Axiom.News.Infrastructure;
 using Axiom.News.Infrastructure.EfCore;
-using Axiom.News.Domain.Repositories;
 using Axiom.Observability;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,10 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.News.Api");
 
-// Infrastructure：DbContext + Repository
-builder.Services.AddDbContext<NewsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("News")));
-builder.Services.AddScoped<INewsArticleRepository, NewsArticleRepository>();
+// Infrastructure：DbContext + Repository（由 Infrastructure 层自身注册）
+builder.Services.AddNewsInfrastructure(builder.Configuration);
 
 // Application：AppService
 builder.Services.AddScoped<INewsArticleAppService, NewsArticleAppService>();

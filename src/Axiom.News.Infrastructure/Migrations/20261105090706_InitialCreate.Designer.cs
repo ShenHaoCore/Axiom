@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Axiom.News.Api.Data.Migrations
+namespace Axiom.News.Infrastructure.Migrations
 {
     [DbContext(typeof(NewsDbContext))]
     [Migration("20261105090706_InitialCreate")]
@@ -25,7 +25,7 @@ namespace Axiom.News.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Axiom.News.Api.Models.NewsArticle", b =>
+            modelBuilder.Entity("Axiom.News.Domain.Entities.NewsArticle", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
