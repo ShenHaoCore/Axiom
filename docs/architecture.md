@@ -31,7 +31,14 @@ Axiom 是一个用于练习 C# 微服务开发的项目。当前交付一条最�
 | `Axiom.AuthHub` | 用户登录、OIDC 授权码 + PKCE、JWT 签发、客户端和演示用户初始化 |
 | `Axiom.ApiGateway` | 统一入口、JWT 验证、机场列表 gRPC 调用和其他 REST 请求转发 |
 | `Axiom.ReferenceData.Api` | 基础档案管理、gRPC 查询、地点事件发布与幂等消费示例 |
+| `Axiom.ReferenceData.Domain` | 行政区与地点实体、仓储接口、领域异常，无框架依赖 |
+| `Axiom.ReferenceData.Application` | 基础档案应用服务、DTO 与手工对象映射，只依赖 Domain |
+| `Axiom.ReferenceData.Infrastructure` | EF Core DbContext、仓储、迁移、Outbox/Inbox 与种子服务 |
 | `Axiom.News.Api` | 新闻稿管理、状态流转、筛选分页与乐观并发 |
+| `Axiom.News.Domain` | 新闻实体、仓储接口、领域异常与长度常量，无框架依赖 |
+| `Axiom.News.Application` | 新闻应用服务、DTO 与手工对象映射，只依赖 Domain |
+| `Axiom.News.Infrastructure` | 新闻 EF Core DbContext、仓储实现与迁移，依赖 Domain |
+| `Axiom.DbMigrator` | 独立迁移控制台，在服务启动前依次应用 Auth / ReferenceData / News 迁移 |
 | `Axiom.Contracts` | 按版本目录组织的 Protobuf 契约和生成的客户端/服务端类型 |
 | `Axiom.SharedKernel` | 跨服务共享的声明类型和权限名称 |
 | `Axiom.Observability` | 统一配置 OpenTelemetry 日志、指标和链路导出 |
@@ -107,7 +114,7 @@ REST 端点：
 | ReferenceData.Api | `axiom_reference_data` | `ReferenceDataDbContext` |
 | News.Api | `axiom_news` | `NewsDbContext` |
 
-各数据库可以部署在同一个 PostgreSQL 实例中，但逻辑数据库、连接配置和迁移保持独立。应用启动时调用 `MigrateAsync`，迁移支持生成幂等脚本。
+各数据库可以部署在同一个 PostgreSQL 实例中，但逻辑数据库、连接配置和迁移保持独立。迁移由独立控制台项目 `Axiom.DbMigrator` 在服务启动前执行（`dotnet run --project src/Axiom.DbMigrator -- news`），服务进程自身不再迁移，避免多副本同时启动时产生迁移竞争。迁移支持生成幂等脚本。
 
 ReferenceData 数据库另含 `outbox_messages` 和 `inbox_messages`：前者保存待发布事件及 Confirm 后的发布时间，后者以事件 ID 和消费者名称的复合主键持久化去重。两张表均归 ReferenceData 独立迁移管理。
 
@@ -214,6 +221,7 @@ docker compose up --build
 不使用容器时，需要提供三个数据库连接字符串、可访问的 RabbitMQ 及 `RabbitMq__Password` 环境变量，然后启动五个服务：
 
 ```powershell
+dotnet run --project src/Axiom.DbMigrator
 dotnet run --project src/Axiom.AuthHub
 dotnet run --project src/Axiom.ReferenceData.Api
 dotnet run --project src/Axiom.News.Api

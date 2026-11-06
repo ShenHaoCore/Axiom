@@ -1,0 +1,119 @@
+@page "{id:guid?}"
+@model Axiom.Web.Pages.Regions.DetailModel
+@{
+    ViewData["Title"] = Localizer["Regions.Detail.Title"];
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Regions/Index">@Localizer["Regions.Title"]</a></li>
+        <li class="breadcrumb-item active">@(Model.Region?.Name ?? Localizer["Common.View"].Value)</li>
+    </ol>
+</nav>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Region is not null)
+{
+    var r = Model.Region;
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            @r.Name
+            @if (r.LocalName is not null)
+            {
+                <small class="text-muted fw-normal">@r.LocalName</small>
+            }
+        </h1>
+        <a class="btn btn-outline-secondary" asp-page="/Regions/Index"
+           asp-route-countryCode="@r.CountryCode">@Localizer["Regions.Detail.BackToTree"]</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>@Localizer["Regions.Detail.BasicInfo"]</strong></div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">@Localizer["Regions.Detail.Level"]</span>
+                        <span class="badge text-bg-secondary">@LevelLabel(r.Level)</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">@Localizer["Regions.Detail.Code"]</span>
+                        <code>@r.Code</code>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">@Localizer["Regions.Detail.Country"]</span>
+                        <span>@r.CountryCode</span>
+                    </li>
+                    @if (r.Admin1Code is not null)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.Admin1Code"]</span>
+                            <code>@r.Admin1Code</code>
+                        </li>
+                    }
+                    @if (r.AsciiName is not null)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.AsciiName"]</span>
+                            <span>@r.AsciiName</span>
+                        </li>
+                    }
+                    @if (r.GeoNameId.HasValue)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.GeoNameId"]</span>
+                            <span>
+                                <a href="https://www.geonames.org/@r.GeoNameId" target="_blank" rel="noopener">
+                                    @r.GeoNameId
+                                </a>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>@Localizer["Regions.Detail.GeoData"]</strong></div>
+                <ul class="list-group list-group-flush">
+                    @if (r.Population.HasValue)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.Population"]</span>
+                            <span class="fw-semibold">@r.Population.Value.ToString("N0")</span>
+                        </li>
+                    }
+                    @if (r.Latitude.HasValue || r.Longitude.HasValue)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.Coordinates"]</span>
+                            <span>@r.Latitude?.ToString("F4"), @r.Longitude?.ToString("F4")</span>
+                        </li>
+                    }
+                    @if (r.ParentId.HasValue)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">@Localizer["Regions.Detail.ParentId"]</span>
+                            <code>@r.ParentId.Value.ToString("N")</code>
+                        </li>
+                    }
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">@Localizer["Regions.Detail.RecordId"]</span>
+                        <code>@r.Id.ToString("N")</code>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    private string LevelLabel(int level) =>
+        level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{level}"].Value : $"L{level}";
+}

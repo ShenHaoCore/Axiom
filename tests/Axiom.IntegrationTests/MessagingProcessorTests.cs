@@ -1,6 +1,6 @@
 // 验证 Outbox Confirm 后标记、失败重试和 Inbox 持久化去重语义。
-using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Messaging;
+using Axiom.ReferenceData.Infrastructure.Messaging;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;

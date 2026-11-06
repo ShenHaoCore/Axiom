@@ -1,5 +1,5 @@
 // 集成测试数据库：配置 AXIOM_TEST_POSTGRES 时创建独立 PostgreSQL 库，否则回退内存库。
-using Axiom.ReferenceData.Api.Data;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 

@@ -1,16 +1,17 @@
 @page
 @model Axiom.Web.Pages.News.DetailModel
 @{
-    ViewData["Title"] = Model.Article?.Title ?? "新闻详情";
+    ViewData["Title"] = Model.Article?.Title ?? Localizer["News.Detail.Title"];
+    var deleteConfirm = Localizer["News.Detail.DeleteConfirm"].Value;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">@(Model.Article?.Title ?? "新闻详情")</h1>
+    <h1 class="mb-0">@(Model.Article?.Title ?? Localizer["News.Detail.Title"].Value)</h1>
     <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" asp-page="/News/Index">返回列表</a>
+        <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.BackToList"]</a>
         @if (Model.Article is not null)
         {
-            <a class="btn btn-outline-primary" asp-page="/News/Edit" asp-route-id="@Model.Article.Id">编辑</a>
+            <a class="btn btn-outline-primary" asp-page="/News/Edit" asp-route-id="@Model.Article.Id">@Localizer["Common.Edit"]</a>
         }
     </div>
 </div>
@@ -23,15 +24,15 @@
 @if (Model.Article is { } article)
 {
     <dl class="row">
-        <dt class="col-sm-2">分类</dt>
+        <dt class="col-sm-2">@Localizer["News.Column.Category"]</dt>
         <dd class="col-sm-10">@article.Category</dd>
-        <dt class="col-sm-2">状态</dt>
-        <dd class="col-sm-10">@article.Status</dd>
-        <dt class="col-sm-2">作者</dt>
+        <dt class="col-sm-2">@Localizer["News.Column.Status"]</dt>
+        <dd class="col-sm-10">@Localizer[$"News.Status.{article.Status}"]</dd>
+        <dt class="col-sm-2">@Localizer["News.Column.Author"]</dt>
         <dd class="col-sm-10">@article.Author</dd>
-        <dt class="col-sm-2">发布时间</dt>
-        <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "未发布")</dd>
-        <dt class="col-sm-2">摘要</dt>
+        <dt class="col-sm-2">@Localizer["News.Column.PublishedAt"]</dt>
+        <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</dd>
+        <dt class="col-sm-2">@Localizer["News.Detail.Summary"]</dt>
         <dd class="col-sm-10">@(article.Summary ?? "-")</dd>
     </dl>
 
@@ -41,6 +42,6 @@
     <form method="post" asp-page-handler="Delete">
         <input type="hidden" name="ArticleId" value="@article.Id" />
         <input type="hidden" name="ETag" value="@Model.ETag" />
-        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('确定删除这条新闻吗？');">删除</button>
+        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('@deleteConfirm');">@Localizer["Common.Delete"]</button>
     </form>
 }

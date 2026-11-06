@@ -5,6 +5,3 @@
 **/bin
 **/obj
 TestResults
-**/node_modules
-frontend/dist
-src/Axiom.Bff/wwwroot/app

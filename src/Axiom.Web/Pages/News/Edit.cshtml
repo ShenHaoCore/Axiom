@@ -1,7 +1,7 @@
 @page
 @model Axiom.Web.Pages.News.EditModel
 @{
-    ViewData["Title"] = Model.IsEdit ? "编辑新闻" : "新增新闻";
+    ViewData["Title"] = Model.IsEdit ? Localizer["News.Edit.EditTitle"].Value : Localizer["News.Edit.CreateTitle"].Value;
 }
 
 <h1 class="mb-4">@ViewData["Title"]</h1>
@@ -36,9 +36,9 @@
         <div class="col-md-4">
             <label asp-for="Input.Status" class="form-label"></label>
             <select asp-for="Input.Status" class="form-select">
-                <option value="Draft">草稿</option>
-                <option value="Published">已发布</option>
-                <option value="Archived">已归档</option>
+                <option value="Draft">@Localizer["News.Status.Draft"]</option>
+                <option value="Published">@Localizer["News.Status.Published"]</option>
+                <option value="Archived">@Localizer["News.Status.Archived"]</option>
             </select>
             <span asp-validation-for="Input.Status" class="text-danger"></span>
         </div>
@@ -55,8 +55,8 @@
     </div>
 
     <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">保存</button>
-        <a class="btn btn-outline-secondary" asp-page="/News/Index">取消</a>
+        <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+        <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.Cancel"]</a>
     </div>
 </form>
 
