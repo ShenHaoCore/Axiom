@@ -10,8 +10,7 @@
 ## 已知安全特性
 
 - OIDC 授权码 + PKCE：防止授权码拦截
-- Cookie Auth（BFF）：HttpOnly、SameSite=Lax、Path 限制
-- CSRF 双提交（Cookie `Axiom.Bff.Csrf` + Header `X-CSRF-Token`）
+- Cookie Auth（Axiom.Web）：HttpOnly、SameSite=Lax，服务端持有令牌
 - JWT Bearer：网关验证 audience 与 scope
 - 密码哈希：AuthHub 使用 ASP.NET Core Identity 默认实现（PBKDF2）
 - Secret 注入：所有敏感配置走环境变量 / `.env`，不硬编码

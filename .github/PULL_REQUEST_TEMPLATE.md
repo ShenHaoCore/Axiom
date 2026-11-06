@@ -14,9 +14,7 @@
 - [ ] Axiom.ApiGateway
 - [ ] Axiom.ReferenceData.Api
 - [ ] Axiom.News.Api
-- [ ] Axiom.Bff
 - [ ] Axiom.Web
-- [ ] frontend/
 - [ ] SharedKernel / Contracts / Observability
 - [ ] compose.yaml / Dockerfile / CI
 
@@ -28,7 +26,6 @@
 - [ ] `dotnet build Axiom.slnx -c Release`
 - [ ] `dotnet test Axiom.slnx -c Release`
 - [ ] `dotnet format Axiom.slnx --verify-no-changes`
-- [ ] `npm run build`（如有前端改动）
 - [ ] 本地冒烟：
 - [ ] 集成测试新增 / 更新：
 

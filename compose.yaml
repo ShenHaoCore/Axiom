@@ -61,8 +61,6 @@ services:
       OpenIddict__Issuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
       Oidc__Clients__0__ClientId: axiom-web
       Oidc__Clients__0__RedirectUris__0: ${PUBLIC_WEB_CALLBACK_URL:-http://localhost:3000/callback}
-      Oidc__Clients__1__ClientId: axiom-bff
-      Oidc__Clients__1__RedirectUris__0: ${PUBLIC_BFF_CALLBACK_URL:-http://localhost:3002/bff/signin-oidc}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
       SeedUser__Password: ${DEMO_USER_PASSWORD:-}
     ports:
@@ -163,29 +161,6 @@ services:
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
     ports:
       - "${WEB_PORT:-3000}:8080"
-    depends_on:
-      authhub:
-        condition: service_started
-      gateway:
-        condition: service_started
-
-  bff:
-    build:
-      context: .
-      dockerfile: src/Axiom.Bff/Dockerfile
-    restart: unless-stopped
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_URLS: http://+:8080
-      Oidc__Authority: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Oidc__ValidIssuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Oidc__BackchannelAuthority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
-      Oidc__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
-      Oidc__ClientId: axiom-bff
-      ApiGateway__BaseAddress: ${INTERNAL_GATEWAY_URL:-http://gateway:8080}
-      OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
-    ports:
-      - "${BFF_PORT:-3002}:8080"
     depends_on:
       authhub:
         condition: service_started

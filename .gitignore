@@ -9,6 +9,3 @@ TestResults/
 .env.staging
 .env.production
 deploy/certs/
-frontend/node_modules/
-frontend/dist/
-src/Axiom.Bff/wwwroot/app/
