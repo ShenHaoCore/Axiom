@@ -1,7 +1,9 @@
-// 启动新闻 API，并配置独立数据库、JWT 鉴权与健康检查。
-using Axiom.News.Api;
-using Axiom.News.Api.Data;
-using Axiom.News.Api.Endpoints;
+// 启动新闻 API，配置分层依赖注入、JWT 鉴权、OpenAPI 和健康检查（HttpApi 层）。
+using Axiom.News.Application.Services;
+using Axiom.News.HttpApi;
+using Axiom.News.HttpApi.Endpoints;
+using Axiom.News.Infrastructure.EfCore;
+using Axiom.News.Domain.Repositories;
 using Axiom.Observability;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,8 +16,15 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.News.Api");
+
+// Infrastructure：DbContext + Repository
 builder.Services.AddDbContext<NewsDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("News")));
+builder.Services.AddScoped<INewsArticleRepository, NewsArticleRepository>();
+
+// Application：AppService
+builder.Services.AddScoped<INewsArticleAppService, NewsArticleAppService>();
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi(options =>

@@ -1,6 +1,8 @@
 // 启动时同步行政区层级：先内置国家，再尝试 GeoNames 增量。
-using Axiom.ReferenceData.Api.Models;
+using Axiom.ReferenceData.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+
+using Axiom.ReferenceData.Infrastructure.EfCore;
 
 namespace Axiom.ReferenceData.Api.Data;
 

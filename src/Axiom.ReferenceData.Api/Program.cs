@@ -1,10 +1,14 @@
-// 启动基础数据 API，并配置独立数据库、JWT 鉴权与健康检查。
-using Axiom.Observability;
-using Axiom.ReferenceData.Api;
+// 启动基础数据 API，配置 ABP 风格分层依赖注入、JWT 鉴权、OpenAPI 和健康检查（HttpApi 层）。
+// Messaging + Seed：暂时保留旧 namespace，后续统一迁移
 using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Endpoints;
-using Axiom.ReferenceData.Api.Health;
 using Axiom.ReferenceData.Api.Messaging;
+using Axiom.Observability;
+using Axiom.ReferenceData.Application.Services;
+using Axiom.ReferenceData.Domain.Repositories;
+using Axiom.ReferenceData.Api.Health;
+using Axiom.ReferenceData.HttpApi;
+using Axiom.ReferenceData.HttpApi.Endpoints;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -16,11 +20,34 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.ReferenceData.Api");
+
+// Infrastructure：DbContext + Repository
 builder.Services.AddDbContext<ReferenceDataDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("ReferenceData")));
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IReferenceLocationRepository, ReferenceLocationRepository>();
+
+// Application：AppService
+builder.Services.AddScoped<IRegionAppService, RegionAppService>();
+builder.Services.AddScoped<IReferenceLocationAppService, ReferenceLocationAppService>();
+
+// Messaging：保持原有注册（Outbox/Inbox/RabbitMQ 是 Infrastructure 子系统）
+builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
+builder.Services.AddScoped<OutboxPublishProcessor>();
+builder.Services.AddScoped<InboxProcessor>();
+builder.Services.AddHttpClient<GeoNamesDownloader>(client =>
+    client.Timeout = TimeSpan.FromSeconds(15));
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHostedService<OutboxPublisherWorker>();
+    builder.Services.AddHostedService<RabbitMqConsumerWorker>();
+    builder.Services.AddHostedService<RegionSeedService>();
+}
+
 builder.Services.AddGrpc();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, _, _) =>
@@ -29,7 +56,7 @@ builder.Services.AddOpenApi(options =>
         {
             Title = "Axiom ReferenceData API",
             Version = "v1",
-            Description = "机场、港口和火车站基础档案 API。"
+            Description = "机场、港口和火车站基础档案 + 全球行政区 API。"
         };
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
@@ -53,17 +80,6 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
-builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
-builder.Services.AddScoped<OutboxPublishProcessor>();
-builder.Services.AddScoped<InboxProcessor>();
-builder.Services.AddHttpClient<GeoNamesDownloader>(client =>
-    client.Timeout = TimeSpan.FromSeconds(15));
-if (!builder.Environment.IsEnvironment("Testing"))
-{
-    builder.Services.AddHostedService<OutboxPublisherWorker>();
-    builder.Services.AddHostedService<RabbitMqConsumerWorker>();
-    builder.Services.AddHostedService<RegionSeedService>();
-}
 
 var authority = builder.Configuration["Authentication:Authority"] ?? "http://localhost:5101";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

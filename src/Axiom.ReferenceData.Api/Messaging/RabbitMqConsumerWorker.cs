@@ -4,6 +4,8 @@ using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.ReferenceData.Api.Messaging;
 
 public sealed class RabbitMqConsumerWorker(

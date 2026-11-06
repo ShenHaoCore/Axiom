@@ -2,6 +2,8 @@
 using Axiom.ReferenceData.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.ReferenceData.Api.Messaging;
 
 public sealed class InboxProcessor(ReferenceDataDbContext dbContext)

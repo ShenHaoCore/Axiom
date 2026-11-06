@@ -1,5 +1,7 @@
 // 验证三类基础档案在 API 边界执行的输入规则。
-using Axiom.ReferenceData.Api.Models;
+using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Application.Dtos;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using FluentAssertions;
 
 namespace Axiom.ReferenceData.Tests;
@@ -14,7 +16,7 @@ public sealed class ReferenceLocationInputValidatorTests
     {
         var request = CreateRequest(code);
 
-        var errors = ReferenceLocationInputValidator.Validate(type, request);
+        var errors = ReferenceLocationInputValidator.Validate(type, request, isCreate: true);
 
         errors.Should().BeEmpty();
     }
@@ -25,7 +27,7 @@ public sealed class ReferenceLocationInputValidatorTests
     [InlineData(ReferenceLocationType.RailStation, "INVALID CODE")]
     public void Validate_with_invalid_code_returns_code_error(ReferenceLocationType type, string code)
     {
-        var errors = ReferenceLocationInputValidator.Validate(type, CreateRequest(code));
+        var errors = ReferenceLocationInputValidator.Validate(type, CreateRequest(code), isCreate: true);
 
         errors.Should().ContainKey("code");
     }
@@ -40,12 +42,12 @@ public sealed class ReferenceLocationInputValidatorTests
             Longitude = -181
         };
 
-        var errors = ReferenceLocationInputValidator.Validate(ReferenceLocationType.Airport, request);
+        var errors = ReferenceLocationInputValidator.Validate(ReferenceLocationType.Airport, request, isCreate: true);
 
         errors.Keys.Should().Contain(["name", "latitude", "longitude"]);
     }
 
-    private static UpsertReferenceLocationRequest CreateRequest(string code) => new(
+    private static UpsertReferenceLocationInput CreateRequest(string code) => new(
         code,
         "测试地点",
         "cn",

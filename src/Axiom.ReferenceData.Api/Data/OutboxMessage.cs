@@ -1,6 +1,6 @@
 // 将地点变更事件与业务数据保存在同一事务中，支持至少一次发布。
 using System.Text.Json;
-using Axiom.ReferenceData.Api.Models;
+using Axiom.ReferenceData.Domain.Entities;
 
 namespace Axiom.ReferenceData.Api.Data;
 
@@ -30,7 +30,17 @@ public sealed class OutboxMessage
             EventId = eventId,
             EventType = eventType,
             OccurredAtUtc = occurredAtUtc,
-            Location = location.ToResponse()
+            Location = new
+            {
+                location.Id,
+                Type = location.Type.ToString(),
+                location.Code,
+                location.Name,
+                location.CountryCode,
+                location.City,
+                location.Latitude,
+                location.Longitude
+            }
         };
 
         return new OutboxMessage

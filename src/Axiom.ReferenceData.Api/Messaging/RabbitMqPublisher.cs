@@ -4,6 +4,8 @@ using System.Text;
 using Axiom.ReferenceData.Api.Data;
 using RabbitMQ.Client;
 
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.ReferenceData.Api.Messaging;
 
 public sealed class RabbitMqPublisher : IMessagePublisher, IDisposable

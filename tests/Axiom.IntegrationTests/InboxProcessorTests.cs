@@ -3,6 +3,8 @@ using Axiom.ReferenceData.Api.Data;
 using Axiom.ReferenceData.Api.Messaging;
 using FluentAssertions;
 
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.IntegrationTests;
 
 public sealed class InboxProcessorTests

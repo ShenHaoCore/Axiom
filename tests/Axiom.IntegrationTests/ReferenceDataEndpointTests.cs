@@ -3,7 +3,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Models;
+using Axiom.ReferenceData.Application.Dtos;
+using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using Axiom.SharedKernel.Models;
 using Axiom.SharedKernel.Security;
 using FluentAssertions;
@@ -41,7 +43,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         var content = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.OK, content);
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         result.Should().NotBeNull();
         result!.Page.Should().Be(1);
         result.PageSize.Should().Be(20);
@@ -71,7 +73,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ValidAirport());
         var createResponse = await _client.SendAsync(createRequest);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await createResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var created = await createResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         created.Should().NotBeNull();
         created!.Code.Should().Be("SHA");
         created.CountryCode.Should().Be("CN");
@@ -91,7 +93,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             createdETag);
         var updateResponse = await _client.SendAsync(updateRequest);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         updated!.Name.Should().Contain("更新");
         var updatedETag = updateResponse.Headers.ETag?.ToString();
         updatedETag.Should().NotBeNullOrWhiteSpace();
@@ -141,7 +143,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ReferenceDataPermissions.READ);
         var firstResponse = await _client.SendAsync(firstRequest);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var firstPage = await firstResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var firstPage = await firstResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         firstPage!.TotalCount.Should().Be(25);
         firstPage.Page.Should().Be(1);
         firstPage.PageSize.Should().Be(20);
@@ -153,7 +155,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             $"/api/reference-data/airports?name={name}&page=3&pageSize=10",
             ReferenceDataPermissions.READ);
         var lastResponse = await _client.SendAsync(lastRequest);
-        var lastPage = await lastResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var lastPage = await lastResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         lastPage!.Items.Should().HaveCount(5);
         lastPage.Items.First().Code.Should().Be("P20");
 
@@ -162,7 +164,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             "/api/reference-data/airports?code=p07",
             ReferenceDataPermissions.READ);
         var codeResponse = await _client.SendAsync(codeRequest);
-        var codeResult = await codeResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var codeResult = await codeResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         codeResult!.Items.Should().ContainSingle(item => item.Code == "P07");
     }
 
@@ -267,7 +269,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         deleteProblem!.Status.Should().Be((int)HttpStatusCode.Conflict);
 
         var getResponse = await _client.SendAsync(CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
-        var unchanged = await getResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var unchanged = await getResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         unchanged!.Name.Should().Be("并发测试机场");
 
         using var deleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, etag);
@@ -295,7 +297,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     private static string ManagePermissions =>
         $"{ReferenceDataPermissions.READ},{ReferenceDataPermissions.MANAGE}";
 
-    private static UpsertReferenceLocationRequest ValidAirport() => new(
+    private static UpsertReferenceLocationInput ValidAirport() => new(
         "sha",
         "上海浦东国际机场",
         "cn",
@@ -323,7 +325,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         HttpMethod method,
         string uri,
         string permissions,
-        UpsertReferenceLocationRequest body,
+        UpsertReferenceLocationInput body,
         string? ifMatch = null)
     {
         var request = CreateRequest(method, uri, permissions, ifMatch);

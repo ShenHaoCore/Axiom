@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.IntegrationTests;
 
 public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDataApplicationMarker>

@@ -1,4 +1,6 @@
 // 后台轮询 Outbox，Broker 故障时延迟重试且不影响业务请求。
+using Axiom.ReferenceData.Infrastructure.EfCore;
+
 namespace Axiom.ReferenceData.Api.Messaging;
 
 public sealed class OutboxPublisherWorker(
