@@ -5,43 +5,92 @@
     var deleteConfirm = Localizer["News.Detail.DeleteConfirm"].Value;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">@(Model.Article?.Title ?? Localizer["News.Detail.Title"].Value)</h1>
-    <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.BackToList"]</a>
-        @if (Model.Article is not null)
-        {
-            <a class="btn btn-outline-primary" asp-page="/News/Edit" asp-route-id="@Model.Article.Id">@Localizer["Common.Edit"]</a>
-        }
-    </div>
-</div>
-
-@if (Model.ErrorMessage is not null)
-{
-    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
-}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/News/Index">@Localizer["News.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
 
 @if (Model.Article is { } article)
 {
-    <dl class="row">
-        <dt class="col-sm-2">@Localizer["News.Column.Category"]</dt>
-        <dd class="col-sm-10">@article.Category</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.Status"]</dt>
-        <dd class="col-sm-10">@Localizer[$"News.Status.{article.Status}"]</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.Author"]</dt>
-        <dd class="col-sm-10">@article.Author</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.PublishedAt"]</dt>
-        <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</dd>
-        <dt class="col-sm-2">@Localizer["News.Detail.Summary"]</dt>
-        <dd class="col-sm-10">@(article.Summary ?? "-")</dd>
-    </dl>
+    <div class="page-header">
+        <div class="page-header-main">
+            <h1>@article.Title</h1>
+            <p class="page-description">
+                <span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span>
+                <span class="ms-2">@article.Category</span>
+                <span class="text-muted">· @article.Author</span>
+                <span class="text-muted">· @(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</span>
+            </p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.BackToList"]</a>
+            <a class="btn btn-primary" asp-page="/News/Edit" asp-route-id="@article.Id">@Localizer["Common.Edit"]</a>
+        </div>
+    </div>
 
-    <hr />
-    <div class="mb-4" style="white-space: pre-wrap;">@article.Content</div>
+    @if (Model.StatusMessage is not null)
+    {
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    }
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    }
 
-    <form method="post" asp-page-handler="Delete">
-        <input type="hidden" name="ArticleId" value="@article.Id" />
-        <input type="hidden" name="ETag" value="@Model.ETag" />
-        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('@deleteConfirm');">@Localizer["Common.Delete"]</button>
-    </form>
+    <div class="detail-layout">
+        <div class="detail-main">
+            <div class="card">
+                <div class="card-header">@Localizer["News.Detail.Article"]</div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(article.Summary))
+                    {
+                        <p class="article-summary">@article.Summary</p>
+                    }
+                    <div class="article-content @(string.IsNullOrWhiteSpace(article.Summary) ? "" : "mt-4")">@article.Content</div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="detail-side">
+            <div class="card">
+                <div class="card-header">@Localizer["News.Detail.Meta"]</div>
+                <div class="card-body">
+                    <div class="meta-list">
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["News.Column.Status"]</span>
+                            <span class="meta-item-value">
+                                <span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span>
+                            </span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["News.Column.Category"]</span>
+                            <span class="meta-item-value">@article.Category</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["News.Column.Author"]</span>
+                            <span class="meta-item-value">@article.Author</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["News.Column.PublishedAt"]</span>
+                            <span class="meta-item-value num">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card danger-zone">
+                <div class="card-header">@Localizer["Common.DangerZone"]</div>
+                <div class="card-body">
+                    <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
+                    <form method="post" asp-page-handler="Delete" data-confirm="@deleteConfirm">
+                        <input type="hidden" name="ArticleId" value="@article.Id" />
+                        <input type="hidden" name="ETag" value="@Model.ETag" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
 }

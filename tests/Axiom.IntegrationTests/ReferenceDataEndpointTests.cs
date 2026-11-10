@@ -122,6 +122,196 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     }
 
     [Fact]
+    public async Task Post_region_with_only_read_permission_returns_403()
+    {
+        using var request = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/regions",
+            ReferenceDataPermissions.READ,
+            new CreateRegionInput(
+                "1",
+                "ZZ",
+                Code: Guid.NewGuid().ToString("N"),
+                Name: "只读权限回归国家"));
+
+        var response = await _client.SendAsync(request);
+
+        var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden, content);
+    }
+
+    [Fact]
+    public async Task Manage_permission_supports_complete_region_crud()
+    {
+        var testId = Guid.NewGuid();
+        var suffix = testId.ToString("N")[..8].ToUpperInvariant();
+        var countryCode = $"X{(char)('A' + testId.ToByteArray()[0] % 26)}";
+        var admin1Code = $"A{suffix}";
+        var cityCode = $"CITY-{suffix}";
+        var countryInput = new CreateRegionInput(
+            "1",
+            countryCode,
+            Code: countryCode,
+            Name: $"回归国家 {suffix}");
+        var country = await CreateRegion(countryInput);
+        country.Level.Should().Be(1);
+        country.CountryCode.Should().Be(countryCode);
+        country.ParentId.Should().BeNull();
+
+        var admin1Input = new CreateRegionInput(
+            "2",
+            countryCode,
+            Admin1Code: admin1Code,
+            Code: admin1Code,
+            Name: $"回归省州 {suffix}",
+            ParentId: country.Id);
+        var admin1 = await CreateRegion(admin1Input);
+        admin1.Level.Should().Be(2);
+        admin1.ParentId.Should().Be(country.Id);
+
+        var cityInput = new CreateRegionInput(
+            "3",
+            countryCode,
+            Admin1Code: admin1Code,
+            Code: cityCode,
+            Name: $"回归城市 {suffix}",
+            AsciiName: $"Regression City {suffix}",
+            LocalName: $"本地城市 {suffix}",
+            Latitude: 31.2,
+            Longitude: 121.5,
+            Population: 1234,
+            ParentId: admin1.Id);
+        var city = await CreateRegion(cityInput);
+        city.Level.Should().Be(3);
+        city.ParentId.Should().Be(admin1.Id);
+        city.GeoNameId.Should().BeNull();
+
+        using var duplicateRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/regions",
+            ManagePermissions,
+            cityInput);
+        var duplicateResponse = await _client.SendAsync(duplicateRequest);
+        var duplicateContent = await duplicateResponse.Content.ReadAsStringAsync();
+        duplicateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict, duplicateContent);
+        var duplicateProblem = await duplicateResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        duplicateProblem.Should().NotBeNull(duplicateContent);
+        duplicateProblem!.Status.Should().Be((int)HttpStatusCode.Conflict);
+        duplicateProblem.Title.Should().NotBeNullOrWhiteSpace();
+
+        using var detailRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/regions/{city.Id}",
+            ReferenceDataPermissions.READ);
+        var detailResponse = await _client.SendAsync(detailRequest);
+        var detailContent = await detailResponse.Content.ReadAsStringAsync();
+        detailResponse.StatusCode.Should().Be(HttpStatusCode.OK, detailContent);
+        var detail = await detailResponse.Content.ReadFromJsonAsync<RegionDto>();
+        detail.Should().NotBeNull(detailContent);
+        detail!.Should().BeEquivalentTo(city);
+
+        using var listRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/regions/?countryCode={countryCode}&page=1&pageSize=50",
+            ReferenceDataPermissions.READ);
+        var listResponse = await _client.SendAsync(listRequest);
+        var listContent = await listResponse.Content.ReadAsStringAsync();
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK, listContent);
+        var list = await listResponse.Content.ReadFromJsonAsync<PagedResponse<RegionDto>>();
+        list.Should().NotBeNull(listContent);
+        list!.TotalCount.Should().Be(3);
+        list.Items.Select(item => item.Id).Should().BeEquivalentTo(new[] { country.Id, admin1.Id, city.Id });
+
+        using var updateRequest = CreateJsonRequest(
+            HttpMethod.Put,
+            $"/api/regions/{city.Id}",
+            ManagePermissions,
+            new UpdateRegionInput(
+                Name: $"回归城市（已更新）{suffix}",
+                Code: $"{cityCode}-UPDATED",
+                Latitude: 30.2,
+                Longitude: 120.5,
+                Population: 5678));
+        var updateResponse = await _client.SendAsync(updateRequest);
+        var updateContent = await updateResponse.Content.ReadAsStringAsync();
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK, updateContent);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<RegionDto>();
+        updated.Should().NotBeNull(updateContent);
+        updated!.Name.Should().Be($"回归城市（已更新）{suffix}");
+        updated.Code.Should().Be($"{cityCode}-UPDATED");
+        updated.Latitude.Should().Be(30.2);
+        updated.Longitude.Should().Be(120.5);
+        updated.Population.Should().Be(5678);
+        updated.Level.Should().Be(3);
+        updated.CountryCode.Should().Be(countryCode);
+        updated.Admin1Code.Should().Be(admin1Code);
+        updated.ParentId.Should().Be(admin1.Id);
+
+        using var treeRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/regions/tree?countryCode={countryCode}&depth=3",
+            ReferenceDataPermissions.READ);
+        var treeResponse = await _client.SendAsync(treeRequest);
+        var treeContent = await treeResponse.Content.ReadAsStringAsync();
+        treeResponse.StatusCode.Should().Be(HttpStatusCode.OK, treeContent);
+        var tree = await treeResponse.Content.ReadFromJsonAsync<RegionTreeDto>();
+        tree.Should().NotBeNull(treeContent);
+        tree!.Id.Should().Be(country.Id);
+        var admin1Node = tree.Children.Should().ContainSingle().Which;
+        admin1Node.Id.Should().Be(admin1.Id);
+        var cityNode = admin1Node.Children.Should().ContainSingle().Which;
+        cityNode.Id.Should().Be(city.Id);
+        cityNode.Name.Should().Be(updated.Name);
+        cityNode.Code.Should().Be(updated.Code);
+
+        using var protectedDeleteRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/api/regions/{admin1.Id}",
+            ManagePermissions);
+        var protectedDeleteResponse = await _client.SendAsync(protectedDeleteRequest);
+        var protectedDeleteContent = await protectedDeleteResponse.Content.ReadAsStringAsync();
+        protectedDeleteResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, protectedDeleteContent);
+        var protectedDeleteProblem = await protectedDeleteResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        protectedDeleteProblem.Should().NotBeNull(protectedDeleteContent);
+        protectedDeleteProblem!.Status.Should().Be((int)HttpStatusCode.BadRequest);
+        protectedDeleteProblem.Title.Should().NotBeNullOrWhiteSpace();
+
+        await DeleteRegion(city.Id);
+        await DeleteRegion(admin1.Id);
+        await DeleteRegion(country.Id);
+
+        foreach (var id in new[] { city.Id, admin1.Id, country.Id })
+        {
+            using var notFoundRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/api/regions/{id}",
+                ReferenceDataPermissions.READ);
+            var notFoundResponse = await _client.SendAsync(notFoundRequest);
+            var notFoundContent = await notFoundResponse.Content.ReadAsStringAsync();
+            notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound, notFoundContent);
+        }
+
+        async Task<RegionDto> CreateRegion(CreateRegionInput input)
+        {
+            using var request = CreateJsonRequest(HttpMethod.Post, "/api/regions", ManagePermissions, input);
+            var response = await _client.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            response.StatusCode.Should().Be(HttpStatusCode.Created, content);
+            var created = await response.Content.ReadFromJsonAsync<RegionDto>();
+            created.Should().NotBeNull(content);
+            return created!;
+        }
+
+        async Task DeleteRegion(Guid id)
+        {
+            using var request = CreateRequest(HttpMethod.Delete, $"/api/regions/{id}", ManagePermissions);
+            var response = await _client.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            response.StatusCode.Should().Be(HttpStatusCode.NoContent, content);
+        }
+    }
+
+    [Fact]
     public async Task Get_with_filters_returns_ordered_pages()
     {
         using var scope = factory.Services.CreateScope();
@@ -363,11 +553,11 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         return request;
     }
 
-    private static HttpRequestMessage CreateJsonRequest(
+    private static HttpRequestMessage CreateJsonRequest<T>(
         HttpMethod method,
         string uri,
         string permissions,
-        UpsertReferenceLocationInput body,
+        T body,
         string? ifMatch = null)
     {
         var request = CreateRequest(method, uri, permissions, ifMatch);

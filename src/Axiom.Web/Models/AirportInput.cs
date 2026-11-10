@@ -1,4 +1,4 @@
-// 承载并校验新增机场页面的用户输入。
+// 承载并校验新增和编辑机场页面的用户输入。
 // ErrorMessage 与 Display(Name) 都使用 SharedResource 的资源键，由 DataAnnotations 本地化。
 using System.ComponentModel.DataAnnotations;
 
@@ -32,4 +32,16 @@ public sealed class AirportInput
     [Range(-180, 180, ErrorMessage = "Validation.Airport.LongitudeRange")]
     [Display(Name = "Field.Airport.Longitude")]
     public double? Longitude { get; set; }
+
+    public static AirportInput From(AirportResponse? airport) => airport is null
+        ? new AirportInput()
+        : new AirportInput
+        {
+            Code = airport.Code,
+            Name = airport.Name,
+            CountryCode = airport.CountryCode,
+            City = airport.City,
+            Latitude = airport.Latitude,
+            Longitude = airport.Longitude
+        };
 }

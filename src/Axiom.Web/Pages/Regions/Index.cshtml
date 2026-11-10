@@ -4,18 +4,32 @@
     ViewData["Title"] = Localizer["Regions.Title"];
 }
 
-<h1 class="mb-4">@Localizer["Regions.Title"]</h1>
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["Regions.Title"]</h1>
+        <p class="page-description">@Localizer["Regions.Description"]</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-page="/Regions/Create"
+           asp-route-countryCode="@Model.SelectedCountryCode">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" />
+            </svg>
+            @Localizer["Regions.Create.Title"]
+        </a>
+    </div>
+</div>
 
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<!-- 顶部工具栏 -->
-<form method="get" class="row g-2 align-items-end mb-4">
-    <div class="col-md-3">
+<!-- 筛选：国家 + 名称搜索 -->
+<form method="get" class="filter-bar">
+    <div class="filter-field">
         <label class="form-label" for="countryCode">@Localizer["Regions.Country"]</label>
-        <select class="form-select" id="countryCode" name="countryCode" onchange="this.form.submit()">
+        <select class="form-select" id="countryCode" name="countryCode" data-auto-submit>
             <option value="">@Localizer["Regions.SelectCountry"]</option>
             @foreach (var c in Model.Countries)
             {
@@ -25,30 +39,42 @@
             }
         </select>
     </div>
-    <div class="col-md-5">
+    <div class="filter-field filter-field-grow">
         <label class="form-label" for="q">@Localizer["Regions.SearchLabel"]</label>
-        <div class="input-group">
-            <input type="text" class="form-control" id="q" name="q" placeholder="@Localizer["Regions.SearchPlaceholder"]"
-                   value="@Model.SearchQuery" />
-            <button type="submit" class="btn btn-primary">@Localizer["Common.Search"]</button>
-            @if (!string.IsNullOrEmpty(Model.SearchQuery))
-            {
-                <a asp-page="/Regions/Index" asp-route-countryCode="@Model.SelectedCountryCode"
-                   class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
-            }
+        <div class="search-field">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="m10.5 10.5 3 3" />
+            </svg>
+            <input type="search" class="form-control" id="q" name="q"
+                   placeholder="@Localizer["Regions.SearchPlaceholder"]" value="@Model.SearchQuery" />
         </div>
+    </div>
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">@Localizer["Common.Search"]</button>
+        @if (!string.IsNullOrEmpty(Model.SearchQuery))
+        {
+            <a asp-page="/Regions/Index" asp-route-countryCode="@Model.SelectedCountryCode"
+               class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
+        }
     </div>
 </form>
 
 <!-- 搜索结果 -->
 @if (Model.SearchResults.Count > 0)
 {
-    <section aria-labelledby="search-title">
-        <h2 class="h4 mb-3" id="search-title">
-            @Localizer["Regions.SearchResults"] <span class="text-muted">(@Localizer["Regions.SearchTotal", Model.SearchTotalCount])</span>
-        </h2>
+    <section class="card data-card mb-4" aria-labelledby="search-title">
+        <div class="card-toolbar">
+            <div class="card-toolbar-title">
+                <h2 id="search-title">@Localizer["Regions.SearchResults"]</h2>
+                <span class="count-pill">@Model.SearchResults.Count</span>
+            </div>
+            <div class="card-toolbar-meta">
+                @Localizer["Regions.SearchTotal", Model.SearchTotalCount]
+            </div>
+        </div>
         <div class="table-responsive">
-            <table class="table table-striped align-middle">
+            <table class="table data-table">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["Regions.Column.Level"]</th>
@@ -56,31 +82,29 @@
                         <th scope="col">@Localizer["Regions.Column.Code"]</th>
                         <th scope="col">@Localizer["Regions.Column.Country"]</th>
                         <th scope="col">@Localizer["Regions.Column.Admin1"]</th>
-                        <th scope="col">@Localizer["Regions.Column.Population"]</th>
-                        <th scope="col"></th>
+                        <th scope="col" class="text-end">@Localizer["Regions.Column.Population"]</th>
+                        <th scope="col" class="text-end">@Localizer["Common.Actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var r in Model.SearchResults)
                     {
+                        var label = r.Level is >= 1 and <= 3
+                            ? Localizer[$"Regions.Level.{r.Level}"].Value
+                            : $"L{r.Level}";
+                        var levelClass = r.Level is >= 1 and <= 3 ? $"level-{r.Level}" : "level-default";
                         <tr>
-                            <td>
-                                @{
-                                    var label = r.Level is >= 1 and <= 3
-                                        ? Localizer[$"Regions.Level.{r.Level}"].Value
-                                        : $"L{r.Level}";
-                                    var color = r.Level == 1 ? "#0b3d91" : r.Level == 2 ? "#1a7f4f" : r.Level == 3 ? "#9d3d10" : "#52606d";
-                                }
-                                <span class="badge" style="background:@color">@label</span>
-                            </td>
+                            <td><span class="badge-soft @levelClass">@label</span></td>
                             <td>@r.Name</td>
-                            <td class="text-muted">@r.Code</td>
+                            <td class="cell-muted"><code>@r.Code</code></td>
                             <td>@r.CountryCode</td>
-                            <td class="text-muted">@r.Admin1Code</td>
-                            <td>@(r.Population?.ToString("N0") ?? "-")</td>
-                            <td class="text-end">
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   asp-page="/Regions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
+                            <td class="cell-muted">@r.Admin1Code</td>
+                            <td class="cell-num text-end">@(r.Population?.ToString("N0") ?? "-")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn-ghost" asp-page="/Regions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
+                                    <a class="btn btn-ghost" asp-page="/Regions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -91,29 +115,47 @@
 }
 else if (!string.IsNullOrEmpty(Model.SearchQuery))
 {
-    <div class="text-muted mb-4">@Localizer["Regions.NoMatch", Model.SearchQuery]</div>
+    <div class="card mb-4">
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <circle cx="7" cy="7" r="4.5" />
+                    <path d="m10.5 10.5 3 3" />
+                </svg>
+            </span>
+            <p class="empty-state-title">@Localizer["Regions.NoMatch", Model.SearchQuery]</p>
+            <p class="empty-state-text">@Localizer["Regions.NoMatchHint"]</p>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/Regions/Index"
+               asp-route-countryCode="@Model.SelectedCountryCode">@Localizer["Common.Clear"]</a>
+        </div>
+    </div>
 }
 
 <!-- 层级树 -->
 @if (Model.Tree is not null)
 {
-    <section aria-labelledby="tree-title">
-        <h2 class="h4 mb-3" id="tree-title">
-            @Model.Tree.Name <span class="text-muted">(@Model.Tree.CountryCode)</span> @Localizer["Regions.TreeTitle"]
-        </h2>
-        <div class="card">
-            <div class="card-body">
-                <partial name="_RegionTreeNode" model="@Model.Tree" />
+    <section class="card data-card" aria-labelledby="tree-title">
+        <div class="card-toolbar">
+            <div class="card-toolbar-title">
+                <h2 id="tree-title">@Model.Tree.Name</h2>
+                <span class="badge-soft">@Model.Tree.CountryCode</span>
             </div>
+            <div class="card-toolbar-meta">
+                @Localizer["Regions.TreeTitle"]
+            </div>
+        </div>
+        <div class="card-body">
+            @if (Model.Tree.Children.Count == 0)
+            {
+                <p class="text-muted mb-0">@Localizer["Regions.TreeEmpty"]</p>
+            }
+            else
+            {
+                <partial name="_RegionTreeNode" model="@Model.Tree" />
+            }
         </div>
     </section>
 }
-
-<style>
-.region-node { margin-bottom: 4px; }
-.region-row { padding: 4px 0; }
-.region-children { border-left: 1px dashed #dee2e6; }
-</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

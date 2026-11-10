@@ -1,4 +1,4 @@
-// 提供机场列表和新增操作，并透传网关的认证与校验结果。
+// 提供机场列表，并透传网关的认证与加载结果。
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
@@ -17,9 +17,6 @@ public sealed class IndexModel(
 {
     public IReadOnlyList<AirportResponse> Airports { get; private set; } = [];
 
-    [BindProperty]
-    public AirportInput Input { get; set; } = new();
-
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -27,39 +24,6 @@ public sealed class IndexModel(
 
     public Task<IActionResult> OnGetAsync(CancellationToken cancellationToken = default) =>
         PageWithAirportsAsync(cancellationToken);
-
-    public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken = default)
-    {
-        if (!ModelState.IsValid)
-        {
-            return await PageWithAirportsAsync(cancellationToken);
-        }
-
-        using var response = await referenceDataClient.CreateAirportAsync(Input, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            ErrorMessage = response.StatusCode switch
-            {
-                HttpStatusCode.Conflict => localizer["Airports.CodeConflict"].Value,
-                HttpStatusCode.BadRequest => localizer["Common.ValidationFailed"].Value,
-                _ => localizer["Airports.CreateFailed"].Value
-            };
-            return await PageWithAirportsAsync(cancellationToken);
-        }
-
-        StatusMessage = localizer["Airports.Created"].Value;
-        return RedirectToPage();
-    }
 
     private async Task<IActionResult> PageWithAirportsAsync(CancellationToken cancellationToken)
     {

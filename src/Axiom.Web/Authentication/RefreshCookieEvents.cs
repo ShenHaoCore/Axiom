@@ -1,6 +1,7 @@
 // 在 Cookie 校验阶段使用 refresh_token 续期访问令牌，避免 15 分钟到期后整页重新登录。
 using System.Globalization;
 using System.Text.Json;
+using Axiom.Web.Clients;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -11,7 +12,7 @@ public sealed class RefreshCookieEvents(
     IHttpClientFactory httpClientFactory,
     ILogger<RefreshCookieEvents> logger) : CookieAuthenticationEvents
 {
-    private const string ACCESS_TOKEN = "access_token";
+    private const string ACCESS_TOKEN = ApiClientHeaders.AccessToken;
     private const string REFRESH_TOKEN = "refresh_token";
     private const string EXPIRES_AT = "expires_at";
     private static readonly TimeSpan RefreshThreshold = TimeSpan.FromMinutes(2);
@@ -75,8 +76,8 @@ public sealed class RefreshCookieEvents(
                     ? seconds
                     : (int)FallbackLifetime.TotalSeconds;
             var tokenType = root.TryGetProperty("token_type", out var typeElement)
-                ? typeElement.GetString() ?? "Bearer"
-                : "Bearer";
+                ? typeElement.GetString() ?? ApiClientHeaders.BearerScheme
+                : ApiClientHeaders.BearerScheme;
 
             // 保留 id_token 等未变化的条目，仅替换访问令牌相关项。
             var updatedTokens = tokens

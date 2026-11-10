@@ -4,9 +4,19 @@
     ViewData["Title"] = Localizer["News.Title"];
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">@Localizer["News.Title"]</h1>
-    <a class="btn btn-primary" asp-page="/News/Edit">@Localizer["News.New"]</a>
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["News.Title"]</h1>
+        <p class="page-description">@Localizer["News.Description"]</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-page="/News/Edit">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" />
+            </svg>
+            @Localizer["News.New"]
+        </a>
+    </div>
 </div>
 
 @if (Model.StatusMessage is not null)
@@ -18,53 +28,77 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<form method="get" class="row g-2 align-items-end mb-4">
-    <div class="col-auto">
-        <label class="form-label" for="status">@Localizer["News.Column.Status"]</label>
-        <select class="form-select" id="status" name="status">
-            <option value="">@Localizer["News.Status.All"]</option>
-            <option value="Draft" selected="@(Model.StatusFilter == "Draft")">@Localizer["News.Status.Draft"]</option>
-            <option value="Published" selected="@(Model.StatusFilter == "Published")">@Localizer["News.Status.Published"]</option>
-            <option value="Archived" selected="@(Model.StatusFilter == "Archived")">@Localizer["News.Status.Archived"]</option>
-        </select>
+<div class="filter-bar">
+    <div class="filter-field">
+        <span class="form-label d-block">@Localizer["Common.Filter"]</span>
+        <nav class="segmented" aria-label="@Localizer["News.Column.Status"]">
+            <a class="@(string.IsNullOrEmpty(Model.StatusFilter) ? "active" : "")"
+               asp-page="/News/Index">@Localizer["News.Status.All"]</a>
+            <a class="@(Model.StatusFilter == "Draft" ? "active" : "")"
+               asp-page="/News/Index" asp-route-status="Draft">@Localizer["News.Status.Draft"]</a>
+            <a class="@(Model.StatusFilter == "Published" ? "active" : "")"
+               asp-page="/News/Index" asp-route-status="Published">@Localizer["News.Status.Published"]</a>
+            <a class="@(Model.StatusFilter == "Archived" ? "active" : "")"
+               asp-page="/News/Index" asp-route-status="Archived">@Localizer["News.Status.Archived"]</a>
+        </nav>
     </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-secondary">@Localizer["Common.Filter"]</button>
-    </div>
-</form>
-
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th scope="col">@Localizer["News.Column.Title"]</th>
-                <th scope="col">@Localizer["News.Column.Category"]</th>
-                <th scope="col">@Localizer["News.Column.Status"]</th>
-                <th scope="col">@Localizer["News.Column.Author"]</th>
-                <th scope="col">@Localizer["News.Column.PublishedAt"]</th>
-                <th scope="col"></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var article in Model.Articles)
-            {
-                <tr>
-                    <td>@article.Title</td>
-                    <td>@article.Category</td>
-                    <td>@Localizer[$"News.Status.{article.Status}"]</td>
-                    <td>@article.Author</td>
-                    <td>@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-outline-secondary" asp-page="/News/Detail" asp-route-id="@article.Id">@Localizer["Common.View"]</a>
-                    </td>
-                </tr>
-            }
-            @if (Model.Articles.Count == 0)
-            {
-                <tr><td colspan="6">@Localizer["News.Empty"]</td></tr>
-            }
-        </tbody>
-    </table>
 </div>
 
-<p class="text-muted">@Localizer["Common.TotalCount", Model.TotalCount]</p>
+<section class="card data-card" aria-labelledby="news-list-title">
+    <div class="card-toolbar">
+        <div class="card-toolbar-title">
+            <h2 id="news-list-title">@Localizer["News.Title"]</h2>
+            <span class="count-pill">@Model.Articles.Count</span>
+        </div>
+    </div>
+
+    @if (Model.Articles.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+                    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                    <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                </svg>
+            </span>
+            <p class="empty-state-title">@Localizer["News.Empty"]</p>
+            <p class="empty-state-text">@Localizer["News.EmptyHint"]</p>
+            <a class="btn btn-primary btn-sm" asp-page="/News/Edit">@Localizer["News.New"]</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@Localizer["News.Column.Title"]</th>
+                        <th scope="col">@Localizer["News.Column.Category"]</th>
+                        <th scope="col">@Localizer["News.Column.Status"]</th>
+                        <th scope="col">@Localizer["News.Column.Author"]</th>
+                        <th scope="col">@Localizer["News.Column.PublishedAt"]</th>
+                        <th scope="col" class="text-end">@Localizer["Common.Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var article in Model.Articles)
+                    {
+                        <tr>
+                            <td>@article.Title</td>
+                            <td class="cell-muted">@article.Category</td>
+                            <td><span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span></td>
+                            <td class="cell-muted">@article.Author</td>
+                            <td class="cell-num">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn-ghost" asp-page="/News/Detail" asp-route-id="@article.Id">@Localizer["Common.View"]</a>
+                                    <a class="btn btn-ghost" asp-page="/News/Edit" asp-route-id="@article.Id">@Localizer["Common.Edit"]</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

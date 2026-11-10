@@ -9,7 +9,7 @@ namespace Axiom.Web.Clients;
 
 public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
 {
-    private const string REGIONS_PATH = "/api/regions";
+    internal const string REGIONS_PATH = "/api/regions";
 
     public Task<HttpResponseMessage> ListAsync(
         int page,
@@ -41,6 +41,49 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
     public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/{id}", null, cancellationToken);
 
+    public Task<HttpResponseMessage> CreateAsync(RegionInput input, CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Post,
+            REGIONS_PATH,
+            JsonContent.Create(new
+            {
+                level = ApiLevel(input.Level),
+                countryCode = input.CountryCode,
+                admin1Code = input.Admin1Code,
+                code = input.Code,
+                name = input.Name,
+                asciiName = input.AsciiName,
+                localName = input.LocalName,
+                latitude = input.Latitude,
+                longitude = input.Longitude,
+                population = input.Population,
+                parentId = input.ParentId
+            }),
+            cancellationToken);
+
+    public Task<HttpResponseMessage> UpdateAsync(
+        Guid id,
+        RegionInput input,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Put,
+            $"{REGIONS_PATH}/{id}",
+            JsonContent.Create(new
+            {
+                name = input.Name,
+                asciiName = input.AsciiName,
+                localName = input.LocalName,
+                code = input.Code,
+                latitude = input.Latitude,
+                longitude = input.Longitude,
+                population = input.Population,
+                parentId = input.ParentId
+            }),
+            cancellationToken);
+
+    public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"{REGIONS_PATH}/{id}", null, cancellationToken);
+
     public Task<HttpResponseMessage> GetTranslationsAsync(
         Guid id,
         string culture,
@@ -64,6 +107,14 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
         CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
 
+    private static string ApiLevel(int level) => level switch
+    {
+        1 => "Country",
+        2 => "Admin1",
+        3 => "City",
+        _ => throw new ArgumentOutOfRangeException(nameof(level), level, "行政区层级必须为 1、2 或 3。")
+    };
+
     private static string TranslationPath(Guid id, string culture) =>
         $"{REGIONS_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
 
@@ -75,12 +126,12 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
     {
         var httpContext = httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
-        var accessToken = await httpContext.GetTokenAsync("access_token")
+        var accessToken = await httpContext.GetTokenAsync(ApiClientHeaders.AccessToken)
             ?? throw new InvalidOperationException("当前登录会话不包含访问令牌。");
 
         using var request = new HttpRequestMessage(method, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.TryAddWithoutValidation("Accept-Language", CultureInfo.CurrentUICulture.Name);
+        request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
+        request.Headers.TryAddWithoutValidation(ApiClientHeaders.AcceptLanguage, CultureInfo.CurrentUICulture.Name);
         request.Content = content;
         return await httpClient.SendAsync(request, cancellationToken);
     }

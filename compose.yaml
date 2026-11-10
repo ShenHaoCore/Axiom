@@ -158,6 +158,7 @@ services:
       Oidc__BackchannelAuthority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
       Oidc__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
       ApiGateway__BaseAddress: ${INTERNAL_GATEWAY_URL:-http://gateway:8080}
+      MockAuth__Enabled: ${MOCK_AUTH_ENABLED:-false}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
     ports:
       - "${WEB_PORT:-3000}:8080"
