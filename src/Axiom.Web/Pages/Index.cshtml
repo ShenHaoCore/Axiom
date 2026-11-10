@@ -67,6 +67,7 @@
                     <th scope="col">@Localizer["Airports.Column.City"]</th>
                     <th scope="col">@Localizer["Airports.Column.Latitude"]</th>
                     <th scope="col">@Localizer["Airports.Column.Longitude"]</th>
+                    <th scope="col">@Localizer["Common.Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -79,11 +80,14 @@
                         <td>@airport.City</td>
                         <td>@airport.Latitude</td>
                         <td>@airport.Longitude</td>
+                        <td>
+                            <a asp-page="/Airports/Translations" asp-route-id="@airport.Id">@Localizer["Translations.Manage"]</a>
+                        </td>
                     </tr>
                 }
                 @if (Model.Airports.Count == 0)
                 {
-                    <tr><td colspan="6">@Localizer["Airports.Empty"]</td></tr>
+                    <tr><td colspan="7">@Localizer["Airports.Empty"]</td></tr>
                 }
             </tbody>
         </table>

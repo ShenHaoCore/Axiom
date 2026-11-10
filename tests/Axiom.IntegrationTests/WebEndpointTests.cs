@@ -124,6 +124,19 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     }
 
     [Fact]
+    public async Task Challenge_forwards_selected_culture_as_ui_locales()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Accept-Language", "en");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var query = QueryHelpers.ParseQuery(response.Headers.Location!.Query);
+        query["ui_locales"].ToString().Should().Be("en");
+    }
+
+    [Fact]
     public async Task Culture_endpoint_sets_culture_cookie()
     {
         using var response = await _client.GetAsync("/culture?culture=en&returnUrl=%2F");

@@ -29,6 +29,15 @@
   <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>内容已被其他请求修改，请刷新后重试。</value></data>
   <data name="Common.ValidationFailed" xml:space="preserve"><value>提交内容未通过服务端校验，请检查后重试。</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>无法加载数据，请稍后重试。</value></data>
+  <data name="Common.Actions" xml:space="preserve"><value>操作</value></data>
+
+  <!-- 翻译维护 -->
+  <data name="Translations.Title" xml:space="preserve"><value>多语言翻译</value></data>
+  <data name="Translations.Hint" xml:space="preserve"><value>为非默认语言填写译文；留空的字段不会保存，全部留空将清除该语言的译文。</value></data>
+  <data name="Translations.Manage" xml:space="preserve"><value>翻译</value></data>
+  <data name="Translations.Saved" xml:space="preserve"><value>翻译已保存。</value></data>
+  <data name="Translations.SaveFailed" xml:space="preserve"><value>保存翻译失败，请稍后重试。</value></data>
+  <data name="Translations.LoadFailed" xml:space="preserve"><value>无法加载翻译，请稍后重试。</value></data>
 
   <!-- 机场 -->
   <data name="Airports.Title" xml:space="preserve"><value>机场档案</value></data>
@@ -45,6 +54,7 @@
   <data name="Airports.LoadFailed" xml:space="preserve"><value>无法加载机场列表，请稍后重试。</value></data>
   <data name="Airports.CodeConflict" xml:space="preserve"><value>机场代码已存在。</value></data>
   <data name="Airports.CreateFailed" xml:space="preserve"><value>新增机场失败，请稍后重试。</value></data>
+  <data name="Airports.Translations.Title" xml:space="preserve"><value>机场翻译</value></data>
 
   <!-- 新闻 -->
   <data name="News.Title" xml:space="preserve"><value>新闻管理</value></data>
@@ -127,6 +137,7 @@
   <data name="Field.News.Category" xml:space="preserve"><value>分类</value></data>
   <data name="Field.News.Author" xml:space="preserve"><value>作者</value></data>
   <data name="Field.News.Status" xml:space="preserve"><value>状态</value></data>
+  <data name="Field.Region.Name" xml:space="preserve"><value>名称</value></data>
 
   <!-- 表单校验 -->
   <data name="Validation.Airport.CodeRequired" xml:space="preserve"><value>机场代码必填。</value></data>

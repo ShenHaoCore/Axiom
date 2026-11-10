@@ -1,4 +1,5 @@
 // 启动 Web 客户端，处理 SSO 会话并通过网关访问基础数据。
+using System.Globalization;
 using Axiom.Observability;
 using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Security;
@@ -74,6 +75,12 @@ builder.Services.AddAuthentication(options =>
         options.ResponseType = OpenIdConnectResponseType.Code;
         options.UsePkce = true;
         options.SaveTokens = true;
+        // 登录页语言跟随 Web 当前界面语言，AuthHub 按 ui_locales 本地化。
+        options.Events.OnRedirectToIdentityProvider = context =>
+        {
+            context.ProtocolMessage.UiLocales = CultureInfo.CurrentUICulture.Name;
+            return Task.CompletedTask;
+        };
         options.RequireHttpsMetadata = builder.Configuration.GetValue(
             "Oidc:RequireHttpsMetadata",
             !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"));

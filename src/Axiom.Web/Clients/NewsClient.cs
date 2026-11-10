@@ -44,6 +44,33 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
         CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{ARTICLES_PATH}/{id}", null, eTag, cancellationToken);
 
+    public Task<HttpResponseMessage> GetTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, null, cancellationToken);
+
+    public Task<HttpResponseMessage> SaveTranslationsAsync(
+        Guid id,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Put,
+            TranslationPath(id, culture),
+            JsonContent.Create(new { values }),
+            null,
+            cancellationToken);
+
+    public Task<HttpResponseMessage> DeleteTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, null, cancellationToken);
+
+    private static string TranslationPath(Guid id, string culture) =>
+        $"{ARTICLES_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
+
     private static object ToPayload(NewsInput input) => new
     {
         title = input.Title,

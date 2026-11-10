@@ -2,17 +2,48 @@
 using System.Security.Cryptography.X509Certificates;
 using Axiom.AuthHub.Data;
 using Axiom.AuthHub.Endpoints;
+using Axiom.AuthHub.Localization;
+using Axiom.AuthHub.Resources;
 using Axiom.Observability;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.Localization;
 using Microsoft.EntityFrameworkCore;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.AuthHub");
-builder.Services.AddRazorPages();
+
+// 国际化：登录页按 OIDC 的 ui_locales（Web 语言选择）→ 查询串 → Cookie → Accept-Language 协商。
+var localizationOptions = builder.Configuration.GetSection(AxiomLocalizationOptions.SECTION)
+    .Get<AxiomLocalizationOptions>() ?? new AxiomLocalizationOptions();
+builder.Services.AddSingleton(localizationOptions);
+builder.Services.AddLocalization();
+builder.Services.AddRequestLocalization(options =>
+{
+    options.SetDefaultCulture(localizationOptions.DefaultCulture);
+    options.AddSupportedCultures(localizationOptions.SupportedCultures);
+    options.AddSupportedUICultures(localizationOptions.SupportedCultures);
+    options.FallBackToParentCultures = true;
+    options.FallBackToParentUICultures = true;
+    options.RequestCultureProviders =
+    [
+        new UiLocalesRequestCultureProvider(),
+        new QueryStringRequestCultureProvider(),
+        new CookieRequestCultureProvider(),
+        new AcceptLanguageHeaderRequestCultureProvider()
+    ];
+});
+builder.Services.AddRazorPages()
+    .AddDataAnnotationsLocalization(options =>
+    {
+        // 登录表单模型上的 ErrorMessage / Display(Name) 都是 AuthResource 的资源键。
+        options.DataAnnotationLocalizerProvider = (_, factory) => factory.Create(typeof(AuthResource));
+    });
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Auth"))
         .UseOpenIddict());
@@ -81,6 +112,7 @@ using (var scope = app.Services.CreateScope())
     await AuthDataSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
 }
 
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 

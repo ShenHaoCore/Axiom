@@ -1,0 +1,65 @@
+@page "{id:guid}"
+@model Axiom.Web.Pages.Airports.TranslationsModel
+@{
+    ViewData["Title"] = Localizer["Airports.Translations.Title"];
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Index">@Localizer["Airports.Title"]</a></li>
+        <li class="breadcrumb-item active">@Localizer["Airports.Translations.Title"]</li>
+    </ol>
+</nav>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Airport is not null)
+{
+    <h1 class="mb-4">
+        @Model.Airport.Code
+        <small class="text-muted fw-normal">@Model.Airport.Name</small>
+    </h1>
+
+    @if (Model.TranslationsLoaded)
+    {
+        <form method="post">
+            <input type="hidden" asp-for="TranslationsLoaded" />
+            <p class="text-muted">@Localizer["Translations.Hint"]</p>
+
+            @foreach (var culture in Model.EditableCultures)
+            {
+                Model.Translations.TryGetValue(culture, out var translation);
+                var cultureResource = Localizer[$"Culture.{culture}"];
+                var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-5">@cultureName</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="translation-@culture-name">@Localizer["Field.Airport.Name"]</label>
+                            <input class="form-control" id="translation-@culture-name"
+                                   name="Translations[@culture].Name" value="@translation?.Name" maxlength="200" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="translation-@culture-city">@Localizer["Field.Airport.City"]</label>
+                            <input class="form-control" id="translation-@culture-city"
+                                   name="Translations[@culture].City" value="@translation?.City" maxlength="100" />
+                        </div>
+                    </div>
+                </fieldset>
+            }
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.Cancel"]</a>
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-warning" role="alert">@Localizer["Translations.LoadFailed"]</div>
+    }
+}

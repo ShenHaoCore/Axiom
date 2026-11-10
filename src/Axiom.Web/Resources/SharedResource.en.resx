@@ -29,6 +29,15 @@
   <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>The content was modified by another request. Please refresh and try again.</value></data>
   <data name="Common.ValidationFailed" xml:space="preserve"><value>The submitted content failed server-side validation. Please check it and try again.</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>Failed to load data. Please try again later.</value></data>
+  <data name="Common.Actions" xml:space="preserve"><value>Actions</value></data>
+
+  <!-- Translation maintenance -->
+  <data name="Translations.Title" xml:space="preserve"><value>Translations</value></data>
+  <data name="Translations.Hint" xml:space="preserve"><value>Enter translations for non-default languages. Empty fields are not saved, and leaving every field empty clears the translations for that language.</value></data>
+  <data name="Translations.Manage" xml:space="preserve"><value>Translations</value></data>
+  <data name="Translations.Saved" xml:space="preserve"><value>Translations saved.</value></data>
+  <data name="Translations.SaveFailed" xml:space="preserve"><value>Failed to save translations. Please try again later.</value></data>
+  <data name="Translations.LoadFailed" xml:space="preserve"><value>Failed to load translations. Please try again later.</value></data>
 
   <!-- Airports -->
   <data name="Airports.Title" xml:space="preserve"><value>Airports</value></data>
@@ -45,6 +54,7 @@
   <data name="Airports.LoadFailed" xml:space="preserve"><value>Failed to load the airport list. Please try again later.</value></data>
   <data name="Airports.CodeConflict" xml:space="preserve"><value>An airport with this code already exists.</value></data>
   <data name="Airports.CreateFailed" xml:space="preserve"><value>Failed to create the airport. Please try again later.</value></data>
+  <data name="Airports.Translations.Title" xml:space="preserve"><value>Airport translations</value></data>
 
   <!-- News -->
   <data name="News.Title" xml:space="preserve"><value>News</value></data>
@@ -127,6 +137,7 @@
   <data name="Field.News.Category" xml:space="preserve"><value>Category</value></data>
   <data name="Field.News.Author" xml:space="preserve"><value>Author</value></data>
   <data name="Field.News.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Field.Region.Name" xml:space="preserve"><value>Name</value></data>
 
   <!-- Validation -->
   <data name="Validation.Airport.CodeRequired" xml:space="preserve"><value>The airport code is required.</value></data>

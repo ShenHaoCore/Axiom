@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Login page -->
+  <data name="Login.Title" xml:space="preserve"><value>Sign in to Axiom</value></data>
+  <data name="Login.Heading" xml:space="preserve"><value>Sign in to Axiom</value></data>
+  <data name="Login.Submit" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Login.InvalidCredentials" xml:space="preserve"><value>Invalid user name or password.</value></data>
+
+  <!-- Fields and validation -->
+  <data name="Field.UserName" xml:space="preserve"><value>User name</value></data>
+  <data name="Field.Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Validation.UserNameRequired" xml:space="preserve"><value>Enter your user name.</value></data>
+  <data name="Validation.UserNameTooLong" xml:space="preserve"><value>User name cannot exceed 256 characters.</value></data>
+  <data name="Validation.PasswordRequired" xml:space="preserve"><value>Enter your password.</value></data>
+  <data name="Validation.PasswordTooLong" xml:space="preserve"><value>Password cannot exceed 128 characters.</value></data>
+</root>

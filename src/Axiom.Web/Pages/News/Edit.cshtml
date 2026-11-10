@@ -54,6 +54,46 @@
         </div>
     </div>
 
+    @if (Model.IsEdit)
+    {
+        <input type="hidden" asp-for="TranslationsLoaded" />
+
+        @if (Model.TranslationsLoaded)
+        {
+            <hr class="my-4" />
+            <h2 class="h4">@Localizer["Translations.Title"]</h2>
+            <p class="text-muted">@Localizer["Translations.Hint"]</p>
+
+            @foreach (var culture in Model.EditableCultures)
+            {
+                Model.Translations.TryGetValue(culture, out var translation);
+                var cultureResource = Localizer[$"Culture.{culture}"];
+                var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-5">@cultureName</legend>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="translation-@culture-title">@Localizer["Field.News.Title"]</label>
+                            <input class="form-control" id="translation-@culture-title"
+                                   name="Translations[@culture].Title" value="@translation?.Title" maxlength="200" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="translation-@culture-summary">@Localizer["Field.News.Summary"]</label>
+                            <input class="form-control" id="translation-@culture-summary"
+                                   name="Translations[@culture].Summary" value="@translation?.Summary" maxlength="500" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="translation-@culture-content">@Localizer["Field.News.Content"]</label>
+                            <textarea class="form-control" id="translation-@culture-content" rows="6" maxlength="50000"
+                                      name="Translations[@culture].Content">@translation?.Content</textarea>
+                        </div>
+                    </div>
+                </fieldset>
+            }
+        }
+    }
+
     <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
         <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.Cancel"]</a>
