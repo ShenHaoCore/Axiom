@@ -12,20 +12,20 @@
         }
         else
         {
-            <span class="me-3 text-muted">•</span>
+            <span class="region-leaf-dot" aria-hidden="true">•</span>
         }
-        <span class="badge-soft me-2 @LevelClass(Model.Level)">@LevelLabel(Model.Level)</span>
+        <span class="badge-soft @LevelClass(Model.Level)">@LevelLabel(Model.Level)</span>
         <a asp-page="/Regions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
-        <a class="ms-2 small" asp-page="/Regions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
         @if (Model.Population.HasValue)
         {
-            <span class="text-muted small ms-2">(@Model.Population.Value.ToString("N0"))</span>
+            <span class="text-muted small num">@Model.Population.Value.ToString("N0")</span>
         }
+        <a class="btn btn-ghost ms-auto" asp-page="/Regions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
     </div>
     @if (Model.Children.Count > 0)
     {
         <div id="node-@Model.Id" class="collapse">
-            <div class="region-children border-start ms-3 ps-3 mt-1">
+            <div class="region-children mt-1">
                 @foreach (var child in Model.Children)
                 {
                     <partial name="_RegionTreeNode" model="child" />

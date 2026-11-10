@@ -3,99 +3,156 @@
 @{
     ViewData["Title"] = Localizer["Airports.Edit.Title"];
     var deleteConfirm = Localizer["Airports.Edit.DeleteConfirm"].Value;
+    var airport = Model.Airport;
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-page="/Index">@Localizer["Airports.Title"]</a></li>
-        <li class="breadcrumb-item active" aria-current="page">@Localizer["Airports.Edit.Title"]</li>
+        <li class="breadcrumb-item active" aria-current="page">@(airport?.Name ?? Localizer["Airports.Edit.Title"].Value)</li>
     </ol>
 </nav>
 
 <div class="page-header">
-    <h1 class="mb-0">@Localizer["Airports.Edit.Title"]</h1>
-    <div class="d-flex gap-2">
+    <div class="page-header-main">
+        <h1>@(airport?.Name ?? Localizer["Airports.Edit.Title"].Value)</h1>
+        <p class="page-description">
+            @Localizer["Airports.Edit.Description"]
+            @if (airport is not null)
+            {
+                <span class="text-muted">· @airport.Code · @airport.CountryCode</span>
+            }
+        </p>
+    </div>
+    <div class="page-actions">
         <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.BackToList"]</a>
         <a class="btn btn-outline-primary" asp-page="/Airports/Translations" asp-route-id="@Model.AirportId">@Localizer["Translations.Manage"]</a>
     </div>
 </div>
 
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-@if (Model.Airport is { } airport)
-{
-    <section class="card card-body mb-4" aria-labelledby="airport-details-title">
-        <h2 class="h4" id="airport-details-title">@Localizer["Airports.Edit.DetailsHeading"]</h2>
-        <dl class="row mb-0">
-            <dt class="col-sm-3">@Localizer["Field.Airport.Code"]</dt>
-            <dd class="col-sm-9"><span class="badge-soft">@airport.Code</span></dd>
-            <dt class="col-sm-3">@Localizer["Field.Airport.Name"]</dt>
-            <dd class="col-sm-9">@airport.Name</dd>
-            <dt class="col-sm-3">@Localizer["Field.Airport.CountryCode"]</dt>
-            <dd class="col-sm-9">@airport.CountryCode</dd>
-            <dt class="col-sm-3">@Localizer["Field.Airport.City"]</dt>
-            <dd class="col-sm-9">@(airport.City ?? "-")</dd>
-            <dt class="col-sm-3">@Localizer["Field.Airport.Latitude"]</dt>
-            <dd class="col-sm-9">@(airport.Latitude?.ToString() ?? "-")</dd>
-            <dt class="col-sm-3">@Localizer["Field.Airport.Longitude"]</dt>
-            <dd class="col-sm-9">@(airport.Longitude?.ToString() ?? "-")</dd>
-        </dl>
-    </section>
-}
+<div class="detail-layout">
+    <div class="detail-main">
+        <form method="post" asp-route-id="@Model.AirportId" class="card form-card" id="airport-edit-form">
+            <input type="hidden" name="ETag" value="@Model.ETag" />
 
-<form method="post" asp-route-id="@Model.AirportId" class="card card-body" id="airport-edit-form">
-    <input type="hidden" name="ETag" value="@Model.ETag" />
-    <h2 class="h4">@Localizer["Airports.Edit.FormHeading"]</h2>
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label asp-for="Input.Code" class="form-label"></label>
-            <input asp-for="Input.Code" class="form-control" autocomplete="off">
-            <span asp-validation-for="Input.Code" class="text-danger"></span>
-        </div>
-        <div class="col-md-8">
-            <label asp-for="Input.Name" class="form-label"></label>
-            <input asp-for="Input.Name" class="form-control">
-            <span asp-validation-for="Input.Name" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Input.CountryCode" class="form-label"></label>
-            <input asp-for="Input.CountryCode" class="form-control" autocomplete="off">
-            <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
-        </div>
-        <div class="col-md-8">
-            <label asp-for="Input.City" class="form-label"></label>
-            <input asp-for="Input.City" class="form-control">
-            <span asp-validation-for="Input.City" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Input.Latitude" class="form-label"></label>
-            <input asp-for="Input.Latitude" class="form-control" step="any">
-            <span asp-validation-for="Input.Latitude" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Input.Longitude" class="form-label"></label>
-            <input asp-for="Input.Longitude" class="form-control" step="any">
-            <span asp-validation-for="Input.Longitude" class="text-danger"></span>
-        </div>
-    </div>
-    <div class="mt-4 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
-        <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.Cancel"]</a>
-    </div>
-</form>
+            <div class="form-section">
+                <div class="section-heading">
+                    <h2>@Localizer["Airports.Edit.FormHeading"]</h2>
+                    <p>@Localizer["Airports.Section.IdentityDescription"]</p>
+                </div>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Input.Code" class="form-label">
+                            @Localizer["Field.Airport.Code"]<span class="required-mark" aria-hidden="true">*</span>
+                        </label>
+                        <input asp-for="Input.Code" class="form-control" autocomplete="off">
+                        <div class="form-text">@Localizer["Airports.Hint.Code"]</div>
+                        <span asp-validation-for="Input.Code" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label asp-for="Input.Name" class="form-label">
+                            @Localizer["Field.Airport.Name"]<span class="required-mark" aria-hidden="true">*</span>
+                        </label>
+                        <input asp-for="Input.Name" class="form-control">
+                        <span asp-validation-for="Input.Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.CountryCode" class="form-label">
+                            @Localizer["Field.Airport.CountryCode"]<span class="required-mark" aria-hidden="true">*</span>
+                        </label>
+                        <input asp-for="Input.CountryCode" class="form-control" autocomplete="off">
+                        <div class="form-text">@Localizer["Airports.Hint.CountryCode"]</div>
+                        <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label asp-for="Input.City" class="form-label"></label>
+                        <input asp-for="Input.City" class="form-control">
+                        <span asp-validation-for="Input.City" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
 
-@if (Model.Airport is not null)
-{
-    <form method="post" asp-page-handler="Delete" asp-route-id="@Model.AirportId"
-          class="card card-body mt-4" id="airport-delete-form" data-confirm="@deleteConfirm">
-        <input type="hidden" name="ETag" value="@Model.ETag" />
-        <button type="submit" class="btn btn-outline-danger align-self-start">@Localizer["Common.Delete"]</button>
-    </form>
-}
+            <div class="form-section">
+                <div class="section-heading">
+                    <h2>@Localizer["Airports.Section.Location"]</h2>
+                    <p>@Localizer["Airports.Hint.Location"]</p>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Input.Latitude" class="form-label"></label>
+                        <input asp-for="Input.Latitude" class="form-control" step="any">
+                        <span asp-validation-for="Input.Latitude" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.Longitude" class="form-label"></label>
+                        <input asp-for="Input.Longitude" class="form-control" step="any">
+                        <span asp-validation-for="Input.Longitude" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.Cancel"]</a>
+            </div>
+        </form>
+    </div>
+
+    <aside class="detail-side">
+        @if (airport is not null)
+        {
+            <div class="card">
+                <div class="card-header">@Localizer["Airports.Edit.DetailsHeading"]</div>
+                <div class="card-body">
+                    <div class="meta-list">
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["Airports.Column.Code"]</span>
+                            <span class="meta-item-value"><span class="badge-soft">@airport.Code</span></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["Airports.Column.Name"]</span>
+                            <span class="meta-item-value">@airport.Name</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["Airports.Column.Country"]</span>
+                            <span class="meta-item-value">@airport.CountryCode</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["Airports.Column.City"]</span>
+                            <span class="meta-item-value">@(airport.City ?? "-")</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["Airports.Column.Latitude"] / @Localizer["Airports.Column.Longitude"]</span>
+                            <span class="meta-item-value num">@(airport.Latitude?.ToString() ?? "-"), @(airport.Longitude?.ToString() ?? "-")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card danger-zone">
+                <div class="card-header">@Localizer["Common.DangerZone"]</div>
+                <div class="card-body">
+                    <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@Model.AirportId"
+                          id="airport-delete-form" data-confirm="@deleteConfirm">
+                        <input type="hidden" name="ETag" value="@Model.ETag" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </aside>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

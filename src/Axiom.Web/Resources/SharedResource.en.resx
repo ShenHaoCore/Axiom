@@ -34,6 +34,8 @@
   <data name="Common.LoadFailed" xml:space="preserve"><value>Failed to load data. Please try again later.</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Common.SignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Common.DangerZone" xml:space="preserve"><value>Danger zone</value></data>
+  <data name="Common.DeleteWarning" xml:space="preserve"><value>This action cannot be undone.</value></data>
 
   <!-- Translation maintenance -->
   <data name="Translations.Title" xml:space="preserve"><value>Translations</value></data>
@@ -42,6 +44,7 @@
   <data name="Translations.Saved" xml:space="preserve"><value>Translations saved.</value></data>
   <data name="Translations.SaveFailed" xml:space="preserve"><value>Failed to save translations. Please try again later.</value></data>
   <data name="Translations.LoadFailed" xml:space="preserve"><value>Failed to load translations. Please try again later.</value></data>
+  <data name="Translations.Description" xml:space="preserve"><value>Maintain localized names and descriptions for this record. Leave a field empty to skip that language.</value></data>
 
   <!-- Airports -->
   <data name="Airports.Title" xml:space="preserve"><value>Airports</value></data>
@@ -68,6 +71,15 @@
   <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>Failed to delete the airport. Please try again later.</value></data>
   <data name="Airports.Edit.Deleted" xml:space="preserve"><value>The airport has been deleted.</value></data>
   <data name="Airports.Translations.Title" xml:space="preserve"><value>Airport translations</value></data>
+  <data name="Airports.Description" xml:space="preserve"><value>Manage airport reference data, including code, name, country, and coordinates.</value></data>
+  <data name="Airports.CreateDescription" xml:space="preserve"><value>Provide the airport identity and location; it appears in the list once saved.</value></data>
+  <data name="Airports.Edit.Description" xml:space="preserve"><value>Update the airport's basic information. Changes apply immediately after saving.</value></data>
+  <data name="Airports.Section.IdentityDescription" xml:space="preserve"><value>The unique airport identity and the country it belongs to.</value></data>
+  <data name="Airports.Section.Location" xml:space="preserve"><value>Location</value></data>
+  <data name="Airports.Hint.Code" xml:space="preserve"><value>3-letter IATA code, e.g. PVG.</value></data>
+  <data name="Airports.Hint.CountryCode" xml:space="preserve"><value>2-letter ISO country code, e.g. CN.</value></data>
+  <data name="Airports.Hint.Location" xml:space="preserve"><value>Decimal degrees; latitude -90 to 90, longitude -180 to 180.</value></data>
+  <data name="Airports.EmptyHint" xml:space="preserve"><value>Airports you add will appear here with their action links.</value></data>
 
   <!-- News -->
   <data name="News.Title" xml:space="preserve"><value>News</value></data>
@@ -96,6 +108,16 @@
   <data name="News.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the article. Please try again later.</value></data>
   <data name="News.Edit.Created" xml:space="preserve"><value>The article has been created.</value></data>
   <data name="News.Edit.Updated" xml:space="preserve"><value>The article has been updated.</value></data>
+  <data name="News.Description" xml:space="preserve"><value>Create, edit, publish, and archive news articles.</value></data>
+  <data name="News.EmptyHint" xml:space="preserve"><value>Your articles will appear here once you create the first one.</value></data>
+  <data name="News.Edit.Description" xml:space="preserve"><value>Provide article metadata and content; you can edit it again later.</value></data>
+  <data name="News.Section.Meta" xml:space="preserve"><value>Basic information</value></data>
+  <data name="News.Section.MetaHint" xml:space="preserve"><value>Title, category, author, and publishing status.</value></data>
+  <data name="News.Section.Content" xml:space="preserve"><value>Content</value></data>
+  <data name="News.Edit.SummaryHint" xml:space="preserve"><value>A short summary shown in lists and detail pages, up to 500 characters.</value></data>
+  <data name="News.Edit.ContentHint" xml:space="preserve"><value>Plain text with line breaks, up to 50,000 characters.</value></data>
+  <data name="News.Detail.Article" xml:space="preserve"><value>Article</value></data>
+  <data name="News.Detail.Meta" xml:space="preserve"><value>Article info</value></data>
 
   <!-- Regions -->
   <data name="Regions.Title" xml:space="preserve"><value>Browse regions</value></data>
@@ -119,6 +141,9 @@
   <data name="Regions.LoadCountriesFailed" xml:space="preserve"><value>Failed to load the country list.</value></data>
   <data name="Regions.SearchFailed" xml:space="preserve"><value>Failed to search regions.</value></data>
   <data name="Regions.LoadTreeFailed" xml:space="preserve"><value>Failed to load the region hierarchy for {0}.</value></data>
+  <data name="Regions.Description" xml:space="preserve"><value>Browse the region hierarchy by country or search by name.</value></data>
+  <data name="Regions.NoMatchHint" xml:space="preserve"><value>Try a shorter keyword, or switch to another country and search again.</value></data>
+  <data name="Regions.TreeEmpty" xml:space="preserve"><value>No region data for this country yet.</value></data>
 
   <!-- Region detail -->
   <data name="Regions.Detail.Title" xml:space="preserve"><value>Region detail</value></data>
@@ -135,16 +160,26 @@
   <data name="Regions.Detail.Coordinates" xml:space="preserve"><value>Coordinates</value></data>
   <data name="Regions.Detail.ParentId" xml:space="preserve"><value>Parent node ID</value></data>
   <data name="Regions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
+  <data name="Regions.Detail.Meta" xml:space="preserve"><value>Record info</value></data>
   <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the region detail.</value></data>
   <data name="Regions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this region?</value></data>
   <data name="Regions.Detail.Deleted" xml:space="preserve"><value>The region has been deleted.</value></data>
   <data name="Regions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the region. Please try again later.</value></data>
   <data name="Regions.Detail.DeleteHasChildren" xml:space="preserve"><value>This region still has child nodes. Delete or move them first.</value></data>
   <data name="Regions.Create.Title" xml:space="preserve"><value>Create region</value></data>
+  <data name="Regions.Create.Description" xml:space="preserve"><value>Choose a level and country to load the form, then fill in the region details.</value></data>
+  <data name="Regions.Create.SetupHeading" xml:space="preserve"><value>Choose level and country</value></data>
+  <data name="Regions.Create.SetupHint" xml:space="preserve"><value>The level and country determine the available parent regions. Change them and load the form again.</value></data>
   <data name="Regions.Create.LoadForm" xml:space="preserve"><value>Load create form</value></data>
   <data name="Regions.Create.SaveFailed" xml:space="preserve"><value>Failed to create the region. Please try again later.</value></data>
   <data name="Regions.Create.Created" xml:space="preserve"><value>The region has been created.</value></data>
   <data name="Regions.Edit.Title" xml:space="preserve"><value>Edit region</value></data>
+  <data name="Regions.Edit.Description" xml:space="preserve"><value>Update the region name, code, and geographical data.</value></data>
+  <data name="Regions.Section.Identity" xml:space="preserve"><value>Identity and hierarchy</value></data>
+  <data name="Regions.Section.IdentityHint" xml:space="preserve"><value>The region's position and code within the country hierarchy.</value></data>
+  <data name="Regions.Section.Geo" xml:space="preserve"><value>Geography and population</value></data>
+  <data name="Regions.Section.GeoHint" xml:space="preserve"><value>Optional data used for maps and statistics.</value></data>
+  <data name="Regions.Hint.Admin1Code" xml:space="preserve"><value>Admin1 code, up to 20 characters.</value></data>
   <data name="Regions.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the region.</value></data>
   <data name="Regions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the region. Please try again later.</value></data>
   <data name="Regions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>

@@ -4,7 +4,7 @@
     ViewData["Title"] = Localizer["Regions.Edit.Title"];
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-page="/Regions/Index">@Localizer["Regions.Title"]</a></li>
         @if (Model.Region is not null)
@@ -15,8 +15,29 @@
     </ol>
 </nav>
 
-<h1 class="mb-4">@Localizer["Regions.Edit.Title"]</h1>
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["Regions.Edit.Title"]</h1>
+        <p class="page-description">
+            @Localizer["Regions.Edit.Description"]
+            @if (Model.Region is not null)
+            {
+                <span class="text-muted">· @Model.Region.Name · @Model.Region.CountryCode</span>
+            }
+        </p>
+    </div>
+    @if (Model.Region is not null)
+    {
+        <div class="page-actions">
+            <a class="btn btn-outline-secondary" asp-page="/Regions/Detail" asp-route-id="@Model.Region.Id">@Localizer["Common.View"]</a>
+        </div>
+    }
+</div>
 
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
@@ -24,77 +45,99 @@
 
 @if (Model.Region is not null)
 {
-    <form method="post" asp-route-id="@Model.Region.Id" class="card card-body" id="region-edit-form">
+    <form method="post" asp-route-id="@Model.Region.Id" class="card form-card" id="region-edit-form">
         <input type="hidden" asp-for="Input.Level" />
         <input type="hidden" asp-for="Input.CountryCode" />
         <input type="hidden" asp-for="Input.Admin1Code" />
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">@Localizer["Regions.Detail.Level"]</label>
-                <input class="form-control" value="@Localizer[$"Regions.Level.{Model.Region.Level}"]" readonly />
+        <div class="form-section">
+            <div class="section-heading">
+                <h2>@Localizer["Regions.Section.Identity"]</h2>
+                <p>@Localizer["Regions.Section.IdentityHint"]</p>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">@Localizer["Regions.Detail.Country"]</label>
-                <input class="form-control" value="@Model.Region.CountryCode" readonly />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">@Localizer["Regions.Detail.GeoNameId"]</label>
-                <input class="form-control" value="@Model.Region.GeoNameId" readonly />
-            </div>
-            @if (Model.Region.Level > 1)
-            {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">@Localizer["Regions.Detail.Level"]</label>
+                    <input class="form-control" value="@Localizer[$"Regions.Level.{Model.Region.Level}"]" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">@Localizer["Regions.Detail.Country"]</label>
+                    <input class="form-control" value="@Model.Region.CountryCode" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">@Localizer["Regions.Detail.GeoNameId"]</label>
+                    <input class="form-control" value="@Model.Region.GeoNameId" readonly />
+                </div>
+
+                @if (Model.Region.Level > 1)
+                {
+                    <div class="col-md-6">
+                        <label asp-for="Input.ParentId" class="form-label">
+                            @Localizer["Field.Region.Parent"]<span class="required-mark" aria-hidden="true">*</span>
+                        </label>
+                        <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
+                            <option value="">@Localizer["Regions.Form.SelectParent"]</option>
+                        </select>
+                        <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">@Localizer["Regions.Detail.Admin1Code"]</label>
+                        <input class="form-control" value="@Model.Region.Admin1Code" readonly />
+                    </div>
+                }
+
                 <div class="col-md-6">
-                    <label asp-for="Input.ParentId" class="form-label"></label>
-                    <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
-                        <option value="">@Localizer["Regions.Form.SelectParent"]</option>
-                    </select>
-                    <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                    <label asp-for="Input.Code" class="form-label"></label>
+                    <input asp-for="Input.Code" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="Input.Code" class="text-danger"></span>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">@Localizer["Regions.Detail.Admin1Code"]</label>
-                    <input class="form-control" value="@Model.Region.Admin1Code" readonly />
+                    <label asp-for="Input.Name" class="form-label">
+                        @Localizer["Field.Region.Name"]<span class="required-mark" aria-hidden="true">*</span>
+                    </label>
+                    <input asp-for="Input.Name" class="form-control" />
+                    <span asp-validation-for="Input.Name" class="text-danger"></span>
                 </div>
-            }
-            <div class="col-md-6">
-                <label asp-for="Input.Code" class="form-label"></label>
-                <input asp-for="Input.Code" class="form-control" autocomplete="off" />
-                <span asp-validation-for="Input.Code" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.Name" class="form-label"></label>
-                <input asp-for="Input.Name" class="form-control" />
-                <span asp-validation-for="Input.Name" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.AsciiName" class="form-label"></label>
-                <input asp-for="Input.AsciiName" class="form-control" />
-                <span asp-validation-for="Input.AsciiName" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.LocalName" class="form-label"></label>
-                <input asp-for="Input.LocalName" class="form-control" />
-                <span asp-validation-for="Input.LocalName" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Latitude" class="form-label"></label>
-                <input asp-for="Input.Latitude" class="form-control" step="any" />
-                <span asp-validation-for="Input.Latitude" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Longitude" class="form-label"></label>
-                <input asp-for="Input.Longitude" class="form-control" step="any" />
-                <span asp-validation-for="Input.Longitude" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Population" class="form-label"></label>
-                <input asp-for="Input.Population" class="form-control" min="0" />
-                <span asp-validation-for="Input.Population" class="text-danger"></span>
+                <div class="col-md-6">
+                    <label asp-for="Input.AsciiName" class="form-label"></label>
+                    <input asp-for="Input.AsciiName" class="form-control" />
+                    <span asp-validation-for="Input.AsciiName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.LocalName" class="form-label"></label>
+                    <input asp-for="Input.LocalName" class="form-control" />
+                    <span asp-validation-for="Input.LocalName" class="text-danger"></span>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex gap-2 mt-4">
+        <div class="form-section">
+            <div class="section-heading">
+                <h2>@Localizer["Regions.Section.Geo"]</h2>
+                <p>@Localizer["Regions.Section.GeoHint"]</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="Input.Latitude" class="form-label"></label>
+                    <input asp-for="Input.Latitude" class="form-control" step="any" />
+                    <span asp-validation-for="Input.Latitude" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.Longitude" class="form-label"></label>
+                    <input asp-for="Input.Longitude" class="form-control" step="any" />
+                    <span asp-validation-for="Input.Longitude" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.Population" class="form-label"></label>
+                    <input asp-for="Input.Population" class="form-control" min="0" />
+                    <span asp-validation-for="Input.Population" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
             <a class="btn btn-outline-secondary" asp-page="/Regions/Detail"
                asp-route-id="@Model.Region.Id">@Localizer["Common.Cancel"]</a>

@@ -4,54 +4,86 @@
     ViewData["Title"] = Model.IsEdit ? Localizer["News.Edit.EditTitle"].Value : Localizer["News.Edit.CreateTitle"].Value;
 }
 
-<h1 class="mb-4">@ViewData["Title"]</h1>
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/News/Index">@Localizer["News.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@ViewData["Title"]</h1>
+        <p class="page-description">@Localizer["News.Edit.Description"]</p>
+    </div>
+</div>
 
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<form method="post" class="card card-body">
+<form method="post" class="card form-card">
     <input type="hidden" asp-for="ArticleId" />
     <input type="hidden" asp-for="ETag" />
 
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["News.Section.Meta"]</h2>
+            <p>@Localizer["News.Section.MetaHint"]</p>
+        </div>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <div class="row g-3">
-        <div class="col-md-8">
-            <label asp-for="Input.Title" class="form-label"></label>
-            <input asp-for="Input.Title" class="form-control" />
-            <span asp-validation-for="Input.Title" class="text-danger"></span>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Input.Title" class="form-label">
+                    @Localizer["Field.News.Title"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Title" class="form-control" />
+                <span asp-validation-for="Input.Title" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Category" class="form-label">
+                    @Localizer["Field.News.Category"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Category" class="form-control" />
+                <span asp-validation-for="Input.Category" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Author" class="form-label">
+                    @Localizer["Field.News.Author"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Author" class="form-control" />
+                <span asp-validation-for="Input.Author" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Status" class="form-label"></label>
+                <select asp-for="Input.Status" class="form-select">
+                    <option value="Draft">@Localizer["News.Status.Draft"]</option>
+                    <option value="Published">@Localizer["News.Status.Published"]</option>
+                    <option value="Archived">@Localizer["News.Status.Archived"]</option>
+                </select>
+                <span asp-validation-for="Input.Status" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Summary" class="form-label"></label>
+                <input asp-for="Input.Summary" class="form-control" />
+                <div class="form-text">@Localizer["News.Edit.SummaryHint"]</div>
+                <span asp-validation-for="Input.Summary" class="text-danger"></span>
+            </div>
         </div>
-        <div class="col-md-4">
-            <label asp-for="Input.Category" class="form-label"></label>
-            <input asp-for="Input.Category" class="form-control" />
-            <span asp-validation-for="Input.Category" class="text-danger"></span>
+    </div>
+
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["News.Section.Content"]</h2>
+            <p>@Localizer["News.Edit.ContentHint"]</p>
         </div>
-        <div class="col-md-8">
-            <label asp-for="Input.Author" class="form-label"></label>
-            <input asp-for="Input.Author" class="form-control" />
-            <span asp-validation-for="Input.Author" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Input.Status" class="form-label"></label>
-            <select asp-for="Input.Status" class="form-select">
-                <option value="Draft">@Localizer["News.Status.Draft"]</option>
-                <option value="Published">@Localizer["News.Status.Published"]</option>
-                <option value="Archived">@Localizer["News.Status.Archived"]</option>
-            </select>
-            <span asp-validation-for="Input.Status" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-            <label asp-for="Input.Summary" class="form-label"></label>
-            <input asp-for="Input.Summary" class="form-control" />
-            <span asp-validation-for="Input.Summary" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-            <label asp-for="Input.Content" class="form-label"></label>
-            <textarea asp-for="Input.Content" class="form-control" rows="10"></textarea>
-            <span asp-validation-for="Input.Content" class="text-danger"></span>
-        </div>
+        <label asp-for="Input.Content" class="form-label">
+            @Localizer["Field.News.Content"]<span class="required-mark" aria-hidden="true">*</span>
+        </label>
+        <textarea asp-for="Input.Content" class="form-control" rows="12"></textarea>
+        <span asp-validation-for="Input.Content" class="text-danger"></span>
     </div>
 
     @if (Model.IsEdit)
@@ -60,41 +92,44 @@
 
         @if (Model.TranslationsLoaded)
         {
-            <hr class="my-4" />
-            <h2 class="h4">@Localizer["Translations.Title"]</h2>
-            <p class="text-muted">@Localizer["Translations.Hint"]</p>
+            <div class="form-section">
+                <div class="section-heading">
+                    <h2>@Localizer["Translations.Title"]</h2>
+                    <p>@Localizer["Translations.Hint"]</p>
+                </div>
 
-            @foreach (var culture in Model.EditableCultures)
-            {
-                Model.Translations.TryGetValue(culture, out var translation);
-                var cultureResource = Localizer[$"Culture.{culture}"];
-                var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+                @foreach (var culture in Model.EditableCultures)
+                {
+                    Model.Translations.TryGetValue(culture, out var translation);
+                    var cultureResource = Localizer[$"Culture.{culture}"];
+                    var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
 
-                <fieldset class="translation-panel">
-                    <legend class="float-none w-auto px-2 fs-5">@cultureName</legend>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label" for="translation-@culture-title">@Localizer["Field.News.Title"]</label>
-                            <input class="form-control" id="translation-@culture-title"
-                                   name="Translations[@culture].Title" value="@translation?.Title" maxlength="200" />
+                    <fieldset class="translation-panel">
+                        <legend>@cultureName</legend>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label" for="translation-@(culture)-title">@Localizer["Field.News.Title"]</label>
+                                <input class="form-control" id="translation-@(culture)-title"
+                                       name="Translations[@culture].Title" value="@translation?.Title" maxlength="200" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="translation-@(culture)-summary">@Localizer["Field.News.Summary"]</label>
+                                <input class="form-control" id="translation-@(culture)-summary"
+                                       name="Translations[@culture].Summary" value="@translation?.Summary" maxlength="500" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="translation-@(culture)-content">@Localizer["Field.News.Content"]</label>
+                                <textarea class="form-control" id="translation-@(culture)-content" rows="6" maxlength="50000"
+                                          name="Translations[@culture].Content">@translation?.Content</textarea>
+                            </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label" for="translation-@culture-summary">@Localizer["Field.News.Summary"]</label>
-                            <input class="form-control" id="translation-@culture-summary"
-                                   name="Translations[@culture].Summary" value="@translation?.Summary" maxlength="500" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label" for="translation-@culture-content">@Localizer["Field.News.Content"]</label>
-                            <textarea class="form-control" id="translation-@culture-content" rows="6" maxlength="50000"
-                                      name="Translations[@culture].Content">@translation?.Content</textarea>
-                        </div>
-                    </div>
-                </fieldset>
-            }
+                    </fieldset>
+                }
+            </div>
         }
     }
 
-    <div class="d-flex gap-2 mt-4">
+    <div class="form-actions">
         <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
         <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.Cancel"]</a>
     </div>
