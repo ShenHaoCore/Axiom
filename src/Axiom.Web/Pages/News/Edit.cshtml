@@ -98,33 +98,7 @@
                     <p>@Localizer["Translations.Hint"]</p>
                 </div>
 
-                @foreach (var culture in Model.EditableCultures)
-                {
-                    Model.Translations.TryGetValue(culture, out var translation);
-                    var cultureResource = Localizer[$"Culture.{culture}"];
-                    var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
-
-                    <fieldset class="translation-panel">
-                        <legend>@cultureName</legend>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label" for="translation-@(culture)-title">@Localizer["Field.News.Title"]</label>
-                                <input class="form-control" id="translation-@(culture)-title"
-                                       name="Translations[@culture].Title" value="@translation?.Title" maxlength="200" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="translation-@(culture)-summary">@Localizer["Field.News.Summary"]</label>
-                                <input class="form-control" id="translation-@(culture)-summary"
-                                       name="Translations[@culture].Summary" value="@translation?.Summary" maxlength="500" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="translation-@(culture)-content">@Localizer["Field.News.Content"]</label>
-                                <textarea class="form-control" id="translation-@(culture)-content" rows="6" maxlength="50000"
-                                          name="Translations[@culture].Content">@translation?.Content</textarea>
-                            </div>
-                        </div>
-                    </fieldset>
-                }
+                <partial name="_TranslationEditor" model="Model.TranslationEditor" />
             </div>
         }
     }

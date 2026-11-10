@@ -39,6 +39,36 @@ public sealed class EditModel(
         .Where(culture => !string.Equals(culture, localizationOptions.DefaultCulture, StringComparison.OrdinalIgnoreCase))
         .ToArray();
 
+    /// <summary>译文编辑器数据：以当前表单中的默认语言内容作为原文参考。</summary>
+    public TranslationEditorModel TranslationEditor => new(
+        TranslationEditorBuilder.CultureLabel(localizationOptions.DefaultCulture, localizer),
+        EditableCultures.Select(culture =>
+        {
+            Translations.TryGetValue(culture, out var translation);
+            return TranslationEditorBuilder.CreateSection(
+                culture,
+                localizer,
+                new TranslationField(
+                    localizer["Field.News.Title"].Value,
+                    $"Translations[{culture}].Title",
+                    translation?.Title,
+                    Input.Title,
+                    MaxLength: 200),
+                new TranslationField(
+                    localizer["Field.News.Summary"].Value,
+                    $"Translations[{culture}].Summary",
+                    translation?.Summary,
+                    Input.Summary,
+                    MaxLength: 500),
+                new TranslationField(
+                    localizer["Field.News.Content"].Value,
+                    $"Translations[{culture}].Content",
+                    translation?.Content,
+                    Input.Content,
+                    Multiline: true,
+                    MaxLength: 50000));
+        }).ToArray());
+
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken cancellationToken = default)
     {
         ArticleId = id;
@@ -150,10 +180,15 @@ public sealed class EditModel(
             }
         }
 
-        TempData["StatusMessage"] = ArticleId is null
-            ? localizer["News.Edit.Created"].Value
-            : localizer["News.Edit.Updated"].Value;
-        return RedirectToPage("/News/Index");
+        if (ArticleId is null)
+        {
+            TempData["StatusMessage"] = localizer["News.Edit.Created"].Value;
+            return RedirectToPage("/News/Index");
+        }
+
+        // 编辑保存后进入详情页，保留当前记录上下文。
+        TempData["StatusMessage"] = localizer["News.Edit.Updated"].Value;
+        return RedirectToPage("/News/Detail", new { id = ArticleId.Value });
     }
 
     private async Task<IActionResult?> LoadTranslationsAsync(Guid id, CancellationToken cancellationToken)

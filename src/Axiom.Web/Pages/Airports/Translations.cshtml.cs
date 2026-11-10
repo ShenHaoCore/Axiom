@@ -20,9 +20,47 @@ public sealed class TranslationsModel(
 
     public string? ErrorMessage { get; private set; }
 
+    [TempData]
+    public string? StatusMessage { get; set; }
+
     public IReadOnlyList<string> EditableCultures => localizationOptions.SupportedCultures
         .Where(culture => !string.Equals(culture, localizationOptions.DefaultCulture, StringComparison.OrdinalIgnoreCase))
         .ToArray();
+
+    /// <summary>译文编辑器数据：以机场默认语言内容作为原文参考。</summary>
+    public TranslationEditorModel? TranslationEditor
+    {
+        get
+        {
+            var airport = Airport;
+            if (airport is null)
+            {
+                return null;
+            }
+
+            return new TranslationEditorModel(
+                TranslationEditorBuilder.CultureLabel(localizationOptions.DefaultCulture, localizer),
+                EditableCultures.Select(culture =>
+                {
+                    Translations.TryGetValue(culture, out var translation);
+                    return TranslationEditorBuilder.CreateSection(
+                        culture,
+                        localizer,
+                        new TranslationField(
+                            localizer["Field.Airport.Name"].Value,
+                            $"Translations[{culture}].Name",
+                            translation?.Name,
+                            airport.Name,
+                            MaxLength: 200),
+                        new TranslationField(
+                            localizer["Field.Airport.City"].Value,
+                            $"Translations[{culture}].City",
+                            translation?.City,
+                            airport.City,
+                            MaxLength: 100));
+                }).ToArray());
+        }
+    }
 
     [BindProperty]
     public Dictionary<string, AirportTranslationInput> Translations { get; set; } = [];
@@ -63,7 +101,8 @@ public sealed class TranslationsModel(
         }
 
         TempData["StatusMessage"] = localizer["Translations.Saved"].Value;
-        return RedirectToPage("/Index");
+        // 保存后留在翻译页，方便继续维护其他语言。
+        return RedirectToPage("/Airports/Translations", new { id });
     }
 
     private async Task<IActionResult?> LoadAirportAsync(Guid id, CancellationToken cancellationToken)

@@ -16,6 +16,8 @@
   <data name="Culture.Select" xml:space="preserve"><value>选择界面语言</value></data>
   <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
   <data name="Culture.en" xml:space="preserve"><value>English</value></data>
+  <data name="Culture.UiLabel" xml:space="preserve"><value>界面语言</value></data>
+  <data name="Layout.UnsavedChanges" xml:space="preserve"><value>切换界面语言会刷新页面，未保存的修改将丢失。确定继续吗？</value></data>
 
   <!-- 通用 -->
   <data name="Common.Save" xml:space="preserve"><value>保存</value></data>
@@ -45,6 +47,15 @@
   <data name="Translations.SaveFailed" xml:space="preserve"><value>保存翻译失败，请稍后重试。</value></data>
   <data name="Translations.LoadFailed" xml:space="preserve"><value>无法加载翻译，请稍后重试。</value></data>
   <data name="Translations.Description" xml:space="preserve"><value>为当前记录维护各语言的名称与描述，留空表示不提供该语言的译文。</value></data>
+  <data name="Translations.SourceFormat" xml:space="preserve"><value>原文（{0}）</value></data>
+  <data name="Translations.SourceLabel" xml:space="preserve"><value>原文</value></data>
+  <data name="Translations.SourceEmpty" xml:space="preserve"><value>默认语言内容为空。</value></data>
+  <data name="Translations.Status.Translated" xml:space="preserve"><value>已翻译</value></data>
+  <data name="Translations.Status.Missing" xml:space="preserve"><value>未翻译</value></data>
+  <data name="Translations.SourceTab" xml:space="preserve"><value>原文</value></data>
+  <data name="Translations.Progress" xml:space="preserve"><value>已完成 {0}/{1} 种语言</value></data>
+  <data name="Translations.CopySource" xml:space="preserve"><value>填入原文</value></data>
+  <data name="Translations.CopiedSource" xml:space="preserve"><value>已填入</value></data>
 
   <!-- 机场 -->
   <data name="Airports.Title" xml:space="preserve"><value>机场档案</value></data>
@@ -84,6 +95,7 @@
   <!-- 新闻 -->
   <data name="News.Title" xml:space="preserve"><value>新闻管理</value></data>
   <data name="News.New" xml:space="preserve"><value>新增新闻</value></data>
+  <data name="News.ListHeading" xml:space="preserve"><value>新闻列表</value></data>
   <data name="News.Status.All" xml:space="preserve"><value>全部</value></data>
   <data name="News.Status.Draft" xml:space="preserve"><value>草稿</value></data>
   <data name="News.Status.Published" xml:space="preserve"><value>已发布</value></data>

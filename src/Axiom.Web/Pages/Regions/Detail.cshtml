@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-            @if (Model.TranslationsLoaded)
+            @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
             {
                 <div class="card">
                     <div class="card-header">@Localizer["Translations.Title"]</div>
@@ -121,25 +121,11 @@
                             <input type="hidden" asp-for="TranslationsLoaded" />
                             <p class="text-muted">@Localizer["Translations.Hint"]</p>
 
-                            @foreach (var culture in Model.EditableCultures)
-                            {
-                                Model.Translations.TryGetValue(culture, out var translation);
-                                var cultureResource = Localizer[$"Culture.{culture}"];
-                                var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+                            <partial name="_TranslationEditor" model="editor" />
 
-                                <fieldset class="translation-panel">
-                                    <legend>@cultureName</legend>
-                                    <div class="row g-3">
-                                        <div class="col-md-8">
-                                            <label class="form-label" for="translation-@(culture)-name">@Localizer["Field.Region.Name"]</label>
-                                            <input class="form-control" id="translation-@(culture)-name"
-                                                   name="Translations[@culture].Name" value="@translation?.Name" maxlength="200" />
-                                        </div>
-                                    </div>
-                                </fieldset>
-                            }
-
-                            <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                            </div>
                         </form>
                     </div>
                 </div>

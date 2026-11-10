@@ -27,6 +27,35 @@ public sealed class DetailModel(
         .Where(culture => !string.Equals(culture, localizationOptions.DefaultCulture, StringComparison.OrdinalIgnoreCase))
         .ToArray();
 
+    /// <summary>译文编辑器数据：以行政区默认语言名称作为原文参考。</summary>
+    public TranslationEditorModel? TranslationEditor
+    {
+        get
+        {
+            var region = Region;
+            if (region is null)
+            {
+                return null;
+            }
+
+            return new TranslationEditorModel(
+                TranslationEditorBuilder.CultureLabel(localizationOptions.DefaultCulture, localizer),
+                EditableCultures.Select(culture =>
+                {
+                    Translations.TryGetValue(culture, out var translation);
+                    return TranslationEditorBuilder.CreateSection(
+                        culture,
+                        localizer,
+                        new TranslationField(
+                            localizer["Field.Region.Name"].Value,
+                            $"Translations[{culture}].Name",
+                            translation?.Name,
+                            region.Name,
+                            MaxLength: 200));
+                }).ToArray());
+        }
+    }
+
     [BindProperty]
     public Dictionary<string, RegionTranslationInput> Translations { get; set; } = [];
 

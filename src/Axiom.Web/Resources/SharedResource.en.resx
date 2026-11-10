@@ -16,6 +16,8 @@
   <data name="Culture.Select" xml:space="preserve"><value>Select language</value></data>
   <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
   <data name="Culture.en" xml:space="preserve"><value>English</value></data>
+  <data name="Culture.UiLabel" xml:space="preserve"><value>Interface language</value></data>
+  <data name="Layout.UnsavedChanges" xml:space="preserve"><value>Switching the interface language reloads the page and discards unsaved changes. Continue?</value></data>
 
   <!-- Common -->
   <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
@@ -45,6 +47,15 @@
   <data name="Translations.SaveFailed" xml:space="preserve"><value>Failed to save translations. Please try again later.</value></data>
   <data name="Translations.LoadFailed" xml:space="preserve"><value>Failed to load translations. Please try again later.</value></data>
   <data name="Translations.Description" xml:space="preserve"><value>Maintain localized names and descriptions for this record. Leave a field empty to skip that language.</value></data>
+  <data name="Translations.SourceFormat" xml:space="preserve"><value>Source ({0})</value></data>
+  <data name="Translations.SourceLabel" xml:space="preserve"><value>Source</value></data>
+  <data name="Translations.SourceEmpty" xml:space="preserve"><value>The default-language content is empty.</value></data>
+  <data name="Translations.Status.Translated" xml:space="preserve"><value>Translated</value></data>
+  <data name="Translations.Status.Missing" xml:space="preserve"><value>Not translated</value></data>
+  <data name="Translations.SourceTab" xml:space="preserve"><value>Source</value></data>
+  <data name="Translations.Progress" xml:space="preserve"><value>{0} of {1} locales translated</value></data>
+  <data name="Translations.CopySource" xml:space="preserve"><value>Use source</value></data>
+  <data name="Translations.CopiedSource" xml:space="preserve"><value>Copied</value></data>
 
   <!-- Airports -->
   <data name="Airports.Title" xml:space="preserve"><value>Airports</value></data>
@@ -84,6 +95,7 @@
   <!-- News -->
   <data name="News.Title" xml:space="preserve"><value>News</value></data>
   <data name="News.New" xml:space="preserve"><value>New article</value></data>
+  <data name="News.ListHeading" xml:space="preserve"><value>News list</value></data>
   <data name="News.Status.All" xml:space="preserve"><value>All</value></data>
   <data name="News.Status.Draft" xml:space="preserve"><value>Draft</value></data>
   <data name="News.Status.Published" xml:space="preserve"><value>Published</value></data>
