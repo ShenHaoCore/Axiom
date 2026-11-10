@@ -1,5 +1,46 @@
+/* Axiom 管理后台布局样式（仅浅色主题）。设计规范：Stripe（design-md/stripe）。 */
+:root {
+  --axiom-sidebar-width: 240px;
+
+  /* Stripe 品牌色板：电光靛蓝 CTA + 深海军蓝文字（不用纯黑） */
+  --axiom-accent: #533afd;
+  --axiom-accent-hover: #4434d4;
+  --axiom-accent-press: #2e2b8c;
+  --axiom-ink: #0d253d;
+  --axiom-ink-secondary: #273951;
+  --axiom-ink-mute: #64748d;
+  --axiom-border: #e3e8ee;
+  --axiom-input-border: #a8c3de;
+  --axiom-surface-soft: #f6f9fc;
+
+  /* 顶栏使用 Stripe dashboard chrome 的深海军蓝 */
+  --axiom-topbar-bg: #1c1e54;
+  --axiom-topbar-fg: #e8eaf6;
+  --axiom-topbar-hover: #2a2d6e;
+  --axiom-topbar-input-bg: #171a45;
+  --axiom-topbar-input-border: #3a3d75;
+
+  /* Stripe 圆角刻度：输入框 6 / 提示框 8 / 卡片 12 / 按钮全 pill */
+  --axiom-radius-sm: 6px;
+  --axiom-radius-md: 8px;
+  --axiom-radius-lg: 12px;
+  --axiom-radius-pill: 9999px;
+
+  /* Stripe 投影层级：蓝色调轻投影 */
+  --axiom-shadow-1: rgba(0, 55, 112, 0.08) 0 1px 3px;
+  --axiom-shadow-2: rgba(0, 55, 112, 0.08) 0 8px 24px, rgba(0, 55, 112, 0.04) 0 2px 6px;
+
+  /* 统一品牌色：覆盖 Bootstrap 链接默认蓝（a 元素读取的是 rgb 三元组变量） */
+  --bs-link-color: var(--axiom-accent);
+  --bs-link-hover-color: var(--axiom-accent-hover);
+  --bs-link-color-rgb: 83, 58, 253;
+  --bs-link-hover-color-rgb: 68, 52, 212;
+}
+
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,24 +49,745 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* Stripe 字体签名：Sohne 的开源替代 Inter 优先，全局启用 ss01 风格集 */
 body {
-  margin-bottom: 60px;
+  font-family: "Inter", "SF Pro Display", -apple-system, "Segoe UI", system-ui, "Microsoft YaHei", sans-serif;
+  font-feature-settings: "ss01";
+  color: var(--axiom-ink);
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-select:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(83, 58, 253, 0.5);
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+/* 整体两栏布局 */
+.app {
+  min-height: 100vh;
+}
+
+/* 侧边栏（桌面端固定于左侧） */
+.sidebar {
+  width: var(--axiom-sidebar-width);
+  flex: 0 0 var(--axiom-sidebar-width);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid var(--axiom-border);
+  transition: width 0.2s ease, flex-basis 0.2s ease;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1rem 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--axiom-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--axiom-border);
+  white-space: nowrap;
+}
+
+.sidebar-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  border-radius: 0.5rem;
+  background: var(--axiom-accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sidebar-nav {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--axiom-ink-secondary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background: var(--axiom-surface-soft);
+  color: var(--axiom-ink);
+}
+
+.sidebar-link.active,
+.sidebar-link.active:hover {
+  background: var(--axiom-accent);
+  color: #fff;
+}
+
+.sidebar-link svg {
+  flex: 0 0 auto;
+  opacity: 0.8;
+}
+
+.sidebar-link.active svg {
+  opacity: 1;
+}
+
+/* 侧边栏分组标题 */
+.sidebar-section {
+  margin-top: 1.25rem;
+  padding: 0 0.75rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--axiom-ink-mute);
+}
+
+/* 桌面端折叠态：仅显示图标，分组标题转为分隔线 */
+.sidebar-collapsed .sidebar {
+  width: 4.25rem;
+  flex: 0 0 4.25rem;
+}
+
+.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+  padding-inline: 0.75rem;
+}
+
+.sidebar-collapsed .sidebar-brand-text,
+.sidebar-collapsed .sidebar-link span,
+.sidebar-collapsed .sidebar-section span {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.sidebar-collapsed .sidebar-section {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.5rem 0;
+  border-top: 1px solid var(--axiom-border);
+}
+
+/* 主内容列 */
+.app-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶栏 */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  min-height: 3rem;
+  padding: 0.4rem 1rem;
+  background: var(--axiom-topbar-bg);
+  color: var(--axiom-topbar-fg);
+}
+
+.topbar-language-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--axiom-topbar-input-border);
+  border-radius: var(--axiom-radius-sm);
+  background: var(--axiom-topbar-input-bg);
+  color: var(--axiom-topbar-fg);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.topbar-language-btn:hover,
+.topbar-language-btn.show {
+  background: var(--axiom-topbar-hover);
+  color: #fff;
+}
+
+.culture-flag-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.culture-flag {
+  width: 1.25rem;
+  height: 0.8333rem;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(13, 37, 61, 0.15);
+}
+
+.culture-menu .dropdown-item.active {
+  background-color: var(--axiom-accent);
+}
+
+.topbar-brand {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.05rem;
+  margin-left: 0.5rem;
+}
+
+.topbar-toggler {
+  border: 1px solid var(--axiom-topbar-input-border);
+  background: transparent;
+  color: var(--axiom-topbar-fg);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.topbar-toggler:hover {
+  background: var(--axiom-topbar-hover);
+  color: #fff;
+}
+
+/* 顶栏用户菜单 */
+.topbar-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--axiom-topbar-fg);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.topbar-user-btn:hover {
+  background: var(--axiom-topbar-hover);
+  color: #fff;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--axiom-accent);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* 移动端抽屉：复用侧边栏链接样式 */
+.offcanvas .sidebar-section {
+  margin-top: 0.75rem;
+}
+
+.offcanvas .sidebar-section:first-child {
+  margin-top: 0;
+}
+
+.offcanvas .sidebar-link {
+  color: var(--axiom-ink-secondary);
+}
+
+.offcanvas .sidebar-link:hover {
+  background: var(--axiom-surface-soft);
+  color: var(--axiom-ink);
+}
+
+.offcanvas .sidebar-link.active {
+  background: var(--axiom-accent);
+  color: #fff;
+}
+
+.topbar-user {
+  color: var(--axiom-topbar-fg);
+  font-size: 0.875rem;
+}
+
+/* 内容区 */
+.content {
+  flex: 1 1 auto;
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 2rem 1.75rem;
+  }
+}
+
+/* Stripe 卡片：12px 圆角 + hairline 边框 + Level 1 轻投影 */
+.card {
+  border-color: var(--axiom-border);
+  border-radius: var(--axiom-radius-lg);
+  box-shadow: var(--axiom-shadow-1);
+}
+
+.card-header {
+  background: var(--axiom-surface-soft);
+  border-bottom-color: var(--axiom-border);
+}
+
+/* Stripe 表格：数字启用 tnum 等宽数字（品牌金融数据签名） */
+.table > :not(caption) > * > * {
+  padding: 0.65rem 0.75rem;
+}
+
+.table td {
+  font-feature-settings: "tnum";
+}
+
+.table thead th {
+  color: var(--axiom-ink-mute);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-bottom-color: var(--axiom-border);
+}
+
+/* 页脚（caption 规格） */
+.footer {
+  border-top: 1px solid var(--axiom-border);
+  color: var(--axiom-ink-mute);
+  font-size: 0.8125rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Stripe 按钮：全部 pill 形，主按钮 padding 不小于 8px 16px */
+.btn {
+  border-radius: var(--axiom-radius-pill);
+  padding: 0.5rem 1rem;
+  font-weight: 400;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--axiom-radius-pill);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--axiom-accent);
+  --bs-btn-border-color: var(--axiom-accent);
+  --bs-btn-hover-bg: var(--axiom-accent-hover);
+  --bs-btn-hover-border-color: var(--axiom-accent-hover);
+  --bs-btn-active-bg: var(--axiom-accent-press);
+  --bs-btn-active-border-color: var(--axiom-accent-press);
+  --bs-btn-disabled-bg: var(--axiom-accent);
+  --bs-btn-disabled-border-color: var(--axiom-accent);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--axiom-accent);
+  --bs-btn-border-color: var(--axiom-accent);
+  --bs-btn-hover-bg: var(--axiom-accent);
+  --bs-btn-hover-border-color: var(--axiom-accent);
+  --bs-btn-active-bg: var(--axiom-accent-press);
+  --bs-btn-active-border-color: var(--axiom-accent-press);
+}
+
+/* Stripe 标题签名：300 细字重 + 负字距（display 层级不超过 300） */
+.content h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.content h2 {
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: var(--axiom-ink);
+}
+
+/* Stripe 表单：6px 圆角 + 冷蓝 hairline 边框，focus 换靛蓝 */
+.form-label {
+  font-weight: 500;
+  color: var(--axiom-ink-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.form-control,
+.form-select {
+  border-color: var(--axiom-input-border);
+  border-radius: var(--axiom-radius-sm);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--axiom-accent);
+}
+
+/* 表格行悬停与提示框 */
+.table tbody tr:hover > * {
+  background-color: var(--axiom-surface-soft);
+}
+
+.alert {
+  border-radius: var(--axiom-radius-md);
+}
+
+/* 浮动面板（用户下拉等）使用 Level 2 投影 */
+.dropdown-menu {
+  border-color: var(--axiom-border);
+  border-radius: var(--axiom-radius-md);
+  box-shadow: var(--axiom-shadow-2);
+}
+
+/* 中性辅助按钮：统一为 Stripe 冷调灰蓝（替代 Bootstrap 默认灰 #6c757d） */
+.btn-outline-secondary {
+  --bs-btn-color: var(--axiom-ink-secondary);
+  --bs-btn-border-color: var(--axiom-input-border);
+  --bs-btn-hover-bg: var(--axiom-surface-soft);
+  --bs-btn-hover-color: var(--axiom-ink);
+  --bs-btn-hover-border-color: var(--axiom-ink-mute);
+  --bs-btn-active-bg: var(--axiom-surface-soft);
+  --bs-btn-active-color: var(--axiom-ink);
+  --bs-btn-active-border-color: var(--axiom-ink-mute);
+}
+
+/* Toast：浅色浮动面板 + 语义色状态点，避免整块高饱和底色 */
+.toast {
+  border-radius: var(--axiom-radius-md);
+  background: #fff;
+  color: var(--axiom-ink);
+  box-shadow: var(--axiom-shadow-2);
+}
+
+.toast-body {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.toast-body::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--axiom-accent);
+}
+
+.toast-success .toast-body::before {
+  background: #198754;
+}
+
+.toast-danger .toast-body::before {
+  background: #ea2261;
+}
+
+/* 页头、轻量筛选区与表单卡片 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  overflow-wrap: anywhere;
+}
+
+.filter-bar {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--axiom-border);
+  border-radius: var(--axiom-radius-lg);
+  background: var(--axiom-surface-soft);
+}
+
+.card {
+  background: #fff;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.table-card {
+  margin-bottom: 1rem;
+}
+
+.table-card .table {
+  margin-bottom: 0;
+}
+
+.table-card .table thead th {
+  background: var(--axiom-surface-soft);
+  white-space: nowrap;
+}
+
+.table-card .table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.table td[colspan] {
+  padding: 2rem 1rem;
+  color: var(--axiom-ink-mute);
+  text-align: center;
+}
+
+/* 软色标签：状态与层级不再使用内联高饱和色块 */
+.badge-soft {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--axiom-radius-pill);
+  background: rgba(83, 58, 253, 0.12);
+  color: var(--axiom-accent-hover);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-draft,
+.level-default {
+  background: #eef1f4;
+  color: #52606d;
+}
+
+.status-published,
+.level-2 {
+  background: #eaf7f0;
+  color: #1a7f4f;
+}
+
+.status-archived {
+  background: #f1f3f5;
+  color: #64748d;
+}
+
+.level-1 {
+  background: #eaf1fb;
+  color: #0b3d91;
+}
+
+.level-3 {
+  background: #fdf1e8;
+  color: #9d3d10;
+}
+
+.translation-panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--axiom-border);
+  border-radius: var(--axiom-radius-md);
+  background: var(--axiom-surface-soft);
+}
+
+.translation-panel legend {
+  color: var(--axiom-ink-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.article-content {
+  color: var(--axiom-ink-secondary);
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.text-muted {
+  color: var(--axiom-ink-mute) !important;
+}
+
+.content a:not(.btn):not(.dropdown-item):not(.region-toggle) {
+  text-decoration: none;
+}
+
+.content a:not(.btn):not(.dropdown-item):not(.region-toggle):hover {
+  text-decoration: underline;
+}
+
+code {
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  background: var(--axiom-surface-soft);
+  color: var(--axiom-ink-secondary);
+  font-feature-settings: "tnum";
+}
+
+.list-group-item {
+  border-color: var(--axiom-border);
+}
+
+/* 明确的键盘焦点、按压和提交加载反馈 */
+.sidebar-link:focus-visible,
+.topbar-language-btn:focus-visible,
+.topbar-user-btn:focus-visible,
+.topbar-toggler:focus-visible,
+.dropdown-item:focus-visible,
+.region-toggle:focus-visible {
+  outline: 2px solid var(--axiom-accent);
+  outline-offset: 2px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1.2;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.75;
+}
+
+.btn.is-loading:disabled {
+  cursor: wait;
+}
+
+.btn.is-loading::before {
+  content: "";
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: axiom-spin 0.65s linear infinite;
+}
+
+.form-control,
+.form-select {
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:hover:not(:focus),
+.form-select:hover:not(:focus) {
+  border-color: var(--axiom-ink-mute);
+}
+
+.form-control::placeholder {
+  color: var(--axiom-ink-mute);
+  opacity: 0.8;
+}
+
+.form-control.input-validation-error:not(:focus),
+.form-select.input-validation-error:not(:focus) {
+  border-color: #ea2261;
+}
+
+.field-validation-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.btn-outline-danger {
+  --bs-btn-color: #c81e5b;
+  --bs-btn-border-color: #ea2261;
+  --bs-btn-hover-bg: #ea2261;
+  --bs-btn-hover-border-color: #ea2261;
+  --bs-btn-active-bg: #c81e5b;
+  --bs-btn-active-border-color: #c81e5b;
+}
+
+/* 行政区树：复用 Bootstrap Collapse，仅补充清晰的展开方向 */
+.region-node {
+  margin-bottom: 0.25rem;
+}
+
+.region-row {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0;
+}
+
+.region-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.25rem;
+  border-radius: var(--axiom-radius-sm);
+  color: var(--axiom-ink-mute);
+  text-decoration: none;
+}
+
+.region-toggle:hover {
+  background: var(--axiom-surface-soft);
+  color: var(--axiom-accent);
+}
+
+.region-chevron {
+  display: inline-block;
+  font-size: 0.625rem;
+  transition: transform 0.15s ease;
+}
+
+.region-toggle[aria-expanded="true"] .region-chevron {
+  transform: rotate(90deg);
+}
+
+.region-children {
+  border-left: 1px dashed var(--axiom-border) !important;
+}
+
+@keyframes axiom-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 移动端保持足够触控面积；减少动态效果偏好优先 */
+@media (max-width: 767.98px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .btn {
+    min-height: 2.75rem;
+  }
+
+  .btn-sm {
+    min-height: 2.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .form-control,
+  .form-select,
+  .region-chevron {
+    transition: none;
+  }
+
+  .btn.is-loading::before {
+    animation-duration: 1.5s;
+  }
 }

@@ -1,6 +1,7 @@
 // Application 层 DTO：请求 / 响应 / 校验。
 // Domain 层只持有 Entity；DTO 用于 HTTP 端点与 AppService 之间的数据传递。
 using Axiom.News.Domain.Constants;
+using Axiom.News.Domain.Entities;
 using Axiom.SharedKernel.Errors;
 
 namespace Axiom.News.Application.Dtos;
@@ -104,10 +105,9 @@ public static class NewsArticleInputValidator
         }
     }
 
-    private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Draft", "Published", "Archived"
-    };
+    // 有效状态直接取自领域枚举，避免与 NewsArticleStatus 重复维护字面量。
+    private static readonly HashSet<string> ValidStatuses =
+        new(Enum.GetNames<NewsArticleStatus>(), StringComparer.OrdinalIgnoreCase);
 
     private static void ValidateStatus(Dictionary<string, ValidationError[]> errors, string? status)
     {

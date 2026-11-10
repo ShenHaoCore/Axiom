@@ -4,7 +4,10 @@
     ViewData["Title"] = Localizer["Airports.Title"];
 }
 
-<h1 class="mb-4">@Localizer["Airports.Title"]</h1>
+<div class="page-header">
+    <h1>@Localizer["Airports.Title"]</h1>
+    <a class="btn btn-primary" asp-page="/Airports/Create">@Localizer["Airports.CreateHeading"]</a>
+</div>
 
 @if (Model.StatusMessage is not null)
 {
@@ -15,50 +18,10 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<section class="mb-5" aria-labelledby="create-airport-title">
-    <h2 class="h4" id="create-airport-title">@Localizer["Airports.CreateHeading"]</h2>
-    <form method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label asp-for="Input.Code" class="form-label"></label>
-                <input asp-for="Input.Code" class="form-control" autocomplete="off">
-                <span asp-validation-for="Input.Code" class="text-danger"></span>
-            </div>
-            <div class="col-md-8">
-                <label asp-for="Input.Name" class="form-label"></label>
-                <input asp-for="Input.Name" class="form-control">
-                <span asp-validation-for="Input.Name" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.CountryCode" class="form-label"></label>
-                <input asp-for="Input.CountryCode" class="form-control" autocomplete="off">
-                <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
-            </div>
-            <div class="col-md-8">
-                <label asp-for="Input.City" class="form-label"></label>
-                <input asp-for="Input.City" class="form-control">
-                <span asp-validation-for="Input.City" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Latitude" class="form-label"></label>
-                <input asp-for="Input.Latitude" class="form-control" step="any">
-                <span asp-validation-for="Input.Latitude" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Longitude" class="form-label"></label>
-                <input asp-for="Input.Longitude" class="form-control" step="any">
-                <span asp-validation-for="Input.Longitude" class="text-danger"></span>
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primary mt-3">@Localizer["Airports.CreateHeading"]</button>
-    </form>
-</section>
-
 <section aria-labelledby="airport-list-title">
     <h2 class="h4" id="airport-list-title">@Localizer["Airports.ListHeading"]</h2>
-    <div class="table-responsive">
-        <table class="table table-striped align-middle">
+    <div class="table-responsive card table-card">
+        <table class="table align-middle">
             <thead>
                 <tr>
                     <th scope="col">@Localizer["Airports.Column.Code"]</th>
@@ -81,7 +44,10 @@
                         <td>@airport.Latitude</td>
                         <td>@airport.Longitude</td>
                         <td>
-                            <a asp-page="/Airports/Translations" asp-route-id="@airport.Id">@Localizer["Translations.Manage"]</a>
+                            <div class="d-flex gap-2">
+                                <a asp-page="/Airports/Edit" asp-route-id="@airport.Id">@Localizer["Common.Edit"]</a>
+                                <a asp-page="/Airports/Translations" asp-route-id="@airport.Id">@Localizer["Translations.Manage"]</a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -93,7 +59,3 @@
         </table>
     </div>
 </section>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

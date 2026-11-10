@@ -4,7 +4,11 @@
     ViewData["Title"] = Localizer["Regions.Title"];
 }
 
-<h1 class="mb-4">@Localizer["Regions.Title"]</h1>
+<div class="page-header">
+    <h1 class="mb-0">@Localizer["Regions.Title"]</h1>
+    <a class="btn btn-primary" asp-page="/Regions/Create"
+       asp-route-countryCode="@Model.SelectedCountryCode">@Localizer["Regions.Create.Title"]</a>
+</div>
 
 @if (Model.ErrorMessage is not null)
 {
@@ -12,10 +16,10 @@
 }
 
 <!-- 顶部工具栏 -->
-<form method="get" class="row g-2 align-items-end mb-4">
+<form method="get" class="filter-bar row g-2 align-items-end">
     <div class="col-md-3">
         <label class="form-label" for="countryCode">@Localizer["Regions.Country"]</label>
-        <select class="form-select" id="countryCode" name="countryCode" onchange="this.form.submit()">
+        <select class="form-select" id="countryCode" name="countryCode" data-auto-submit>
             <option value="">@Localizer["Regions.SelectCountry"]</option>
             @foreach (var c in Model.Countries)
             {
@@ -47,8 +51,8 @@
         <h2 class="h4 mb-3" id="search-title">
             @Localizer["Regions.SearchResults"] <span class="text-muted">(@Localizer["Regions.SearchTotal", Model.SearchTotalCount])</span>
         </h2>
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
+        <div class="table-responsive card table-card">
+            <table class="table align-middle">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["Regions.Column.Level"]</th>
@@ -69,9 +73,9 @@
                                     var label = r.Level is >= 1 and <= 3
                                         ? Localizer[$"Regions.Level.{r.Level}"].Value
                                         : $"L{r.Level}";
-                                    var color = r.Level == 1 ? "#0b3d91" : r.Level == 2 ? "#1a7f4f" : r.Level == 3 ? "#9d3d10" : "#52606d";
+                                    var levelClass = r.Level is >= 1 and <= 3 ? $"level-{r.Level}" : "level-default";
                                 }
-                                <span class="badge" style="background:@color">@label</span>
+                                <span class="badge-soft @levelClass">@label</span>
                             </td>
                             <td>@r.Name</td>
                             <td class="text-muted">@r.Code</td>
@@ -79,8 +83,12 @@
                             <td class="text-muted">@r.Admin1Code</td>
                             <td>@(r.Population?.ToString("N0") ?? "-")</td>
                             <td class="text-end">
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   asp-page="/Regions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       asp-page="/Regions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-page="/Regions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -108,12 +116,6 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
         </div>
     </section>
 }
-
-<style>
-.region-node { margin-bottom: 4px; }
-.region-row { padding: 4px 0; }
-.region-children { border-left: 1px dashed #dee2e6; }
-</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

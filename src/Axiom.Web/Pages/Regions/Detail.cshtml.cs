@@ -33,6 +33,9 @@ public sealed class DetailModel(
     [BindProperty]
     public bool TranslationsLoaded { get; set; }
 
+    [BindProperty]
+    public string? CountryCode { get; set; }
+
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var failure = await LoadRegionAsync(id, cancellationToken);
@@ -72,6 +75,57 @@ public sealed class DetailModel(
 
         TempData["StatusMessage"] = localizer["Translations.Saved"].Value;
         return RedirectToPage("/Regions/Detail", new { id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await regionClient.DeleteAsync(id, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return Challenge();
+        }
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            ErrorMessage = localizer["Regions.Detail.DeleteHasChildren"].Value;
+            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            ErrorMessage = localizer["Regions.Detail.DeleteFailed"].Value;
+            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+        }
+
+        StatusMessage = localizer["Regions.Detail.Deleted"].Value;
+        return RedirectToPage("/Regions/Index", new { countryCode = CountryCode });
+    }
+
+    private async Task<IActionResult> ReloadAfterDeleteFailureAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var failure = await LoadRegionAsync(id, cancellationToken);
+        if (failure is not null)
+        {
+            return failure;
+        }
+
+        if (Region is null)
+        {
+            return Page();
+        }
+
+        var translationFailure = await LoadTranslationsAsync(id, cancellationToken);
+        return translationFailure ?? Page();
     }
 
     private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)

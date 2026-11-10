@@ -9,6 +9,9 @@
   <data name="Nav.Airports" xml:space="preserve"><value>机场档案</value></data>
   <data name="Nav.News" xml:space="preserve"><value>新闻管理</value></data>
   <data name="Nav.Regions" xml:space="preserve"><value>行政区</value></data>
+  <data name="Layout.NavSectionData" xml:space="preserve"><value>数据管理</value></data>
+  <data name="Layout.NavSectionContent" xml:space="preserve"><value>内容管理</value></data>
+  <data name="Layout.ToggleNavigation" xml:space="preserve"><value>切换导航菜单</value></data>
   <data name="Layout.Footer" xml:space="preserve"><value>Axiom 基础数据管理</value></data>
   <data name="Culture.Select" xml:space="preserve"><value>选择界面语言</value></data>
   <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
@@ -30,6 +33,7 @@
   <data name="Common.ValidationFailed" xml:space="preserve"><value>提交内容未通过服务端校验，请检查后重试。</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>无法加载数据，请稍后重试。</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Common.SignOut" xml:space="preserve"><value>退出登录</value></data>
 
   <!-- 翻译维护 -->
   <data name="Translations.Title" xml:space="preserve"><value>多语言翻译</value></data>
@@ -54,6 +58,15 @@
   <data name="Airports.LoadFailed" xml:space="preserve"><value>无法加载机场列表，请稍后重试。</value></data>
   <data name="Airports.CodeConflict" xml:space="preserve"><value>机场代码已存在。</value></data>
   <data name="Airports.CreateFailed" xml:space="preserve"><value>新增机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Title" xml:space="preserve"><value>编辑机场</value></data>
+  <data name="Airports.Edit.DetailsHeading" xml:space="preserve"><value>机场详情</value></data>
+  <data name="Airports.Edit.FormHeading" xml:space="preserve"><value>基本信息</value></data>
+  <data name="Airports.Edit.LoadFailed" xml:space="preserve"><value>无法加载机场详情，请稍后重试。</value></data>
+  <data name="Airports.Edit.SaveFailed" xml:space="preserve"><value>保存机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Updated" xml:space="preserve"><value>机场已更新。</value></data>
+  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>确定删除这个机场吗？</value></data>
+  <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>删除机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Deleted" xml:space="preserve"><value>机场已删除。</value></data>
   <data name="Airports.Translations.Title" xml:space="preserve"><value>机场翻译</value></data>
 
   <!-- 新闻 -->
@@ -123,6 +136,44 @@
   <data name="Regions.Detail.ParentId" xml:space="preserve"><value>父节点 ID</value></data>
   <data name="Regions.Detail.RecordId" xml:space="preserve"><value>记录 ID</value></data>
   <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>无法加载行政区详情。</value></data>
+  <data name="Regions.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这个行政区吗？</value></data>
+  <data name="Regions.Detail.Deleted" xml:space="preserve"><value>行政区已删除。</value></data>
+  <data name="Regions.Detail.DeleteFailed" xml:space="preserve"><value>删除行政区失败，请稍后重试。</value></data>
+  <data name="Regions.Detail.DeleteHasChildren" xml:space="preserve"><value>该行政区仍有子节点，请先删除或移动子节点。</value></data>
+  <data name="Regions.Create.Title" xml:space="preserve"><value>新增行政区</value></data>
+  <data name="Regions.Create.LoadForm" xml:space="preserve"><value>加载新增表单</value></data>
+  <data name="Regions.Create.SaveFailed" xml:space="preserve"><value>新增行政区失败，请稍后重试。</value></data>
+  <data name="Regions.Create.Created" xml:space="preserve"><value>行政区已新增。</value></data>
+  <data name="Regions.Edit.Title" xml:space="preserve"><value>编辑行政区</value></data>
+  <data name="Regions.Edit.LoadFailed" xml:space="preserve"><value>无法加载行政区内容。</value></data>
+  <data name="Regions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
+  <data name="Regions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
+  <data name="Regions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
+  <data name="Regions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
+  <data name="Field.Region.Level" xml:space="preserve"><value>层级</value></data>
+  <data name="Field.Region.CountryCode" xml:space="preserve"><value>国家代码</value></data>
+  <data name="Field.Region.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
+  <data name="Field.Region.Code" xml:space="preserve"><value>行政区代码</value></data>
+  <data name="Field.Region.AsciiName" xml:space="preserve"><value>Ascii 名</value></data>
+  <data name="Field.Region.LocalName" xml:space="preserve"><value>当地名称</value></data>
+  <data name="Field.Region.Latitude" xml:space="preserve"><value>纬度</value></data>
+  <data name="Field.Region.Longitude" xml:space="preserve"><value>经度</value></data>
+  <data name="Field.Region.Population" xml:space="preserve"><value>人口</value></data>
+  <data name="Field.Region.Parent" xml:space="preserve"><value>父级行政区</value></data>
+  <data name="Validation.Region.LevelRange" xml:space="preserve"><value>层级必须为国家、省/州或市。</value></data>
+  <data name="Validation.Region.CountryCodeRequired" xml:space="preserve"><value>国家代码必填。</value></data>
+  <data name="Validation.Region.CountryCodeFormat" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="Validation.Region.Admin1CodeTooLong" xml:space="preserve"><value>Admin1 Code 不能超过 20 个字符。</value></data>
+  <data name="Validation.Region.CodeTooLong" xml:space="preserve"><value>行政区代码不能超过 50 个字符。</value></data>
+  <data name="Validation.Region.NameRequired" xml:space="preserve"><value>名称必填。</value></data>
+  <data name="Validation.Region.NameTooLong" xml:space="preserve"><value>名称不能超过 200 个字符。</value></data>
+  <data name="Validation.Region.AsciiNameTooLong" xml:space="preserve"><value>Ascii 名不能超过 200 个字符。</value></data>
+  <data name="Validation.Region.LocalNameTooLong" xml:space="preserve"><value>当地名称不能超过 200 个字符。</value></data>
+  <data name="Validation.Region.LatitudeRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
+  <data name="Validation.Region.LongitudeRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
+  <data name="Validation.Region.PopulationRange" xml:space="preserve"><value>人口不能为负数。</value></data>
+  <data name="Validation.Region.ParentRequired" xml:space="preserve"><value>当前层级必须选择父级行政区。</value></data>
+  <data name="Validation.Region.ParentInvalid" xml:space="preserve"><value>父级行政区与当前国家或层级不匹配，请重新选择。</value></data>
 
   <!-- 字段标签 -->
   <data name="Field.Airport.Code" xml:space="preserve"><value>机场代码</value></data>

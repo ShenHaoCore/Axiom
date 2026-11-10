@@ -9,7 +9,7 @@ namespace Axiom.Web.Clients;
 
 public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
 {
-    private const string ARTICLES_PATH = "/api/news/articles";
+    internal const string ARTICLES_PATH = "/api/news/articles";
 
     public Task<HttpResponseMessage> ListAsync(
         string? status,
@@ -90,15 +90,15 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
     {
         var httpContext = httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
-        var accessToken = await httpContext.GetTokenAsync("access_token")
+        var accessToken = await httpContext.GetTokenAsync(ApiClientHeaders.AccessToken)
             ?? throw new InvalidOperationException("当前登录会话不包含访问令牌。");
 
         using var request = new HttpRequestMessage(method, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.TryAddWithoutValidation("Accept-Language", CultureInfo.CurrentUICulture.Name);
+        request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
+        request.Headers.TryAddWithoutValidation(ApiClientHeaders.AcceptLanguage, CultureInfo.CurrentUICulture.Name);
         if (eTag is not null)
         {
-            request.Headers.TryAddWithoutValidation("If-Match", eTag);
+            request.Headers.TryAddWithoutValidation(ApiClientHeaders.IfMatch, eTag);
         }
 
         request.Content = content;

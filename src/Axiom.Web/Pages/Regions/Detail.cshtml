@@ -2,6 +2,7 @@
 @model Axiom.Web.Pages.Regions.DetailModel
 @{
     ViewData["Title"] = Localizer["Regions.Detail.Title"];
+    var deleteConfirm = Localizer["Regions.Detail.DeleteConfirm"].Value;
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -25,7 +26,7 @@
 {
     var r = Model.Region;
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <h1 class="mb-0">
             @r.Name
             @if (r.LocalName is not null)
@@ -33,8 +34,17 @@
                 <small class="text-muted fw-normal">@r.LocalName</small>
             }
         </h1>
-        <a class="btn btn-outline-secondary" asp-page="/Regions/Index"
-           asp-route-countryCode="@r.CountryCode">@Localizer["Regions.Detail.BackToTree"]</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary" asp-page="/Regions/Edit"
+               asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id"
+                  data-confirm="@deleteConfirm">
+                <input type="hidden" name="CountryCode" value="@r.CountryCode" />
+                <button type="submit" class="btn btn-outline-danger">@Localizer["Common.Delete"]</button>
+            </form>
+            <a class="btn btn-outline-secondary" asp-page="/Regions/Index"
+               asp-route-countryCode="@r.CountryCode">@Localizer["Regions.Detail.BackToTree"]</a>
+        </div>
     </div>
 
     <div class="row g-3">
@@ -44,7 +54,7 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
                         <span class="text-muted">@Localizer["Regions.Detail.Level"]</span>
-                        <span class="badge text-bg-secondary">@LevelLabel(r.Level)</span>
+                        <span class="badge-soft @(r.Level is >= 1 and <= 3 ? $"level-{r.Level}" : "level-default")">@LevelLabel(r.Level)</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span class="text-muted">@Localizer["Regions.Detail.Code"]</span>
@@ -131,7 +141,7 @@
                 var cultureResource = Localizer[$"Culture.{culture}"];
                 var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
 
-                <fieldset class="border rounded p-3 mb-3">
+                <fieldset class="translation-panel">
                     <legend class="float-none w-auto px-2 fs-5">@cultureName</legend>
                     <div class="row g-3">
                         <div class="col-md-8">

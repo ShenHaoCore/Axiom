@@ -5,7 +5,7 @@
     var deleteConfirm = Localizer["News.Detail.DeleteConfirm"].Value;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <h1 class="mb-0">@(Model.Article?.Title ?? Localizer["News.Detail.Title"].Value)</h1>
     <div class="d-flex gap-2">
         <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.BackToList"]</a>
@@ -23,25 +23,27 @@
 
 @if (Model.Article is { } article)
 {
-    <dl class="row">
-        <dt class="col-sm-2">@Localizer["News.Column.Category"]</dt>
-        <dd class="col-sm-10">@article.Category</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.Status"]</dt>
-        <dd class="col-sm-10">@Localizer[$"News.Status.{article.Status}"]</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.Author"]</dt>
-        <dd class="col-sm-10">@article.Author</dd>
-        <dt class="col-sm-2">@Localizer["News.Column.PublishedAt"]</dt>
-        <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</dd>
-        <dt class="col-sm-2">@Localizer["News.Detail.Summary"]</dt>
-        <dd class="col-sm-10">@(article.Summary ?? "-")</dd>
-    </dl>
+    <div class="card card-body">
+        <dl class="row">
+            <dt class="col-sm-2">@Localizer["News.Column.Category"]</dt>
+            <dd class="col-sm-10">@article.Category</dd>
+            <dt class="col-sm-2">@Localizer["News.Column.Status"]</dt>
+            <dd class="col-sm-10"><span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span></dd>
+            <dt class="col-sm-2">@Localizer["News.Column.Author"]</dt>
+            <dd class="col-sm-10">@article.Author</dd>
+            <dt class="col-sm-2">@Localizer["News.Column.PublishedAt"]</dt>
+            <dd class="col-sm-10">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</dd>
+            <dt class="col-sm-2">@Localizer["News.Detail.Summary"]</dt>
+            <dd class="col-sm-10">@(article.Summary ?? "-")</dd>
+        </dl>
 
-    <hr />
-    <div class="mb-4" style="white-space: pre-wrap;">@article.Content</div>
+        <hr />
+        <div class="mb-4 article-content">@article.Content</div>
 
-    <form method="post" asp-page-handler="Delete">
-        <input type="hidden" name="ArticleId" value="@article.Id" />
-        <input type="hidden" name="ETag" value="@Model.ETag" />
-        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('@deleteConfirm');">@Localizer["Common.Delete"]</button>
-    </form>
+        <form method="post" asp-page-handler="Delete" data-confirm="@deleteConfirm">
+            <input type="hidden" name="ArticleId" value="@article.Id" />
+            <input type="hidden" name="ETag" value="@Model.ETag" />
+            <button type="submit" class="btn btn-outline-danger">@Localizer["Common.Delete"]</button>
+        </form>
+    </div>
 }

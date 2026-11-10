@@ -4,7 +4,7 @@
     ViewData["Title"] = Localizer["News.Title"];
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <h1 class="mb-0">@Localizer["News.Title"]</h1>
     <a class="btn btn-primary" asp-page="/News/Edit">@Localizer["News.New"]</a>
 </div>
@@ -18,23 +18,20 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<form method="get" class="row g-2 align-items-end mb-4">
+<form method="get" class="filter-bar row g-2 align-items-end">
     <div class="col-auto">
         <label class="form-label" for="status">@Localizer["News.Column.Status"]</label>
-        <select class="form-select" id="status" name="status">
+        <select class="form-select" id="status" name="status" data-auto-submit>
             <option value="">@Localizer["News.Status.All"]</option>
             <option value="Draft" selected="@(Model.StatusFilter == "Draft")">@Localizer["News.Status.Draft"]</option>
             <option value="Published" selected="@(Model.StatusFilter == "Published")">@Localizer["News.Status.Published"]</option>
             <option value="Archived" selected="@(Model.StatusFilter == "Archived")">@Localizer["News.Status.Archived"]</option>
         </select>
     </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-secondary">@Localizer["Common.Filter"]</button>
-    </div>
 </form>
 
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
+<div class="table-responsive card table-card">
+    <table class="table align-middle">
         <thead>
             <tr>
                 <th scope="col">@Localizer["News.Column.Title"]</th>
@@ -51,7 +48,7 @@
                 <tr>
                     <td>@article.Title</td>
                     <td>@article.Category</td>
-                    <td>@Localizer[$"News.Status.{article.Status}"]</td>
+                    <td><span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span></td>
                     <td>@article.Author</td>
                     <td>@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
                     <td class="text-end">

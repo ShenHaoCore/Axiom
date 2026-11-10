@@ -11,7 +11,7 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<form method="post">
+<form method="post" class="card card-body">
     <input type="hidden" asp-for="ArticleId" />
     <input type="hidden" asp-for="ETag" />
 
@@ -70,7 +70,7 @@
                 var cultureResource = Localizer[$"Culture.{culture}"];
                 var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
 
-                <fieldset class="border rounded p-3 mb-3">
+                <fieldset class="translation-panel">
                     <legend class="float-none w-auto px-2 fs-5">@cultureName</legend>
                     <div class="row g-3">
                         <div class="col-12">

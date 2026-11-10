@@ -9,6 +9,9 @@
   <data name="Nav.Airports" xml:space="preserve"><value>Airports</value></data>
   <data name="Nav.News" xml:space="preserve"><value>News</value></data>
   <data name="Nav.Regions" xml:space="preserve"><value>Regions</value></data>
+  <data name="Layout.NavSectionData" xml:space="preserve"><value>Data</value></data>
+  <data name="Layout.NavSectionContent" xml:space="preserve"><value>Content</value></data>
+  <data name="Layout.ToggleNavigation" xml:space="preserve"><value>Toggle navigation</value></data>
   <data name="Layout.Footer" xml:space="preserve"><value>Axiom Reference Data Management</value></data>
   <data name="Culture.Select" xml:space="preserve"><value>Select language</value></data>
   <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
@@ -30,6 +33,7 @@
   <data name="Common.ValidationFailed" xml:space="preserve"><value>The submitted content failed server-side validation. Please check it and try again.</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>Failed to load data. Please try again later.</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Common.SignOut" xml:space="preserve"><value>Sign out</value></data>
 
   <!-- Translation maintenance -->
   <data name="Translations.Title" xml:space="preserve"><value>Translations</value></data>
@@ -54,6 +58,15 @@
   <data name="Airports.LoadFailed" xml:space="preserve"><value>Failed to load the airport list. Please try again later.</value></data>
   <data name="Airports.CodeConflict" xml:space="preserve"><value>An airport with this code already exists.</value></data>
   <data name="Airports.CreateFailed" xml:space="preserve"><value>Failed to create the airport. Please try again later.</value></data>
+  <data name="Airports.Edit.Title" xml:space="preserve"><value>Edit airport</value></data>
+  <data name="Airports.Edit.DetailsHeading" xml:space="preserve"><value>Airport detail</value></data>
+  <data name="Airports.Edit.FormHeading" xml:space="preserve"><value>Basic information</value></data>
+  <data name="Airports.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the airport detail. Please try again later.</value></data>
+  <data name="Airports.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the airport. Please try again later.</value></data>
+  <data name="Airports.Edit.Updated" xml:space="preserve"><value>The airport has been updated.</value></data>
+  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>Delete this airport?</value></data>
+  <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>Failed to delete the airport. Please try again later.</value></data>
+  <data name="Airports.Edit.Deleted" xml:space="preserve"><value>The airport has been deleted.</value></data>
   <data name="Airports.Translations.Title" xml:space="preserve"><value>Airport translations</value></data>
 
   <!-- News -->
@@ -123,6 +136,44 @@
   <data name="Regions.Detail.ParentId" xml:space="preserve"><value>Parent node ID</value></data>
   <data name="Regions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
   <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the region detail.</value></data>
+  <data name="Regions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this region?</value></data>
+  <data name="Regions.Detail.Deleted" xml:space="preserve"><value>The region has been deleted.</value></data>
+  <data name="Regions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the region. Please try again later.</value></data>
+  <data name="Regions.Detail.DeleteHasChildren" xml:space="preserve"><value>This region still has child nodes. Delete or move them first.</value></data>
+  <data name="Regions.Create.Title" xml:space="preserve"><value>Create region</value></data>
+  <data name="Regions.Create.LoadForm" xml:space="preserve"><value>Load create form</value></data>
+  <data name="Regions.Create.SaveFailed" xml:space="preserve"><value>Failed to create the region. Please try again later.</value></data>
+  <data name="Regions.Create.Created" xml:space="preserve"><value>The region has been created.</value></data>
+  <data name="Regions.Edit.Title" xml:space="preserve"><value>Edit region</value></data>
+  <data name="Regions.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the region.</value></data>
+  <data name="Regions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the region. Please try again later.</value></data>
+  <data name="Regions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>
+  <data name="Regions.Form.UniqueConflict" xml:space="preserve"><value>The region code already exists for this country and level.</value></data>
+  <data name="Regions.Form.SelectParent" xml:space="preserve"><value>-- Select a parent --</value></data>
+  <data name="Field.Region.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="Field.Region.CountryCode" xml:space="preserve"><value>Country code</value></data>
+  <data name="Field.Region.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
+  <data name="Field.Region.Code" xml:space="preserve"><value>Region code</value></data>
+  <data name="Field.Region.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
+  <data name="Field.Region.LocalName" xml:space="preserve"><value>Local name</value></data>
+  <data name="Field.Region.Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Field.Region.Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Field.Region.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="Field.Region.Parent" xml:space="preserve"><value>Parent region</value></data>
+  <data name="Validation.Region.LevelRange" xml:space="preserve"><value>Level must be Country, Province/State, or City.</value></data>
+  <data name="Validation.Region.CountryCodeRequired" xml:space="preserve"><value>The country code is required.</value></data>
+  <data name="Validation.Region.CountryCodeFormat" xml:space="preserve"><value>The country code must be 2 letters.</value></data>
+  <data name="Validation.Region.Admin1CodeTooLong" xml:space="preserve"><value>Admin1 Code cannot exceed 20 characters.</value></data>
+  <data name="Validation.Region.CodeTooLong" xml:space="preserve"><value>The region code cannot exceed 50 characters.</value></data>
+  <data name="Validation.Region.NameRequired" xml:space="preserve"><value>The name is required.</value></data>
+  <data name="Validation.Region.NameTooLong" xml:space="preserve"><value>The name cannot exceed 200 characters.</value></data>
+  <data name="Validation.Region.AsciiNameTooLong" xml:space="preserve"><value>The ascii name cannot exceed 200 characters.</value></data>
+  <data name="Validation.Region.LocalNameTooLong" xml:space="preserve"><value>The local name cannot exceed 200 characters.</value></data>
+  <data name="Validation.Region.LatitudeRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="Validation.Region.LongitudeRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="Validation.Region.PopulationRange" xml:space="preserve"><value>Population cannot be negative.</value></data>
+  <data name="Validation.Region.ParentRequired" xml:space="preserve"><value>Select a parent region for this level.</value></data>
+  <data name="Validation.Region.ParentInvalid" xml:space="preserve"><value>The parent does not match the selected country or level. Select another parent.</value></data>
 
   <!-- Field labels -->
   <data name="Field.Airport.Code" xml:space="preserve"><value>Airport code</value></data>
