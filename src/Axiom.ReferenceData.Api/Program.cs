@@ -1,13 +1,16 @@
-// 启动基础数据 API，并配置独立数据库、JWT 鉴权与健康检查。
+// 启动基础数据 API，配置 ABP 风格分层依赖注入、JWT 鉴权、OpenAPI 和健康检查（HttpApi 层）。
 using Axiom.Observability;
-using Axiom.ReferenceData.Api;
-using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Endpoints;
-using Axiom.ReferenceData.Api.Health;
-using Axiom.ReferenceData.Api.Messaging;
+using Axiom.ReferenceData.Application.Services;
+using Axiom.ReferenceData.Infrastructure;
+using Axiom.ReferenceData.Infrastructure.EfCore;
+using Axiom.ReferenceData.Infrastructure.Health;
+using Axiom.ReferenceData.HttpApi;
+using Axiom.ReferenceData.HttpApi.Endpoints;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,11 +19,38 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.ReferenceData.Api");
-builder.Services.AddDbContext<ReferenceDataDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ReferenceData")));
+
+// 国际化：默认语言与受支持语言来自 Localization 配置节，供语言协商与 AppService 回退链使用。
+var localizationOptions = builder.Configuration.GetSection(AxiomLocalizationOptions.SECTION)
+    .Get<AxiomLocalizationOptions>() ?? new AxiomLocalizationOptions();
+builder.Services.AddSingleton(localizationOptions);
+builder.Services.AddLocalization();
+builder.Services.AddRequestLocalization(options =>
+{
+    options.SetDefaultCulture(localizationOptions.DefaultCulture);
+    options.AddSupportedCultures(localizationOptions.SupportedCultures);
+    options.AddSupportedUICultures(localizationOptions.SupportedCultures);
+    options.FallBackToParentCultures = true;
+    options.FallBackToParentUICultures = true;
+    options.RequestCultureProviders =
+    [
+        new QueryStringRequestCultureProvider(),
+        new CookieRequestCultureProvider(),
+        new AcceptLanguageHeaderRequestCultureProvider()
+    ];
+});
+
+// Infrastructure：DbContext + 仓储 + 事务性消息 + 种子（由 Infrastructure 层自身注册）
+builder.Services.AddReferenceDataInfrastructure(builder.Configuration, builder.Environment);
+
+// Application：AppService
+builder.Services.AddScoped<IRegionAppService, RegionAppService>();
+builder.Services.AddScoped<IReferenceLocationAppService, ReferenceLocationAppService>();
+
 builder.Services.AddGrpc();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, _, _) =>
@@ -29,7 +59,7 @@ builder.Services.AddOpenApi(options =>
         {
             Title = "Axiom ReferenceData API",
             Version = "v1",
-            Description = "机场、港口和火车站基础档案 API。"
+            Description = "机场、港口和火车站基础档案 + 全球行政区 API。"
         };
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
@@ -53,14 +83,6 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
-builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
-builder.Services.AddScoped<OutboxPublishProcessor>();
-builder.Services.AddScoped<InboxProcessor>();
-if (!builder.Environment.IsEnvironment("Testing"))
-{
-    builder.Services.AddHostedService<OutboxPublisherWorker>();
-    builder.Services.AddHostedService<RabbitMqConsumerWorker>();
-}
 
 var authority = builder.Configuration["Authentication:Authority"] ?? "http://localhost:5101";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -94,12 +116,7 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
-{
-    using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider.GetRequiredService<ReferenceDataDbContext>().Database.MigrateAsync();
-}
-
+app.UseRequestLocalization();
 app.UseExceptionHandler();
 app.UseStatusCodePages(async context =>
 {
@@ -115,6 +132,7 @@ app.UseAuthorization();
 
 app.MapOpenApi("/openapi/v1.json").AllowAnonymous();
 app.MapReferenceLocationEndpoints();
+app.MapRegionEndpoints();
 app.MapGrpcService<ReferenceDataQueryGrpcService>().RequireAuthorization(ReferenceLocationEndpoints.READ_POLICY);
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions

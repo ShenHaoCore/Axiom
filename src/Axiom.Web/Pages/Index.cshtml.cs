@@ -2,12 +2,18 @@
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Models;
+using Axiom.Web.Clients;
+using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages;
 
-public sealed class IndexModel(ReferenceDataClient referenceDataClient) : PageModel
+public sealed class IndexModel(
+    ReferenceDataClient referenceDataClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     public IReadOnlyList<AirportResponse> Airports { get; private set; } = [];
 
@@ -44,14 +50,14 @@ public sealed class IndexModel(ReferenceDataClient referenceDataClient) : PageMo
         {
             ErrorMessage = response.StatusCode switch
             {
-                HttpStatusCode.Conflict => "机场代码已存在。",
-                HttpStatusCode.BadRequest => "提交内容未通过服务端校验，请检查后重试。",
-                _ => "新增机场失败，请稍后重试。"
+                HttpStatusCode.Conflict => localizer["Airports.CodeConflict"].Value,
+                HttpStatusCode.BadRequest => localizer["Common.ValidationFailed"].Value,
+                _ => localizer["Airports.CreateFailed"].Value
             };
             return await PageWithAirportsAsync(cancellationToken);
         }
 
-        StatusMessage = "机场已新增。";
+        StatusMessage = localizer["Airports.Created"].Value;
         return RedirectToPage();
     }
 
@@ -76,7 +82,7 @@ public sealed class IndexModel(ReferenceDataClient referenceDataClient) : PageMo
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = "无法加载机场列表，请稍后重试。";
+            ErrorMessage = localizer["Airports.LoadFailed"].Value;
             return null;
         }
 

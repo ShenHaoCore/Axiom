@@ -1,12 +1,16 @@
 // 为授权码流程提供基于 Identity  Cookie 的登录页面。
 using System.ComponentModel.DataAnnotations;
+using Axiom.AuthHub.Resources;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.AuthHub.Pages.Account;
 
-public sealed class LoginModel(SignInManager<IdentityUser> signInManager) : PageModel
+public sealed class LoginModel(
+    SignInManager<IdentityUser> signInManager,
+    IStringLocalizer<AuthResource> localizer) : PageModel
 {
     [BindProperty]
     public LoginInput Input { get; set; } = new();
@@ -33,7 +37,7 @@ public sealed class LoginModel(SignInManager<IdentityUser> signInManager) : Page
             lockoutOnFailure: true);
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(string.Empty, "用户名或密码无效。");
+            ModelState.AddModelError(string.Empty, localizer["Login.InvalidCredentials"]);
             return Page();
         }
 
@@ -42,15 +46,15 @@ public sealed class LoginModel(SignInManager<IdentityUser> signInManager) : Page
 
     public sealed class LoginInput
     {
-        [Required]
-        [StringLength(256)]
-        [Display(Name = "用户名")]
+        [Required(ErrorMessage = "Validation.UserNameRequired")]
+        [StringLength(256, ErrorMessage = "Validation.UserNameTooLong")]
+        [Display(Name = "Field.UserName")]
         public string? UserName { get; set; }
 
-        [Required]
-        [StringLength(128)]
+        [Required(ErrorMessage = "Validation.PasswordRequired")]
+        [StringLength(128, ErrorMessage = "Validation.PasswordTooLong")]
         [DataType(DataType.Password)]
-        [Display(Name = "密码")]
+        [Display(Name = "Field.Password")]
         public string? Password { get; set; }
     }
 }

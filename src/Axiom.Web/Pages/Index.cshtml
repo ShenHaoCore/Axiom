@@ -1,10 +1,10 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "机场档案";
+    ViewData["Title"] = Localizer["Airports.Title"];
 }
 
-<h1 class="mb-4">机场档案</h1>
+<h1 class="mb-4">@Localizer["Airports.Title"]</h1>
 
 @if (Model.StatusMessage is not null)
 {
@@ -16,7 +16,7 @@
 }
 
 <section class="mb-5" aria-labelledby="create-airport-title">
-    <h2 class="h4" id="create-airport-title">新增机场</h2>
+    <h2 class="h4" id="create-airport-title">@Localizer["Airports.CreateHeading"]</h2>
     <form method="post">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
         <div class="row g-3">
@@ -51,22 +51,23 @@
                 <span asp-validation-for="Input.Longitude" class="text-danger"></span>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-3">新增机场</button>
+        <button type="submit" class="btn btn-primary mt-3">@Localizer["Airports.CreateHeading"]</button>
     </form>
 </section>
 
 <section aria-labelledby="airport-list-title">
-    <h2 class="h4" id="airport-list-title">机场列表</h2>
+    <h2 class="h4" id="airport-list-title">@Localizer["Airports.ListHeading"]</h2>
     <div class="table-responsive">
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th scope="col">代码</th>
-                    <th scope="col">名称</th>
-                    <th scope="col">国家</th>
-                    <th scope="col">城市</th>
-                    <th scope="col">纬度</th>
-                    <th scope="col">经度</th>
+                    <th scope="col">@Localizer["Airports.Column.Code"]</th>
+                    <th scope="col">@Localizer["Airports.Column.Name"]</th>
+                    <th scope="col">@Localizer["Airports.Column.Country"]</th>
+                    <th scope="col">@Localizer["Airports.Column.City"]</th>
+                    <th scope="col">@Localizer["Airports.Column.Latitude"]</th>
+                    <th scope="col">@Localizer["Airports.Column.Longitude"]</th>
+                    <th scope="col">@Localizer["Common.Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -79,11 +80,14 @@
                         <td>@airport.City</td>
                         <td>@airport.Latitude</td>
                         <td>@airport.Longitude</td>
+                        <td>
+                            <a asp-page="/Airports/Translations" asp-route-id="@airport.Id">@Localizer["Translations.Manage"]</a>
+                        </td>
                     </tr>
                 }
                 @if (Model.Airports.Count == 0)
                 {
-                    <tr><td colspan="6">暂无机场档案。</td></tr>
+                    <tr><td colspan="7">@Localizer["Airports.Empty"]</td></tr>
                 }
             </tbody>
         </table>

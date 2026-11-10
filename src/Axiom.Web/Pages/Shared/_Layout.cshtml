@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,16 +17,34 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Index">机场档案</a>
+                            <a class="nav-link text-dark" asp-page="/Index">@Localizer["Nav.Airports"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/News/Index">新闻管理</a>
+                            <a class="nav-link text-dark" asp-page="/News/Index">@Localizer["Nav.News"]</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-page="/Regions/Index">@Localizer["Nav.Regions"]</a>
                         </li>
                     </ul>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <span class="navbar-text">@User.Identity.Name</span>
-                    }
+                    <div class="d-flex align-items-center gap-3">
+                        <form method="get" action="/culture" class="m-0">
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <select name="culture" class="form-select form-select-sm"
+                                    aria-label="@Localizer["Culture.Select"]"
+                                    onchange="this.form.submit()">
+                                @foreach (var culture in LocalizationOptions.SupportedCultures)
+                                {
+                                    <option value="@culture" selected="@(culture == System.Globalization.CultureInfo.CurrentUICulture.Name)">
+                                        @Localizer[$"Culture.{culture}"]
+                                    </option>
+                                }
+                            </select>
+                        </form>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <span class="navbar-text">@User.Identity.Name</span>
+                        }
+                    </div>
                 </div>
             </div>
         </nav>
@@ -38,7 +56,7 @@
     </div>
 
     <footer class="border-top footer text-muted">
-        <div class="container">Axiom 基础数据管理</div>
+        <div class="container">@Localizer["Layout.Footer"]</div>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

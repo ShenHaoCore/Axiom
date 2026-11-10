@@ -2,8 +2,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Models;
+using Axiom.ReferenceData.Infrastructure.Messaging;
+using Axiom.ReferenceData.Application.Dtos;
+using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using Axiom.SharedKernel.Models;
 using Axiom.SharedKernel.Security;
 using FluentAssertions;
@@ -41,7 +43,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         var content = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.OK, content);
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         result.Should().NotBeNull();
         result!.Page.Should().Be(1);
         result.PageSize.Should().Be(20);
@@ -71,7 +73,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ValidAirport());
         var createResponse = await _client.SendAsync(createRequest);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await createResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var created = await createResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         created.Should().NotBeNull();
         created!.Code.Should().Be("SHA");
         created.CountryCode.Should().Be("CN");
@@ -91,7 +93,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             createdETag);
         var updateResponse = await _client.SendAsync(updateRequest);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         updated!.Name.Should().Contain("更新");
         var updatedETag = updateResponse.Headers.ETag?.ToString();
         updatedETag.Should().NotBeNullOrWhiteSpace();
@@ -124,14 +126,12 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ReferenceDataDbContext>();
-        dbContext.ReferenceLocations.AddRange(Enumerable.Range(0, 25).Select(index => new ReferenceLocation
-        {
-            Id = Guid.NewGuid(),
-            Type = ReferenceLocationType.Airport,
-            Code = $"P{index:00}",
-            Name = $"分页测试机场 {index:00}",
-            CountryCode = "CN"
-        }));
+        dbContext.ReferenceLocations.AddRange(Enumerable.Range(0, 25).Select(index =>
+            ReferenceLocation.Create(
+                ReferenceLocationType.Airport,
+                $"AA{(char)('A' + index)}",
+                $"分页测试机场 {index:00}",
+                "CN")));
         await dbContext.SaveChangesAsync();
         var name = Uri.EscapeDataString("分页测试");
 
@@ -141,7 +141,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ReferenceDataPermissions.READ);
         var firstResponse = await _client.SendAsync(firstRequest);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var firstPage = await firstResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var firstPage = await firstResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         firstPage!.TotalCount.Should().Be(25);
         firstPage.Page.Should().Be(1);
         firstPage.PageSize.Should().Be(20);
@@ -153,17 +153,17 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             $"/api/reference-data/airports?name={name}&page=3&pageSize=10",
             ReferenceDataPermissions.READ);
         var lastResponse = await _client.SendAsync(lastRequest);
-        var lastPage = await lastResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
+        var lastPage = await lastResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
         lastPage!.Items.Should().HaveCount(5);
-        lastPage.Items.First().Code.Should().Be("P20");
+        lastPage.Items.First().Code.Should().Be("AAU");
 
         using var codeRequest = CreateRequest(
             HttpMethod.Get,
-            "/api/reference-data/airports?code=p07",
+            "/api/reference-data/airports?code=aah",
             ReferenceDataPermissions.READ);
         var codeResponse = await _client.SendAsync(codeRequest);
-        var codeResult = await codeResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationResponse>>();
-        codeResult!.Items.Should().ContainSingle(item => item.Code == "P07");
+        var codeResult = await codeResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceLocationDto>>();
+        codeResult!.Items.Should().ContainSingle(item => item.Code == "AAH");
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         deleteProblem!.Status.Should().Be((int)HttpStatusCode.Conflict);
 
         var getResponse = await _client.SendAsync(CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
-        var unchanged = await getResponse.Content.ReadFromJsonAsync<ReferenceLocationResponse>();
+        var unchanged = await getResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         unchanged!.Name.Should().Be("并发测试机场");
 
         using var deleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, etag);
@@ -292,10 +292,54 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         problem!.Errors.Should().NotBeEmpty();
     }
 
+    [Fact]
+    public async Task Translations_are_merged_by_request_culture_and_fall_back_to_default()
+    {
+        var input = ValidAirport() with { Code = "TRN", Name = "翻译测试机场" };
+        using var createRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/reference-data/airports",
+            ManagePermissions,
+            input);
+        var createResponse = await _client.SendAsync(createRequest);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var location = createResponse.Headers.Location!.OriginalString;
+
+        using var saveRequest = CreateRequest(HttpMethod.Put, $"{location}/translations/en", ManagePermissions);
+        saveRequest.Content = JsonContent.Create(
+            new SaveTranslationsInput(new Dictionary<string, string> { ["Name"] = "Translation Test Airport" }));
+        var saveResponse = await _client.SendAsync(saveRequest);
+        saveResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var saved = await saveResponse.Content.ReadFromJsonAsync<TranslationDto>();
+        saved!.Values["Name"].Should().Be("Translation Test Airport");
+
+        var defaultResponse = await _client.SendAsync(
+            CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
+        var defaultDto = await defaultResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        defaultDto!.Name.Should().Be("翻译测试机场");
+
+        using var englishRequest = CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ);
+        englishRequest.Headers.Add("Accept-Language", "en");
+        var englishResponse = await _client.SendAsync(englishRequest);
+        var englishDto = await englishResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        englishDto!.Name.Should().Be("Translation Test Airport");
+
+        using var deleteTranslationRequest =
+            CreateRequest(HttpMethod.Delete, $"{location}/translations/en", ManagePermissions);
+        var deleteTranslationResponse = await _client.SendAsync(deleteTranslationRequest);
+        deleteTranslationResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var afterDeleteRequest = CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ);
+        afterDeleteRequest.Headers.Add("Accept-Language", "en");
+        var afterDeleteResponse = await _client.SendAsync(afterDeleteRequest);
+        var afterDeleteDto = await afterDeleteResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
+        afterDeleteDto!.Name.Should().Be("翻译测试机场");
+    }
+
     private static string ManagePermissions =>
         $"{ReferenceDataPermissions.READ},{ReferenceDataPermissions.MANAGE}";
 
-    private static UpsertReferenceLocationRequest ValidAirport() => new(
+    private static UpsertReferenceLocationInput ValidAirport() => new(
         "sha",
         "上海浦东国际机场",
         "cn",
@@ -323,7 +367,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         HttpMethod method,
         string uri,
         string permissions,
-        UpsertReferenceLocationRequest body,
+        UpsertReferenceLocationInput body,
         string? ifMatch = null)
     {
         var request = CreateRequest(method, uri, permissions, ifMatch);

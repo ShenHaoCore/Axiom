@@ -1,7 +1,8 @@
 // 验证消费者按 EventId + Consumer 组合实现幂等去重。
-using Axiom.ReferenceData.Api.Data;
-using Axiom.ReferenceData.Api.Messaging;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using FluentAssertions;
+
+using Axiom.ReferenceData.Infrastructure.EfCore;
 
 namespace Axiom.IntegrationTests;
 

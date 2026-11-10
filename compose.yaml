@@ -36,6 +36,19 @@ services:
       timeout: 5s
       retries: 20
 
+  db-migrator:
+    build:
+      context: .
+      dockerfile: src/Axiom.DbMigrator/Dockerfile
+    restart: "no"
+    environment:
+      ConnectionStrings__News: Host=postgres;Port=5432;Database=axiom_news;Username=axiom;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__ReferenceData: Host=postgres;Port=5432;Database=axiom_reference_data;Username=axiom;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Auth: Host=postgres;Port=5432;Database=axiom_auth;Username=axiom;Password=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   authhub:
     build:
       context: .
@@ -46,7 +59,8 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Auth: Host=postgres;Port=5432;Database=axiom_auth;Username=axiom;Password=${POSTGRES_PASSWORD}
       OpenIddict__Issuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Oidc__RedirectUris__0: ${PUBLIC_WEB_CALLBACK_URL:-http://localhost:3000/callback}
+      Oidc__Clients__0__ClientId: axiom-web
+      Oidc__Clients__0__RedirectUris__0: ${PUBLIC_WEB_CALLBACK_URL:-http://localhost:3000/callback}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
       SeedUser__Password: ${DEMO_USER_PASSWORD:-}
     ports:
@@ -54,6 +68,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-migrator:
+        condition: service_completed_successfully
 
   reference-data:
     build:
@@ -80,6 +96,8 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_started
+      db-migrator:
+        condition: service_completed_successfully
 
   news-api:
     build:
@@ -101,6 +119,8 @@ services:
         condition: service_healthy
       authhub:
         condition: service_started
+      db-migrator:
+        condition: service_completed_successfully
 
   gateway:
     build:

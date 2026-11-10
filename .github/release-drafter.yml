@@ -1,0 +1,55 @@
+name-template: 'v$RESOLVED_VERSION 发布'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '✨ 新功能 (feat)'
+    labels:
+      - 'feat'
+      - 'feature'
+  - title: '🐛 修复 (fix)'
+    labels:
+      - 'fix'
+      - 'bug'
+  - title: '🔁 重构 (refactor)'
+    labels:
+      - 'refactor'
+  - title: '📦 构建 / CI (chore)'
+    labels:
+      - 'chore'
+      - 'build'
+      - 'ci'
+  - title: '📝 文档 (docs)'
+    labels:
+      - 'docs'
+  - title: '⚡ 性能 / 安全'
+    labels:
+      - 'perf'
+      - 'security'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_`#'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  ## 摘要
+  $CHANGES
+
+  ## 贡献者
+  $CONTRIBUTORS
+
+  ## 升级指南
+  <!-- 如果有破坏性变更，写在这里；否则删除本节 -->
+
+  ## 验证命令
+  ```powershell
+  dotnet build Axiom.slnx -c Release
+  dotnet test Axiom.slnx -c Release
+  npm run build --prefix frontend
+  ```

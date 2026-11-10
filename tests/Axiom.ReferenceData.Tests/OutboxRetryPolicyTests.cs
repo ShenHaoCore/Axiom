@@ -1,5 +1,5 @@
 // 验证 Outbox 失败后的退避间隔按指数增长并封顶。
-using Axiom.ReferenceData.Api.Messaging;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using FluentAssertions;
 
 namespace Axiom.ReferenceData.Tests;
