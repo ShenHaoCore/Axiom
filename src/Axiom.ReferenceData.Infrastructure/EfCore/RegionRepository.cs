@@ -54,6 +54,24 @@ public sealed class RegionRepository(ReferenceDataDbContext dbContext) : IRegion
             .Where(r => r.CountryCode == countryCode && (int)r.Level <= depth)
             .ToListAsync(ct);
 
+    public async Task<List<Region>> ListByParentAsync(Guid parentId, CancellationToken ct = default) =>
+        await dbContext.Regions.AsNoTracking()
+            .Where(r => r.ParentId == parentId)
+            .OrderBy(r => r.Code)
+            .ToListAsync(ct);
+
+    public async Task<List<Region>> ListByParentIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken ct = default)
+    {
+        if (parentIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.Regions.AsNoTracking()
+            .Where(r => r.ParentId != null && parentIds.Contains(r.ParentId.Value))
+            .ToListAsync(ct);
+    }
+
     public async Task<bool> AnyByUniqueKeyAsync(RegionLevel level, string countryCode, string code, CancellationToken ct = default) =>
         await dbContext.Regions.AnyAsync(r => r.CountryCode == countryCode && r.Level == level && r.Code == code, ct);
 

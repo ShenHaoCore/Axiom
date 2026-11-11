@@ -80,6 +80,50 @@ public sealed class RegionAppService(
         return BuildTree(country, byParent, lookup);
     }
 
+    public async Task<IReadOnlyList<RegionChildDto>> GetChildrenAsync(
+        Guid id,
+        string? culture = null,
+        CancellationToken ct = default)
+    {
+        var parent = await repository.GetByIdAsNoTrackingAsync(id, ct)
+            ?? throw new RegionNotFoundException(id);
+
+        var children = await repository.ListByParentAsync(id, ct);
+        var grandchildren = await repository.ListByParentIdsAsync(
+            children.Select(child => child.Id).ToArray(), ct);
+        var byParent = grandchildren
+            .GroupBy(grandchild => grandchild.ParentId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var chain = localization.CultureChain(culture);
+        var translations = await repository.ListTranslationsAsync(
+            children.Select(child => child.Id).ToArray(),
+            chain,
+            ct);
+        var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
+
+        return children
+            .Select(child =>
+            {
+                byParent.TryGetValue(child.Id, out var childChildren);
+                // 同名检测使用默认语言名称：直辖市在数据源中就是省、市两条同名记录。
+                var sameNameChildCount = childChildren?.Count(grandchild =>
+                    string.Equals(grandchild.Name?.Trim(), child.Name?.Trim(), StringComparison.Ordinal)) ?? 0;
+
+                return new RegionChildDto(
+                    child.Id,
+                    (int)child.Level,
+                    child.CountryCode,
+                    child.Admin1Code,
+                    child.Code,
+                    lookup.Find(child.Id, RegionTranslationFields.Name) ?? child.Name,
+                    child.Population,
+                    childChildren?.Count ?? 0,
+                    sameNameChildCount);
+            })
+            .ToList();
+    }
+
     public async Task<RegionDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsNoTrackingAsync(id, ct);

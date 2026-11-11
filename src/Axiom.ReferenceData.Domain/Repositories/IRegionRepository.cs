@@ -22,6 +22,12 @@ public interface IRegionRepository
 
     Task<List<Region>> ListForTreeAsync(string countryCode, int depth, CancellationToken ct = default);
 
+    /// <summary>读取指定父节点的直接子级（按代码排序），供层级树按级惰性加载。</summary>
+    Task<List<Region>> ListByParentAsync(Guid parentId, CancellationToken ct = default);
+
+    /// <summary>一次读取多个父节点的直接子级（用于统计各子级的下级数量与同名子级检测）。</summary>
+    Task<List<Region>> ListByParentIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken ct = default);
+
     Task<bool> AnyByUniqueKeyAsync(RegionLevel level, string countryCode, string code, CancellationToken ct = default);
     Task<bool> HasChildrenAsync(Guid parentId, CancellationToken ct = default);
 

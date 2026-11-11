@@ -32,6 +32,10 @@ public static class RegionEndpoints
             .Produces<RegionTreeDto>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
+        group.MapGet("/{id:guid}/children", HandleChildren)
+            .Produces<IReadOnlyList<RegionChildDto>>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         group.MapGet("/{id:guid}", HandleGet)
             .Produces<RegionDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -110,6 +114,22 @@ public static class RegionEndpoints
         catch (RegionCountryNotFoundException)
         {
             return CountryNotFound(localizer, countryCode);
+        }
+    }
+
+    private static async Task<IResult> HandleChildren(
+        Guid id,
+        IRegionAppService app,
+        IStringLocalizer<ApiErrorMessages> localizer,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return Results.Ok(await app.GetChildrenAsync(id, CultureInfo.CurrentUICulture.Name, ct));
+        }
+        catch (RegionNotFoundException)
+        {
+            return RegionNotFound(localizer, id);
         }
     }
 

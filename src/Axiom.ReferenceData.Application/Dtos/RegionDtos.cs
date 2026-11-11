@@ -27,6 +27,21 @@ public sealed record RegionTreeDto(
     long? Population,
     IReadOnlyList<RegionTreeDto> Children);
 
+/// <summary>
+/// 层级树的单级子项：ChildCount 支撑惰性树的展开箭头渲染，
+/// SameNameChildCount 支撑前端把直辖市（与父级同名的下级）合并展示。
+/// </summary>
+public sealed record RegionChildDto(
+    Guid Id,
+    int Level,
+    string CountryCode,
+    string? Admin1Code,
+    string Code,
+    string Name,
+    long? Population,
+    int ChildCount,
+    int SameNameChildCount);
+
 public sealed record CreateRegionInput(
     string Level,
     string CountryCode,

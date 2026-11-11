@@ -12,6 +12,12 @@ public interface IRegionAppService
     /// <summary>按语言合并译文后返回国家层级树。</summary>
     Task<RegionTreeDto?> GetTreeAsync(string countryCode, int depth, string? culture = null, CancellationToken ct = default);
 
+    /// <summary>
+    /// 返回指定节点的直接子级（按代码排序、合并译文），并附带每个子级的下级数量与同名下级数量，
+    /// 供客户端惰性加载层级树。父节点不存在时抛出 RegionNotFoundException。
+    /// </summary>
+    Task<IReadOnlyList<RegionChildDto>> GetChildrenAsync(Guid id, string? culture = null, CancellationToken ct = default);
+
     Task<RegionDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default);
 
     Task<(RegionDto Dto, Uri LocationUri)> CreateAsync(CreateRegionInput input, CancellationToken ct = default);
