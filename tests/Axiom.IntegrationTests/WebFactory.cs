@@ -99,6 +99,11 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 return RegionTree(request);
             }
 
+            if (path.StartsWith("/api/regions/", StringComparison.Ordinal) && path.EndsWith("/children"))
+            {
+                return RegionChildren(path);
+            }
+
             if (path.StartsWith("/api/regions/", StringComparison.Ordinal))
             {
                 return await RegionItemAsync(request, path, canManage, cancellationToken);
@@ -330,6 +335,40 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 .OrderBy(child => child.Code)
                 .Select(BuildTree)
                 .ToList());
+
+        // 单级子级：childCount 渲染展开箭头，sameNameChildCount 支撑直辖市合并展示。
+        private HttpResponseMessage RegionChildren(string path)
+        {
+            var idSegment = path.Split('/', StringSplitOptions.RemoveEmptyEntries) switch
+            {
+                [_, _, var id, _] when Guid.TryParse(id, out var parsed) => parsed,
+                _ => Guid.Empty
+            };
+
+            if (!_regions.TryGetValue(idSegment, out var parent))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+
+            var items = _regions.Values
+                .Where(child => child.ParentId == parent.Id)
+                .OrderBy(child => child.Code)
+                .Select(child => new
+                {
+                    child.Id,
+                    child.Level,
+                    child.CountryCode,
+                    child.Admin1Code,
+                    child.Code,
+                    child.Name,
+                    child.Population,
+                    childCount = _regions.Values.Count(grandchild => grandchild.ParentId == child.Id),
+                    sameNameChildCount = _regions.Values.Count(grandchild =>
+                        grandchild.ParentId == child.Id
+                        && string.Equals(grandchild.Name?.Trim(), child.Name?.Trim(), StringComparison.Ordinal))
+                }).ToList();
+            return Json(HttpStatusCode.OK, items);
+        }
 
         private async Task<HttpResponseMessage> RegionItemAsync(
             HttpRequestMessage request,

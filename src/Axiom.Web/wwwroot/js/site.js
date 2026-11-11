@@ -113,6 +113,63 @@
         });
     }
 
+    // ---------- 行政区树：按级惰性加载 ----------
+
+    // 拉取某节点的子级片段；已加载或加载中的容器直接跳过。
+    function loadRegionChildren(container) {
+        var url = container.getAttribute('data-children-url');
+        if (!url
+            || container.getAttribute('data-loaded') === '1'
+            || container.getAttribute('data-loading') === '1') {
+            return;
+        }
+
+        container.setAttribute('data-loading', '1');
+        container.innerHTML = '<span class="region-children-loading" aria-hidden="true"></span>';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                return response.text();
+            })
+            .then(function (html) {
+                container.innerHTML = html;
+                container.setAttribute('data-loaded', '1');
+            })
+            .catch(function () {
+                // 失败保留重试入口：点击后重新拉取。
+                container.innerHTML = '';
+                var retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'region-children-retry';
+                retry.textContent = container.getAttribute('data-error-text') || 'Load failed';
+                retry.addEventListener('click', function () {
+                    loadRegionChildren(container);
+                });
+                container.appendChild(retry);
+            })
+            .finally(function () {
+                container.removeAttribute('data-loading');
+            });
+    }
+
+    // 点击展开箭头时触发加载；Bootstrap collapse 只负责展开动画与 aria 状态。
+    document.addEventListener('click', function (event) {
+        var toggle = event.target.closest('.region-toggle[data-bs-toggle="collapse"]');
+        if (!toggle) {
+            return;
+        }
+
+        var target = document.getElementById(toggle.getAttribute('aria-controls'));
+        var container = target && target.querySelector('[data-children-container]');
+        if (container) {
+            loadRegionChildren(container);
+        }
+    });
+
     // ---------- Toast 通知 ----------
 
     var toastContainer = null;

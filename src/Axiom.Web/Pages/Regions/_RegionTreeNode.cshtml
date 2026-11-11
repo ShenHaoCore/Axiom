@@ -1,9 +1,8 @@
-@model Axiom.Web.Models.RegionTreeView
-@using Axiom.Web.Models
+@model Axiom.Web.Models.RegionNodeViewModel
 
 <div class="region-node">
     <div class="region-row">
-        @if (Model.Children.Count > 0)
+        @if (Model.HasChildren)
         {
             <a class="region-toggle" data-bs-toggle="collapse"
                href="#node-@Model.Id" role="button" aria-expanded="false" aria-controls="node-@Model.Id" aria-label="@Model.Name">
@@ -14,7 +13,7 @@
         {
             <span class="region-leaf-dot" aria-hidden="true">•</span>
         }
-        <span class="badge-soft @LevelClass(Model.Level)">@LevelLabel(Model.Level)</span>
+        <span class="badge-soft @LevelClass(Model.Level)">@LevelLabel(Model)</span>
         <a asp-page="/Regions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
         @if (Model.Population.HasValue)
         {
@@ -22,22 +21,23 @@
         }
         <a class="btn btn-ghost ms-auto" asp-page="/Regions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
     </div>
-    @if (Model.Children.Count > 0)
+    @if (Model.HasChildren)
     {
+        @* 子级不在服务端预渲染：首次展开时由 site.js 惰性拉取 _RegionChildren 片段。 *@
         <div id="node-@Model.Id" class="collapse">
-            <div class="region-children mt-1">
-                @foreach (var child in Model.Children)
-                {
-                    <partial name="_RegionTreeNode" model="child" />
-                }
-            </div>
+            <div class="region-children" data-children-container
+                 data-children-url="@Url.Page("/Regions/Index", "Children", new { id = Model.Id })"
+                 data-error-text="@Localizer["Regions.LoadChildrenFailed"]"></div>
         </div>
     }
 </div>
 
 @functions {
-    string LevelLabel(int level) =>
-        level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{level}"].Value : $"L{level}";
+    // 直辖市（与省级同名的市级重复已合并）单独命名，与普通省/州区分。
+    string LevelLabel(Axiom.Web.Models.RegionNodeViewModel node) =>
+        node.IsMunicipality
+            ? Localizer["Regions.Municipality"].Value
+            : node.Level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{node.Level}"].Value : $"L{node.Level}";
 
     static string LevelClass(int level) =>
         level is >= 1 and <= 3 ? $"level-{level}" : "level-default";

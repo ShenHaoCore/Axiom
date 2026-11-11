@@ -38,6 +38,9 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
             null,
             cancellationToken);
 
+    public Task<HttpResponseMessage> GetChildrenAsync(Guid parentId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/{parentId}/children", null, cancellationToken);
+
     public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/{id}", null, cancellationToken);
 

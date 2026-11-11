@@ -174,7 +174,22 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         using var indexResponse = await _client.SendAsync(indexRequest);
         indexResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var index = await indexResponse.Content.ReadAsStringAsync();
-        index.Should().Contain("/Regions/Create").And.Contain($"/Regions/Edit/{WebFactory.RegionCityId}");
+        // 层级树服务端只渲染国家根节点，子级在展开时惰性加载。
+        index.Should().Contain("/Regions/Create").And.Contain($"/Regions/Detail/{WebFactory.RegionCountryId}");
+
+        using var childrenRequest = CreateRequest(
+            HttpMethod.Get, $"/Regions?handler=Children&id={WebFactory.RegionCountryId}");
+        using var childrenResponse = await _client.SendAsync(childrenRequest);
+        childrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var children = WebUtility.HtmlDecode(await childrenResponse.Content.ReadAsStringAsync());
+        children.Should().Contain("江苏").And.Contain($"/Regions/Edit/{WebFactory.RegionAdmin1Id}");
+
+        using var grandChildrenRequest = CreateRequest(
+            HttpMethod.Get, $"/Regions?handler=Children&id={WebFactory.RegionAdmin1Id}");
+        using var grandChildrenResponse = await _client.SendAsync(grandChildrenRequest);
+        grandChildrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var grandChildren = WebUtility.HtmlDecode(await grandChildrenResponse.Content.ReadAsStringAsync());
+        grandChildren.Should().Contain("苏州").And.Contain($"/Regions/Edit/{WebFactory.RegionCityId}");
 
         var edit = await GetFormAsync($"/Regions/Edit/{WebFactory.RegionCityId}");
         WebUtility.HtmlDecode(edit.Html).Should().Contain("苏州");
@@ -243,7 +258,9 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         content.Should().Contain("仍有子节点");
-        using var treeRequest = CreateRequest(HttpMethod.Get, "/Regions?countryCode=CN");
+        // 删除被拒后子级仍在：通过惰性加载接口确认江苏下还有苏州。
+        using var treeRequest = CreateRequest(
+            HttpMethod.Get, $"/Regions?handler=Children&id={WebFactory.RegionAdmin1Id}");
         using var treeResponse = await _client.SendAsync(treeRequest);
         treeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         WebUtility.HtmlDecode(await treeResponse.Content.ReadAsStringAsync()).Should().Contain("苏州");

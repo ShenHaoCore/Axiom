@@ -30,7 +30,7 @@
     <div class="filter-field">
         <label class="form-label" for="countryCode">@Localizer["Regions.Country"]</label>
         <select class="form-select" id="countryCode" name="countryCode" data-auto-submit>
-            <option value="">@Localizer["Regions.SelectCountry"]</option>
+            <option value="all" selected="@(Model.SelectedCountryCode == null)">@Localizer["Regions.AllCountries"]</option>
             @foreach (var c in Model.Countries)
             {
                 <option value="@c.CountryCode" selected="@(Model.SelectedCountryCode == c.CountryCode)">
@@ -131,31 +131,33 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
     </div>
 }
 
-<!-- 层级树 -->
-@if (Model.Tree is not null)
-{
-    <section class="card data-card" aria-labelledby="tree-title">
-        <div class="card-toolbar">
-            <div class="card-toolbar-title">
-                <h2 id="tree-title">@Model.Tree.Name</h2>
-                <span class="badge-soft">@Model.Tree.CountryCode</span>
-            </div>
-            <div class="card-toolbar-meta">
-                @Localizer["Regions.TreeTitle"]
-            </div>
+<!-- 层级树：所有国家同属一棵树，国家为根节点，子级在展开时惰性加载 -->
+<section class="card data-card" aria-labelledby="tree-title">
+    <div class="card-toolbar">
+        <div class="card-toolbar-title">
+            <h2 id="tree-title">@Localizer["Regions.TreeTitle"]</h2>
         </div>
-        <div class="card-body">
-            @if (Model.Tree.Children.Count == 0)
-            {
-                <p class="text-muted mb-0">@Localizer["Regions.TreeEmpty"]</p>
-            }
-            else
-            {
-                <partial name="_RegionTreeNode" model="@Model.Tree" />
-            }
+        <div class="card-toolbar-meta">
+            <span class="count-pill">@Model.Countries.Count</span>
         </div>
-    </section>
-}
+    </div>
+    <div class="card-body">
+        @if (Model.Countries.Count == 0)
+        {
+            <p class="text-muted mb-0">@Localizer["Regions.TreeEmpty"]</p>
+        }
+        else
+        {
+            @foreach (var country in Model.Countries)
+            {
+                <partial name="_RegionTreeNode"
+                         model="new Axiom.Web.Models.RegionNodeViewModel(
+                             country.Id, country.Level, country.Code, country.Name,
+                             country.Population, HasChildren: true, IsMunicipality: false)" />
+            }
+        }
+    </div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

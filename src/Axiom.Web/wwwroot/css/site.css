@@ -355,53 +355,6 @@ hr {
   color: #c9c6ff;
 }
 
-/* 一级分类：下拉分组 */
-.app-header-group {
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.app-header-link.dropdown-toggle::after {
-  margin-left: 1px;
-  border-top-color: currentColor;
-  opacity: 0.7;
-}
-
-.app-header-dropdown {
-  min-width: 184px;
-  margin-top: 4px;
-  padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  background: #23265e;
-  box-shadow: 0 16px 36px rgba(9, 11, 45, 0.45);
-}
-
-.app-header-dropdown .dropdown-item {
-  padding: 7px 10px;
-  border-radius: 6px;
-  color: var(--axiom-topbar-mute);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.app-header-dropdown .dropdown-item:hover,
-.app-header-dropdown .dropdown-item:focus {
-  background: var(--axiom-topbar-hover);
-  color: #fff;
-}
-
-.app-header-dropdown .dropdown-item.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  font-weight: 600;
-}
-
-.app-header-dropdown .dropdown-item.active svg {
-  color: #c9c6ff;
-}
-
 .app-header-actions {
   display: flex;
   align-items: center;
@@ -1706,9 +1659,50 @@ textarea.form-control {
 }
 
 .region-children {
-  margin-left: 12px;
-  padding-left: 12px;
+  /* 引导线对齐父级三角箭头中心：行内左边距 8px + 箭头按钮半宽 11px = 19px，线右缘落在 19px。 */
+  margin-left: 18px;
+  /* 上下留 2px 呼吸空间，同时让引导线贴住父行底边、延伸过最后一行。 */
+  padding: 2px 0 2px 12px;
   border-left: 1px solid var(--axiom-border);
+}
+
+/* ---------- 惰性加载 ---------- */
+
+/* 子级加载中的转圈指示器。 */
+.region-children-loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin: 6px 0;
+  border: 2px solid var(--axiom-border-strong);
+  border-top-color: var(--axiom-accent);
+  border-radius: 50%;
+  animation: region-children-spin 0.7s linear infinite;
+}
+
+@keyframes region-children-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 子级加载失败的重试按钮（文案由 data-error-text 提供）。 */
+.region-children-retry {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  margin: 4px 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--axiom-radius-xs);
+  background: transparent;
+  color: var(--axiom-danger, #c0392b);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.region-children-retry:hover {
+  background: var(--axiom-surface-sunken);
 }
 
 /* =========================================================
