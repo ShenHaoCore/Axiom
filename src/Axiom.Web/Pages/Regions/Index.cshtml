@@ -153,7 +153,8 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
                 <partial name="_RegionTreeNode"
                          model="new Axiom.Web.Models.RegionNodeViewModel(
                              country.Id, country.Level, country.Code, country.Name,
-                             country.Population, HasChildren: true, IsMunicipality: false)" />
+                             country.Population, HasChildren: true, IsMunicipality: false,
+                             IsAutonomousRegion: false, IsSpecialAdministrativeRegion: false)" />
             }
         }
     </div>

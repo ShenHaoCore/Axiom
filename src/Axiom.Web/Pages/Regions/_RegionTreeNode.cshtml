@@ -33,11 +33,15 @@
 </div>
 
 @functions {
-    // 直辖市（与省级同名的市级重复已合并）单独命名，与普通省/州区分。
+    // 直辖市、自治区、特别行政区单独命名，与普通省/州区分。
     string LevelLabel(Axiom.Web.Models.RegionNodeViewModel node) =>
         node.IsMunicipality
             ? Localizer["Regions.Municipality"].Value
-            : node.Level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{node.Level}"].Value : $"L{node.Level}";
+            : node.IsSpecialAdministrativeRegion
+                ? Localizer["Regions.SpecialAdministrativeRegion"].Value
+                : node.IsAutonomousRegion
+                    ? Localizer["Regions.AutonomousRegion"].Value
+                    : node.Level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{node.Level}"].Value : $"L{node.Level}";
 
     static string LevelClass(int level) =>
         level is >= 1 and <= 3 ? $"level-{level}" : "level-default";

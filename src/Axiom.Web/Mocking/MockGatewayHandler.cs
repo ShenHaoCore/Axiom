@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
@@ -13,6 +14,14 @@ namespace Axiom.Web.Mocking;
 
 public sealed class MockGatewayHandler : DelegatingHandler
 {
+    // 与真实网关一致的语言协商规则，供列表/详情套用已保存的译文。
+    private readonly AxiomLocalizationOptions localization;
+
+    public MockGatewayHandler(AxiomLocalizationOptions localization)
+    {
+        this.localization = localization;
+    }
+
     // 路径与各网关客户端共享同一常量，避免双份维护。
     private static readonly string AIRPORTS_PATH = ReferenceDataClient.AIRPORTS_PATH;
     private static readonly string ARTICLES_PATH = NewsClient.ARTICLES_PATH;
@@ -74,6 +83,62 @@ public sealed class MockGatewayHandler : DelegatingHandler
     // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region。
     private static readonly Dictionary<string, Dictionary<string, string>> Translations = new();
 
+    // 本地 Mock 没有数据库，预置英文译文，保证切换语言后能直接看到业务数据切换。
+    static MockGatewayHandler()
+    {
+        SeedTranslations();
+    }
+
+    private static void SeedTranslations()
+    {
+        const string culture = "en";
+
+        void Set(string kind, Guid id, params (string Field, string Value)[] fields)
+        {
+            var key = $"{kind}/{id}/{culture}";
+            if (!Translations.TryGetValue(key, out var values))
+            {
+                Translations[key] = values = new Dictionary<string, string>(StringComparer.Ordinal);
+            }
+
+            foreach (var (field, value) in fields)
+            {
+                values[field] = value;
+            }
+        }
+
+        Set("airport", Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            ("Name", "Beijing Capital International Airport"), ("City", "Beijing"));
+        Set("airport", Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            ("Name", "John F. Kennedy International Airport"), ("City", "New York"));
+        Set("airport", Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            ("Name", "London Heathrow Airport"), ("City", "London"));
+        Set("airport", Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            ("Name", "Narita International Airport"), ("City", "Tokyo"));
+
+        // 行政区主数据已带 AsciiName，直接作为英文名，覆盖全部层级节点。
+        foreach (var region in Regions)
+        {
+            if (!string.IsNullOrWhiteSpace(region.AsciiName))
+            {
+                Set("region", region.Id, ("Name", region.AsciiName));
+            }
+        }
+
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
+            ("Title", "Axiom Platform 2026 Spring Release"),
+            ("Summary", "This release adds the region module, internationalization and developer mock support."),
+            ("Content", "Axiom shipped its 2026 spring release this month, covering region hierarchy browsing, multilingual UI and business data, and a mock authentication mode for developers."));
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),
+            ("Title", "Airport Data Onboarding Guide"),
+            ("Summary", "How to create airport records and maintain multilingual names."),
+            ("Content", "This guide walks through airport onboarding: enter the IATA code, country and city coordinates, then add English names on the translation page for multilingual display."));
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"),
+            ("Title", "Global Region Dataset Upgraded to v2"),
+            ("Summary", "The region dataset now includes population and geographic coordinates."),
+            ("Content", "Region dataset v2 adds population estimates and coordinates for province and city nodes, and fixes several administrative code mappings."));
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -111,9 +176,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
         {
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 List<AirportResponse> snapshot;
                 lock (Gate) { snapshot = [.. Airports]; }
-                return Json(Paged(snapshot), HttpStatusCode.OK);
+                return Json(Paged(snapshot.Select(airport => Localize(airport, requestCulture))), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -156,12 +222,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
                     var airport = Airports.FirstOrDefault(a => a.Id == id);
                     return airport is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定机场。")
-                        : Json(airport, HttpStatusCode.OK, AirportETags[id].ToString("N"));
+                        : Json(Localize(airport, requestCulture), HttpStatusCode.OK, AirportETags[id].ToString("N"));
                 }
             }
 
@@ -241,9 +308,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
         {
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 List<NewsArticleView> snapshot;
                 lock (Gate) { snapshot = [.. Articles]; }
-                return Json(Paged(snapshot), HttpStatusCode.OK);
+                return Json(Paged(snapshot.Select(article => Localize(article, requestCulture))), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -284,12 +352,9 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 var index = Articles.FindIndex(a => a.Id == id);
                 if (request.Method == HttpMethod.Get)
                 {
-                    if (index < 0)
-                    {
-                        return Json(SampleArticle(id), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
-                    }
-
-                    return Json(Articles[index], HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
+                    var requestCulture = ResolveCulture(request);
+                    var article = index < 0 ? SampleArticle(id) : Articles[index];
+                    return Json(Localize(article, requestCulture), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
                 }
 
                 if (request.Method == HttpMethod.Put)
@@ -362,6 +427,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
             if (request.Method == HttpMethod.Get)
             {
                 var query = ParseQuery(request.RequestUri?.Query);
+                var requestCulture = ResolveCulture(request);
                 var level = int.TryParse(query.GetValueOrDefault("level"), out var lv) ? lv : (int?)null;
                 var country = query.GetValueOrDefault("countryCode");
                 var keyword = query.GetValueOrDefault("q");
@@ -379,7 +445,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                         .ToList();
                 }
 
-                return Json(Paged(matches), HttpStatusCode.OK);
+                return Json(Paged(matches.Select(region => Localize(region, requestCulture))), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -425,7 +491,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
         if (rest.Equals("tree", StringComparison.OrdinalIgnoreCase) && request.Method == HttpMethod.Get)
         {
             var country = ParseQuery(request.RequestUri?.Query).GetValueOrDefault("countryCode") ?? "CN";
-            return Json(BuildTree(country), HttpStatusCode.OK);
+            return Json(Localize(BuildTree(country), ResolveCulture(request)), HttpStatusCode.OK);
         }
 
         // 单级子级：{id}/children，供行政区树按级惰性加载。
@@ -450,6 +516,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 .Where(r => r.ParentId == parentId)
                 .OrderBy(r => r.Code)
                 .ToList();
+            var requestCulture = ResolveCulture(request);
             var items = children.Select(child =>
             {
                 var grandchildren = snapshot.Where(r => r.ParentId == child.Id).ToList();
@@ -460,7 +527,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                     child.CountryCode,
                     child.Admin1Code,
                     child.Code,
-                    child.Name,
+                    Name = Localize(child, requestCulture).Name,
                     child.Population,
                     childCount = grandchildren.Count,
                     // 同名下级数量：直辖市（省、市同名）在展示时合并，前端据此识别。
@@ -481,12 +548,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
                     var region = Regions.FirstOrDefault(r => r.Id == id);
                     return region is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定行政区。")
-                        : Json(region, HttpStatusCode.OK);
+                        : Json(Localize(region, requestCulture), HttpStatusCode.OK);
                 }
             }
 
@@ -824,6 +892,79 @@ public sealed class MockGatewayHandler : DelegatingHandler
         }
     }
 
+    // ---------- 多语言 ----------
+
+    // 与真实网关一致：按 Accept-Language 协商语言，候选链首项即当前语言。
+    private string ResolveCulture(HttpRequestMessage request)
+    {
+        var requested = request.Headers.AcceptLanguage
+            .Select(language => language.Value)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        return localization.CultureChain(requested)[0];
+    }
+
+    // 按语言链合并译文，先命中的语言优先；未命中的字段由调用方回退主表值。
+    private Dictionary<string, string> FindTranslations(string kind, Guid id, string culture)
+    {
+        var merged = new Dictionary<string, string>(StringComparer.Ordinal);
+        lock (Gate)
+        {
+            foreach (var candidate in localization.CultureChain(culture))
+            {
+                if (Translations.TryGetValue($"{kind}/{id}/{candidate}", out var values))
+                {
+                    foreach (var (field, value) in values)
+                    {
+                        merged.TryAdd(field, value);
+                    }
+                }
+            }
+        }
+
+        return merged;
+    }
+
+    // 空译文视为未翻译，保持与真实网关"回退主表"一致的行为。
+    private static string? Pick(Dictionary<string, string> values, string field) =>
+        values.TryGetValue(field, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+
+    private AirportResponse Localize(AirportResponse airport, string culture)
+    {
+        var values = FindTranslations("airport", airport.Id, culture);
+        return airport with
+        {
+            Name = Pick(values, "Name") ?? airport.Name,
+            City = Pick(values, "City") ?? airport.City
+        };
+    }
+
+    private NewsArticleView Localize(NewsArticleView article, string culture)
+    {
+        var values = FindTranslations("news", article.Id, culture);
+        return article with
+        {
+            Title = Pick(values, "Title") ?? article.Title,
+            Summary = Pick(values, "Summary") ?? article.Summary,
+            Content = Pick(values, "Content") ?? article.Content
+        };
+    }
+
+    private RegionView Localize(RegionView region, string culture)
+    {
+        var values = FindTranslations("region", region.Id, culture);
+        return region with { Name = Pick(values, "Name") ?? region.Name };
+    }
+
+    private RegionTreeView Localize(RegionTreeView node, string culture)
+    {
+        var values = FindTranslations("region", node.Id, culture);
+        return node with
+        {
+            Name = Pick(values, "Name") ?? node.Name,
+            Children = node.Children.Select(child => Localize(child, culture)).ToList()
+        };
+    }
+
     // ---------- 工具 ----------
 
     private static bool TryParseSubResource(string rest, out Guid id, out string? culture)
@@ -930,8 +1071,11 @@ public sealed class MockGatewayHandler : DelegatingHandler
         return result;
     }
 
-    private static object Paged<T>(IReadOnlyList<T> items) =>
-        new PagedResponse<T>(items, items.Count, Page: 1, PageSize: Math.Max(items.Count, 1));
+    private static object Paged<T>(IEnumerable<T> source)
+    {
+        var items = source as IReadOnlyList<T> ?? source.ToList();
+        return new PagedResponse<T>(items, items.Count, Page: 1, PageSize: Math.Max(items.Count, 1));
+    }
 
     private static HttpResponseMessage Json(object payload, HttpStatusCode statusCode, string? etag = null)
     {

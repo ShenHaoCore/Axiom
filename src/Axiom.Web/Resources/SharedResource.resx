@@ -151,6 +151,8 @@
   <data name="Regions.Level.2" xml:space="preserve"><value>省/州</value></data>
   <data name="Regions.Level.3" xml:space="preserve"><value>市</value></data>
   <data name="Regions.Municipality" xml:space="preserve"><value>直辖市</value></data>
+  <data name="Regions.AutonomousRegion" xml:space="preserve"><value>自治区</value></data>
+  <data name="Regions.SpecialAdministrativeRegion" xml:space="preserve"><value>特别行政区</value></data>
   <data name="Regions.LoadCountriesFailed" xml:space="preserve"><value>无法加载国家列表。</value></data>
   <data name="Regions.SearchFailed" xml:space="preserve"><value>搜索行政区失败。</value></data>
   <data name="Regions.LoadTreeFailed" xml:space="preserve"><value>无法加载 {0} 的行政区层级。</value></data>

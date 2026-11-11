@@ -43,12 +43,12 @@ builder.Services.AddHttpContextAccessor();
 // 开发环境可通过 MockAuth:Enabled 跳过 SSO 登录，并用示例数据替代网关调用。
 var useMockAuth = builder.Environment.IsDevelopment() && builder.Configuration.GetValue("MockAuth:Enabled", false);
 
-builder.Services.AddTransient<MockGatewayHandler>();
 // 网关地址只读一次：配置缺失时回退到本地网关默认端口。
-var gatewayBaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100");
-var referenceDataClient = builder.Services.AddHttpClient<ReferenceDataClient>(client => client.BaseAddress = gatewayBaseAddress);
-var newsClient = builder.Services.AddHttpClient<NewsClient>(client => client.BaseAddress = gatewayBaseAddress);
-var regionClient = builder.Services.AddHttpClient<RegionClient>(client => client.BaseAddress = gatewayBaseAddress);
+builder.Services.AddTransient<MockGatewayHandler>();
+var gatewayAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100");
+var referenceDataClient = builder.Services.AddHttpClient<ReferenceDataClient>(client => client.BaseAddress = gatewayAddress);
+var newsClient = builder.Services.AddHttpClient<NewsClient>(client => client.BaseAddress = gatewayAddress);
+var regionClient = builder.Services.AddHttpClient<RegionClient>(client => client.BaseAddress = gatewayAddress);
 if (useMockAuth)
 {
     referenceDataClient.AddHttpMessageHandler<MockGatewayHandler>();
