@@ -35,7 +35,7 @@ public sealed class IndexModel(
         CancellationToken cancellationToken = default)
     {
         // 总是拉国家列表：树的根节点 + 下拉筛选
-        var countriesResponse = await regionClient.ListAsync(1, 250, level: 1, null, null, null, cancellationToken);
+        var countriesResponse = await regionClient.ListAsync(1, 250, depth: 0, null, null, null, cancellationToken);
         if (!countriesResponse.IsSuccessStatusCode)
         {
             ErrorMessage = countriesResponse.StatusCode == HttpStatusCode.Unauthorized
@@ -77,10 +77,10 @@ public sealed class IndexModel(
         return Page();
     }
 
-    // 惰性加载：返回某节点子级的局部视图（含直辖市合并与展开箭头判断）。
-    public async Task<IActionResult> OnGetChildrenAsync(Guid id, CancellationToken cancellationToken = default)
+    // 惰性加载：返回某节点子级的局部视图（含同名合并与展开箭头判断）。
+    public async Task<IActionResult> OnGetChildrenAsync(string country, string code, CancellationToken cancellationToken = default)
     {
-        var response = await regionClient.GetChildrenAsync(id, cancellationToken);
+        var response = await regionClient.GetChildrenAsync(country, code, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             // 401 交给 Challenge 走登录跳转；其余错误由前端提示重试。

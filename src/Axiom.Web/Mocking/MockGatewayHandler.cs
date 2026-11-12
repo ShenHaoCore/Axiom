@@ -93,7 +93,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
     {
         const string culture = "en";
 
-        void Set(string kind, Guid id, params (string Field, string Value)[] fields)
+        void Set(string kind, string id, params (string Field, string Value)[] fields)
         {
             var key = $"{kind}/{id}/{culture}";
             if (!Translations.TryGetValue(key, out var values))
@@ -107,13 +107,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
             }
         }
 
-        Set("airport", Guid.Parse("11111111-1111-1111-1111-111111111111"),
+        Set("airport", Guid.Parse("11111111-1111-1111-1111-111111111111").ToString(),
             ("Name", "Beijing Capital International Airport"), ("City", "Beijing"));
-        Set("airport", Guid.Parse("22222222-2222-2222-2222-222222222222"),
+        Set("airport", Guid.Parse("22222222-2222-2222-2222-222222222222").ToString(),
             ("Name", "John F. Kennedy International Airport"), ("City", "New York"));
-        Set("airport", Guid.Parse("33333333-3333-3333-3333-333333333333"),
+        Set("airport", Guid.Parse("33333333-3333-3333-3333-333333333333").ToString(),
             ("Name", "London Heathrow Airport"), ("City", "London"));
-        Set("airport", Guid.Parse("44444444-4444-4444-4444-444444444444"),
+        Set("airport", Guid.Parse("44444444-4444-4444-4444-444444444444").ToString(),
             ("Name", "Narita International Airport"), ("City", "Tokyo"));
 
         // 行政区主数据已带 AsciiName，直接作为英文名，覆盖全部层级节点。
@@ -121,19 +121,19 @@ public sealed class MockGatewayHandler : DelegatingHandler
         {
             if (!string.IsNullOrWhiteSpace(region.AsciiName))
             {
-                Set("region", region.Id, ("Name", region.AsciiName));
+                Set("region", $"{region.CountryCode}/{region.Code}", ("Name", region.AsciiName));
             }
         }
 
-        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001").ToString(),
             ("Title", "Axiom Platform 2026 Spring Release"),
             ("Summary", "This release adds the region module, internationalization and developer mock support."),
             ("Content", "Axiom shipped its 2026 spring release this month, covering region hierarchy browsing, multilingual UI and business data, and a mock authentication mode for developers."));
-        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002").ToString(),
             ("Title", "Airport Data Onboarding Guide"),
             ("Summary", "How to create airport records and maintain multilingual names."),
             ("Content", "This guide walks through airport onboarding: enter the IATA code, country and city coordinates, then add English names on the translation page for multilingual display."));
-        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"),
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003").ToString(),
             ("Title", "Global Region Dataset Upgraded to v2"),
             ("Summary", "The region dataset now includes population and geographic coordinates."),
             ("Content", "Region dataset v2 adds population estimates and coordinates for province and city nodes, and fixes several administrative code mappings."));
@@ -287,7 +287,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
                     Airports.RemoveAt(index);
                     AirportETags.Remove(id);
-                    RemoveTranslations("airport", id);
+                    RemoveTranslations("airport", id.ToString());
                     return Empty(HttpStatusCode.NoContent);
                 }
             }
@@ -428,20 +428,23 @@ public sealed class MockGatewayHandler : DelegatingHandler
             {
                 var query = ParseQuery(request.RequestUri?.Query);
                 var requestCulture = ResolveCulture(request);
-                var level = int.TryParse(query.GetValueOrDefault("level"), out var lv) ? lv : (int?)null;
+                var depth = int.TryParse(query.GetValueOrDefault("depth"), out var d) ? d : (int?)null;
                 var country = query.GetValueOrDefault("countryCode");
+                var parentCode = query.GetValueOrDefault("parentCode");
                 var keyword = query.GetValueOrDefault("q");
 
                 List<RegionView> matches;
                 lock (Gate)
                 {
                     matches = Regions
-                        .Where(r => !level.HasValue || r.Level == level.Value)
+                        .Where(r => !depth.HasValue || r.Depth == depth.Value)
                         .Where(r => string.IsNullOrWhiteSpace(country)
                             || string.Equals(r.CountryCode, country, StringComparison.OrdinalIgnoreCase))
+                        .Where(r => string.IsNullOrWhiteSpace(parentCode)
+                            || string.Equals(r.ParentCode, parentCode, StringComparison.OrdinalIgnoreCase))
                         .Where(r => string.IsNullOrWhiteSpace(keyword)
                             || r.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                        .OrderBy(r => r.CountryCode).ThenBy(r => r.Code)
+                        .OrderBy(r => r.CountryCode).ThenBy(r => r.Depth).ThenBy(r => r.Code)
                         .ToList();
                 }
 
@@ -451,22 +454,43 @@ public sealed class MockGatewayHandler : DelegatingHandler
             if (request.Method == HttpMethod.Post)
             {
                 using var body = await ReadJsonAsync(request, cancellationToken);
+                var depthValue = Integer(body, "depth");
+                int? depth = depthValue is >= 0 and <= 3 ? (int)depthValue : null;
                 var countryCode = Text(body, "countryCode")?.ToUpperInvariant();
+                var code = Text(body, "code")?.ToUpperInvariant();
                 var name = Text(body, "name");
-                if (!TryParseRegionLevel(Text(body, "level"), out var level)
-                    || countryCode is null || name is null
-                    || !TryReadParentId(body, out var parentId))
+                if (depth is null || countryCode is null || code is null || name is null)
                 {
                     return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
                 }
 
+                var parentCode = Text(body, "parentCode")?.ToUpperInvariant();
+                if (depth > 0)
+                {
+                    if (string.IsNullOrEmpty(parentCode))
+                    {
+                        return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
+                    }
+
+                    lock (Gate)
+                    {
+                        if (Regions.All(r => r.CountryCode != countryCode || r.Code != parentCode))
+                        {
+                            return Problem(HttpStatusCode.NotFound, "上级行政区不存在。");
+                        }
+                    }
+                }
+
                 var created = new RegionView(
-                    Guid.NewGuid(),
-                    level == 1 ? null : parentId,
-                    level,
                     countryCode,
-                    Text(body, "admin1Code"),
-                    Text(body, "code")?.ToUpperInvariant() ?? name,
+                    code,
+                    depth == 0 ? null : parentCode,
+                    depth.Value,
+                    Text(body, "type") ?? DeriveDefaultType(countryCode, depth.Value),
+                    "active",
+                    Text(body, "codeIso"),
+                    Text(body, "sortKey") ?? string.Empty,
+                    Text(body, "abbrev"),
                     name,
                     Text(body, "asciiName"),
                     Text(body, "localName"),
@@ -477,7 +501,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
                 lock (Gate)
                 {
-                    if (RegionKeyExists(null, created.Level, created.CountryCode, created.Code))
+                    if (Regions.Any(r => r.CountryCode == created.CountryCode && r.Code == created.Code))
                     {
                         return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
                     }
@@ -494,11 +518,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
             return Json(Localize(BuildTree(country), ResolveCulture(request)), HttpStatusCode.OK);
         }
 
-        // 单级子级：{id}/children，供行政区树按级惰性加载。
+        // 单级子级：{country}/{code}/children，供行政区树按级惰性加载。
         if (rest.EndsWith("/children", StringComparison.OrdinalIgnoreCase) && request.Method == HttpMethod.Get)
         {
-            var idPart = rest[..^"/children".Length];
-            if (!Guid.TryParse(idPart, out var parentId))
+            if (!TryParseRegionKey(rest[..^"/children".Length], out var country, out var parentCode))
             {
                 return Problem(HttpStatusCode.BadRequest, "行政区子级请求无效。");
             }
@@ -506,27 +529,28 @@ public sealed class MockGatewayHandler : DelegatingHandler
             List<RegionView> snapshot;
             lock (Gate) { snapshot = [.. Regions]; }
 
-            var parent = snapshot.FirstOrDefault(r => r.Id == parentId);
-            if (parent is null)
+            if (snapshot.All(r => r.CountryCode != country || r.Code != parentCode))
             {
                 return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
             }
 
             var children = snapshot
-                .Where(r => r.ParentId == parentId)
+                .Where(r => r.CountryCode == country && r.ParentCode == parentCode)
                 .OrderBy(r => r.Code)
                 .ToList();
             var requestCulture = ResolveCulture(request);
             var items = children.Select(child =>
             {
-                var grandchildren = snapshot.Where(r => r.ParentId == child.Id).ToList();
+                var grandchildren = snapshot
+                    .Where(r => r.CountryCode == country && r.ParentCode == child.Code)
+                    .ToList();
                 return new
                 {
-                    child.Id,
-                    child.Level,
                     child.CountryCode,
-                    child.Admin1Code,
                     child.Code,
+                    child.ParentCode,
+                    child.Depth,
+                    child.Type,
                     Name = Localize(child, requestCulture).Name,
                     child.Population,
                     childCount = grandchildren.Count,
@@ -539,11 +563,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
             return Json(items, HttpStatusCode.OK);
         }
 
-        if (TryParseSubResource(rest, out var id, out var culture))
+        // 条目与翻译子资源：{country}/{code}[/translations/{culture}]。
+        if (TryParseRegionKey(rest, out var itemCountry, out var itemCode, out var itemCulture))
         {
-            if (culture is not null)
+            if (itemCulture is not null)
             {
-                return await HandleTranslationAsync(request, $"region/{id}/{culture}", culture, cancellationToken);
+                return await HandleTranslationAsync(
+                    request, $"region/{itemCountry}/{itemCode}/{itemCulture}", itemCulture, cancellationToken);
             }
 
             if (request.Method == HttpMethod.Get)
@@ -551,7 +577,8 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
-                    var region = Regions.FirstOrDefault(r => r.Id == id);
+                    var region = Regions.FirstOrDefault(r =>
+                        r.CountryCode == itemCountry && r.Code == itemCode);
                     return region is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定行政区。")
                         : Json(Localize(region, requestCulture), HttpStatusCode.OK);
@@ -561,39 +588,26 @@ public sealed class MockGatewayHandler : DelegatingHandler
             if (request.Method == HttpMethod.Put)
             {
                 using var body = await ReadJsonAsync(request, cancellationToken);
-                if (!TryReadParentId(body, out var parentId))
-                {
-                    return Problem(HttpStatusCode.BadRequest, "行政区更新请求无效。");
-                }
 
                 lock (Gate)
                 {
-                    var index = Regions.FindIndex(r => r.Id == id);
+                    var index = Regions.FindIndex(r =>
+                        r.CountryCode == itemCountry && r.Code == itemCode);
                     if (index < 0)
                     {
                         return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
                     }
 
                     var original = Regions[index];
-                    var updated = new RegionView(
-                        id,
-                        original.Level == 1 ? null : parentId ?? original.ParentId,
-                        original.Level,
-                        original.CountryCode,
-                        original.Admin1Code,
-                        Text(body, "code")?.ToUpperInvariant() ?? original.Code,
-                        Text(body, "name") ?? original.Name,
-                        Text(body, "asciiName") ?? original.AsciiName,
-                        Text(body, "localName") ?? original.LocalName,
-                        Number(body, "latitude") ?? original.Latitude,
-                        Number(body, "longitude") ?? original.Longitude,
-                        Integer(body, "population") ?? original.Population,
-                        original.GeoNameId);
-
-                    if (RegionKeyExists(id, updated.Level, updated.CountryCode, updated.Code))
+                    var updated = original with
                     {
-                        return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
-                    }
+                        Name = Text(body, "name") ?? original.Name,
+                        AsciiName = Text(body, "asciiName") ?? original.AsciiName,
+                        LocalName = Text(body, "localName") ?? original.LocalName,
+                        Latitude = Number(body, "latitude") ?? original.Latitude,
+                        Longitude = Number(body, "longitude") ?? original.Longitude,
+                        Population = Integer(body, "population") ?? original.Population
+                    };
 
                     Regions[index] = updated;
                     return Json(updated, HttpStatusCode.OK);
@@ -604,19 +618,21 @@ public sealed class MockGatewayHandler : DelegatingHandler
             {
                 lock (Gate)
                 {
-                    var index = Regions.FindIndex(r => r.Id == id);
+                    var index = Regions.FindIndex(r =>
+                        r.CountryCode == itemCountry && r.Code == itemCode);
                     if (index < 0)
                     {
                         return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
                     }
 
-                    if (Regions.Any(r => r.ParentId == id))
+                    if (Regions.Any(r => r.CountryCode == itemCountry && r.ParentCode == itemCode))
                     {
                         return Problem(HttpStatusCode.BadRequest, "行政区仍有子节点，不能删除。");
                     }
 
+                    var removed = Regions[index];
                     Regions.RemoveAt(index);
-                    RemoveTranslations("region", id);
+                    RemoveTranslations("region", $"{removed.CountryCode}/{removed.Code}");
                     return Empty(HttpStatusCode.NoContent);
                 }
             }
@@ -626,207 +642,184 @@ public sealed class MockGatewayHandler : DelegatingHandler
         return Empty(HttpStatusCode.NotFound);
     }
 
-    private static bool TryParseRegionLevel(string? value, out int level)
+    private static bool TryParseRegionKey(string value, out string countryCode, out string code) =>
+        TryParseRegionKey(value, out countryCode, out code, out _);
+
+    private static bool TryParseRegionKey(string value, out string countryCode, out string code, out string? culture)
     {
-        if (string.Equals(value, "Country", StringComparison.OrdinalIgnoreCase))
+        countryCode = string.Empty;
+        code = string.Empty;
+        culture = null;
+
+        var segments = value.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 2)
         {
-            level = 1;
-            return true;
+            countryCode = segments[0].ToUpperInvariant();
+            code = segments[1].ToUpperInvariant();
+            return countryCode.Length == 2 && countryCode.All(char.IsAsciiLetter) && code.Length > 0;
         }
 
-        if (string.Equals(value, "Admin1", StringComparison.OrdinalIgnoreCase))
+        if (segments.Length == 4 && segments[2].Equals("translations", StringComparison.OrdinalIgnoreCase))
         {
-            level = 2;
-            return true;
-        }
-
-        if (string.Equals(value, "City", StringComparison.OrdinalIgnoreCase))
-        {
-            level = 3;
-            return true;
-        }
-
-        level = default;
-        return false;
-    }
-
-    private static bool TryReadParentId(JsonDocument document, out Guid? parentId)
-    {
-        parentId = null;
-        if (document.RootElement.ValueKind != JsonValueKind.Object
-            || !document.RootElement.TryGetProperty("parentId", out var element)
-            || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return true;
-        }
-
-        if (element.ValueKind == JsonValueKind.String
-            && Guid.TryParse(element.GetString(), out var parsed))
-        {
-            parentId = parsed;
-            return true;
+            countryCode = segments[0].ToUpperInvariant();
+            code = segments[1].ToUpperInvariant();
+            culture = segments[3];
+            return countryCode.Length == 2 && countryCode.All(char.IsAsciiLetter) && code.Length > 0;
         }
 
         return false;
     }
 
-    private static bool RegionKeyExists(Guid? excludedId, int level, string countryCode, string code) =>
-        Regions.Any(region => (!excludedId.HasValue || region.Id != excludedId.Value)
-            && region.Level == level
-            && string.Equals(region.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(region.Code, code, StringComparison.OrdinalIgnoreCase));
+    private static string DeriveDefaultType(string countryCode, int depth) => depth switch
+    {
+        0 => "country",
+        1 => countryCode == "US" ? "state" : "province",
+        2 => "prefecture_city",
+        _ => "district"
+    };
 
     private static RegionTreeView BuildTree(string countryCode)
     {
         lock (Gate)
         {
-            var root = Regions.FirstOrDefault(r => r.Level == 1
+            var root = Regions.FirstOrDefault(r => r.Depth == 0
                 && string.Equals(r.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase));
             if (root is null)
             {
-                return new RegionTreeView(Guid.Empty, 1, countryCode, null, countryCode, countryCode, null, []);
+                return new RegionTreeView(countryCode, countryCode, null, 0, "country", countryCode, null, []);
             }
 
             var children = Regions
-                .Where(r => r.Level == 2 && r.ParentId == root.Id)
+                .Where(r => r.Depth == 1 && r.ParentCode == root.Code)
                 .OrderBy(r => r.Code)
                 .Select(child => new RegionTreeView(
-                    child.Id,
-                    child.Level,
                     child.CountryCode,
-                    child.Admin1Code,
                     child.Code,
+                    child.ParentCode,
+                    child.Depth,
+                    child.Type,
                     child.Name,
                     child.Population,
                     Regions
-                        .Where(r => r.Level == 3 && r.ParentId == child.Id)
+                        .Where(r => r.Depth == 2 && r.ParentCode == child.Code)
                         .OrderBy(r => r.Code)
                         .Select(grand => new RegionTreeView(
-                            grand.Id, grand.Level, grand.CountryCode, grand.Admin1Code,
-                            grand.Code, grand.Name, grand.Population, []))
+                            grand.CountryCode, grand.Code, grand.ParentCode,
+                            grand.Depth, grand.Type, grand.Name, grand.Population, []))
                         .ToList()))
                 .ToList();
 
             return new RegionTreeView(
-                root.Id, root.Level, root.CountryCode, root.Admin1Code,
-                root.Code, root.Name, root.Population, children);
+                root.CountryCode, root.Code, null, root.Depth, root.Type,
+                root.Name, root.Population, children);
         }
     }
 
     // 行政区种子：中国 34 个省级行政区 + 主要城市，美/英/日示例省州。
-    // 直辖市（北京/上海/天津/重庆）按 GeoNames 模式存省、市两条同名记录，
-    // 前端层级树据 sameNameChildCount 合并展示为「直辖市」。
+    // 按 (country, code) 复合业务键存储；直辖市（北京/上海/天津/重庆）按数据源口径
+    // 存省、市两条同名记录，前端据 sameNameChildCount 合并展示为「直辖市」。
     private static List<RegionView> LoadRegions()
     {
-        Guid G(string tail) => Guid.Parse($"00000000-0000-0000-0000-{tail}");
-
         return
         [
-            // 中国：国家
-            new(G("a00000000001"), null, 1, "CN", null, "CN", "中国", "China", null, 35.0, 105.0, 1_410_000_000, null),
-            // 直辖市（省、市同名两条记录）
-            new(G("a00000000011"), G("a00000000001"), 2, "CN", "11", "110000", "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
-            new(G("a00000000012"), G("a00000000011"), 3, "CN", "11", "110100", "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
-            new(G("a00000000031"), G("a00000000001"), 2, "CN", "31", "310000", "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
-            new(G("a00000000032"), G("a00000000031"), 3, "CN", "31", "310100", "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
-            new(G("a00000000041"), G("a00000000001"), 2, "CN", "12", "120000", "天津市", "Tianjin", null, 39.1, 117.2, 13_900_000, null),
-            new(G("a00000000042"), G("a00000000041"), 3, "CN", "12", "120100", "天津市", "Tianjin", null, 39.1, 117.2, 13_900_000, null),
-            new(G("a00000000051"), G("a00000000001"), 2, "CN", "50", "500000", "重庆市", "Chongqing", null, 29.6, 106.5, 32_100_000, null),
-            new(G("a00000000052"), G("a00000000051"), 3, "CN", "50", "500100", "重庆市", "Chongqing", null, 29.6, 106.5, 32_100_000, null),
-            // 省（每省按 10 个序号一段：省级一段首，城市随后）
-            new(G("a00000000021"), G("a00000000001"), 2, "CN", "44", "440000", "广东省", "Guangdong", null, 23.4, 113.3, 126_000_000, null),
-            new(G("a00000000022"), G("a00000000021"), 3, "CN", "44", "440100", "广州市", "Guangzhou", null, 23.1, 113.3, 18_700_000, null),
-            new(G("a00000000023"), G("a00000000021"), 3, "CN", "44", "440300", "深圳市", "Shenzhen", null, 22.5, 114.1, 17_600_000, null),
-            new(G("a00000000024"), G("a00000000021"), 3, "CN", "44", "441900", "东莞市", "Dongguan", null, 23.0, 113.8, 10_500_000, null),
-            new(G("a00000000101"), G("a00000000001"), 2, "CN", "13", "130000", "河北省", "Hebei", null, 38.0, 114.5, 74_600_000, null),
-            new(G("a00000000111"), G("a00000000101"), 3, "CN", "13", "130100", "石家庄市", "Shijiazhuang", null, 38.0, 114.5, 11_200_000, null),
-            new(G("a00000000112"), G("a00000000101"), 3, "CN", "13", "130200", "唐山市", "Tangshan", null, 39.6, 118.2, 7_700_000, null),
-            new(G("a00000000121"), G("a00000000001"), 2, "CN", "14", "140000", "山西省", "Shanxi", null, 37.9, 112.5, 34_900_000, null),
-            new(G("a00000000131"), G("a00000000121"), 3, "CN", "14", "140100", "太原市", "Taiyuan", null, 37.9, 112.5, 5_300_000, null),
-            new(G("a00000000141"), G("a00000000001"), 2, "CN", "15", "150000", "内蒙古自治区", "Inner Mongolia", null, 40.8, 111.7, 24_000_000, null),
-            new(G("a00000000151"), G("a00000000141"), 3, "CN", "15", "150100", "呼和浩特市", "Hohhot", null, 40.8, 111.7, 3_400_000, null),
-            new(G("a00000000152"), G("a00000000141"), 3, "CN", "15", "150200", "包头市", "Baotou", null, 40.7, 109.8, 2_700_000, null),
-            new(G("a00000000161"), G("a00000000001"), 2, "CN", "21", "210000", "辽宁省", "Liaoning", null, 41.8, 123.4, 42_600_000, null),
-            new(G("a00000000171"), G("a00000000161"), 3, "CN", "21", "210100", "沈阳市", "Shenyang", null, 41.8, 123.4, 9_100_000, null),
-            new(G("a00000000172"), G("a00000000161"), 3, "CN", "21", "210200", "大连市", "Dalian", null, 38.9, 121.6, 7_500_000, null),
-            new(G("a00000000181"), G("a00000000001"), 2, "CN", "22", "220000", "吉林省", "Jilin", null, 43.9, 125.3, 24_100_000, null),
-            new(G("a00000000191"), G("a00000000181"), 3, "CN", "22", "220100", "长春市", "Changchun", null, 43.9, 125.3, 9_100_000, null),
-            new(G("a00000000201"), G("a00000000001"), 2, "CN", "23", "230000", "黑龙江省", "Heilongjiang", null, 45.8, 126.5, 31_900_000, null),
-            new(G("a00000000211"), G("a00000000201"), 3, "CN", "23", "230100", "哈尔滨市", "Harbin", null, 45.8, 126.5, 10_100_000, null),
-            new(G("a00000000221"), G("a00000000001"), 2, "CN", "32", "320000", "江苏省", "Jiangsu", null, 32.1, 118.8, 84_700_000, null),
-            new(G("a00000000231"), G("a00000000221"), 3, "CN", "32", "320100", "南京市", "Nanjing", null, 32.1, 118.8, 9_400_000, null),
-            new(G("a00000000232"), G("a00000000221"), 3, "CN", "32", "320500", "苏州市", "Suzhou", null, 31.3, 120.6, 12_700_000, null),
-            new(G("a00000000233"), G("a00000000221"), 3, "CN", "32", "320200", "无锡市", "Wuxi", null, 31.5, 120.3, 7_500_000, null),
-            new(G("a00000000241"), G("a00000000001"), 2, "CN", "33", "330000", "浙江省", "Zhejiang", null, 30.3, 120.2, 64_600_000, null),
-            new(G("a00000000251"), G("a00000000241"), 3, "CN", "33", "330100", "杭州市", "Hangzhou", null, 30.3, 120.2, 12_200_000, null),
-            new(G("a00000000252"), G("a00000000241"), 3, "CN", "33", "330200", "宁波市", "Ningbo", null, 29.9, 121.5, 9_400_000, null),
-            new(G("a00000000261"), G("a00000000001"), 2, "CN", "34", "340000", "安徽省", "Anhui", null, 31.9, 117.3, 61_000_000, null),
-            new(G("a00000000271"), G("a00000000261"), 3, "CN", "34", "340100", "合肥市", "Hefei", null, 31.8, 117.2, 9_400_000, null),
-            new(G("a00000000281"), G("a00000000001"), 2, "CN", "35", "350000", "福建省", "Fujian", null, 26.1, 119.3, 41_500_000, null),
-            new(G("a00000000291"), G("a00000000281"), 3, "CN", "35", "350100", "福州市", "Fuzhou", null, 26.1, 119.3, 8_400_000, null),
-            new(G("a00000000292"), G("a00000000281"), 3, "CN", "35", "350200", "厦门市", "Xiamen", null, 24.5, 118.1, 5_200_000, null),
-            new(G("a00000000301"), G("a00000000001"), 2, "CN", "36", "360000", "江西省", "Jiangxi", null, 28.7, 115.9, 45_200_000, null),
-            new(G("a00000000311"), G("a00000000301"), 3, "CN", "36", "360100", "南昌市", "Nanchang", null, 28.7, 115.9, 6_400_000, null),
-            new(G("a00000000321"), G("a00000000001"), 2, "CN", "37", "370000", "山东省", "Shandong", null, 36.7, 117.1, 101_500_000, null),
-            new(G("a00000000331"), G("a00000000321"), 3, "CN", "37", "370100", "济南市", "Jinan", null, 36.7, 117.1, 9_200_000, null),
-            new(G("a00000000332"), G("a00000000321"), 3, "CN", "37", "370200", "青岛市", "Qingdao", null, 36.1, 120.4, 10_100_000, null),
-            new(G("a00000000341"), G("a00000000001"), 2, "CN", "41", "410000", "河南省", "Henan", null, 34.7, 113.6, 99_400_000, null),
-            new(G("a00000000351"), G("a00000000341"), 3, "CN", "41", "410100", "郑州市", "Zhengzhou", null, 34.7, 113.6, 12_600_000, null),
-            new(G("a00000000361"), G("a00000000001"), 2, "CN", "42", "420000", "湖北省", "Hubei", null, 30.6, 114.3, 57_700_000, null),
-            new(G("a00000000371"), G("a00000000361"), 3, "CN", "42", "420100", "武汉市", "Wuhan", null, 30.6, 114.3, 12_300_000, null),
-            new(G("a00000000381"), G("a00000000001"), 2, "CN", "43", "430000", "湖南省", "Hunan", null, 28.2, 112.9, 66_400_000, null),
-            new(G("a00000000391"), G("a00000000381"), 3, "CN", "43", "430100", "长沙市", "Changsha", null, 28.2, 112.9, 10_000_000, null),
-            new(G("a00000000651"), G("a00000000001"), 2, "CN", "45", "450000", "广西壮族自治区", "Guangxi", null, 22.8, 108.3, 50_100_000, null),
-            new(G("a00000000661"), G("a00000000651"), 3, "CN", "45", "450100", "南宁市", "Nanning", null, 22.8, 108.3, 8_700_000, null),
-            new(G("a00000000401"), G("a00000000001"), 2, "CN", "46", "460000", "海南省", "Hainan", null, 20.0, 110.3, 10_100_000, null),
-            new(G("a00000000411"), G("a00000000401"), 3, "CN", "46", "460100", "海口市", "Haikou", null, 20.0, 110.3, 2_900_000, null),
-            new(G("a00000000421"), G("a00000000001"), 2, "CN", "51", "510000", "四川省", "Sichuan", null, 30.7, 104.1, 83_700_000, null),
-            new(G("a00000000431"), G("a00000000421"), 3, "CN", "51", "510100", "成都市", "Chengdu", null, 30.6, 104.1, 20_900_000, null),
-            new(G("a00000000441"), G("a00000000001"), 2, "CN", "52", "520000", "贵州省", "Guizhou", null, 26.6, 106.6, 38_600_000, null),
-            new(G("a00000000451"), G("a00000000441"), 3, "CN", "52", "520100", "贵阳市", "Guiyang", null, 26.6, 106.6, 6_000_000, null),
-            new(G("a00000000461"), G("a00000000001"), 2, "CN", "53", "530000", "云南省", "Yunnan", null, 25.0, 102.7, 47_200_000, null),
-            new(G("a00000000471"), G("a00000000461"), 3, "CN", "53", "530100", "昆明市", "Kunming", null, 24.9, 102.8, 8_500_000, null),
-            new(G("a00000000481"), G("a00000000001"), 2, "CN", "54", "540000", "西藏自治区", "Tibet", null, 29.7, 91.1, 3_600_000, null),
-            new(G("a00000000491"), G("a00000000481"), 3, "CN", "54", "540100", "拉萨市", "Lhasa", null, 29.7, 91.1, 900_000, null),
-            new(G("a00000000501"), G("a00000000001"), 2, "CN", "61", "610000", "陕西省", "Shaanxi", null, 34.3, 108.9, 39_500_000, null),
-            new(G("a00000000511"), G("a00000000501"), 3, "CN", "61", "610100", "西安市", "Xi'an", null, 34.3, 108.9, 12_900_000, null),
-            new(G("a00000000521"), G("a00000000001"), 2, "CN", "62", "620000", "甘肃省", "Gansu", null, 36.1, 103.8, 25_000_000, null),
-            new(G("a00000000531"), G("a00000000521"), 3, "CN", "62", "620100", "兰州市", "Lanzhou", null, 36.1, 103.8, 4_400_000, null),
-            new(G("a00000000541"), G("a00000000001"), 2, "CN", "63", "630000", "青海省", "Qinghai", null, 36.6, 101.8, 5_900_000, null),
-            new(G("a00000000551"), G("a00000000541"), 3, "CN", "63", "630100", "西宁市", "Xining", null, 36.6, 101.8, 2_500_000, null),
-            new(G("a00000000561"), G("a00000000001"), 2, "CN", "64", "640000", "宁夏回族自治区", "Ningxia", null, 38.5, 106.3, 7_200_000, null),
-            new(G("a00000000571"), G("a00000000561"), 3, "CN", "64", "640100", "银川市", "Yinchuan", null, 38.5, 106.3, 3_000_000, null),
-            new(G("a00000000581"), G("a00000000001"), 2, "CN", "65", "650000", "新疆维吾尔自治区", "Xinjiang", null, 43.8, 87.6, 25_900_000, null),
-            new(G("a00000000591"), G("a00000000581"), 3, "CN", "65", "650100", "乌鲁木齐市", "Urumqi", null, 43.8, 87.6, 4_100_000, null),
-            new(G("a00000000601"), G("a00000000001"), 2, "CN", "71", "710000", "台湾省", "Taiwan", null, 25.0, 121.5, 23_500_000, null),
-            new(G("a00000000611"), G("a00000000601"), 3, "CN", "71", "710100", "台北市", "Taipei", null, 25.0, 121.6, 2_600_000, null),
-            // 特别区：本身即城市，无下级
-            new(G("a00000000621"), G("a00000000001"), 2, "CN", "81", "810000", "香港特别行政区", "Hong Kong", null, 22.3, 114.2, 7_300_000, null),
-            new(G("a00000000641"), G("a00000000001"), 2, "CN", "82", "820000", "澳门特别行政区", "Macao", null, 22.2, 113.5, 700_000, null),
-            // 美国
-            new(G("b00000000001"), null, 1, "US", null, "US", "美国", "United States", null, 39.8, -98.6, 331_000_000, null),
-            new(G("b00000000011"), G("b00000000001"), 2, "US", "06", "060000", "加利福尼亚州", "California", null, 36.8, -119.4, 39_000_000, null),
-            new(G("b00000000012"), G("b00000000011"), 3, "US", "06", "060400", "洛杉矶县", "Los Angeles", null, 34.1, -118.2, 9_900_000, null),
-            new(G("b00000000021"), G("b00000000001"), 2, "US", "48", "480000", "得克萨斯州", "Texas", null, 31.5, -99.3, 29_100_000, null),
-            new(G("b00000000022"), G("b00000000021"), 3, "US", "48", "482000", "哈里斯县", "Harris", null, 29.8, -95.4, 4_700_000, null),
-            new(G("b00000000031"), G("b00000000001"), 2, "US", "36", "360000", "纽约州", "New York", null, 42.9, -75.5, 19_700_000, null),
-            new(G("b00000000032"), G("b00000000031"), 3, "US", "36", "360400", "纽约县", "New York County", null, 40.8, -74.0, 1_600_000, null),
-            // 英国
-            new(G("c00000000001"), null, 1, "GB", null, "GB", "英国", "United Kingdom", null, 54.0, -2.0, 67_000_000, null),
-            new(G("c00000000011"), G("c00000000001"), 2, "GB", "ENG", "ENG", "英格兰", "England", null, 52.4, -1.5, 56_000_000, null),
-            new(G("c00000000012"), G("c00000000011"), 3, "GB", "ENG", "LND", "伦敦市", "London", null, 51.5, -0.1, 8_900_000, null),
-            new(G("c00000000021"), G("c00000000001"), 2, "GB", "SCT", "SCT", "苏格兰", "Scotland", null, 56.8, -4.2, 5_500_000, null),
-            new(G("c00000000022"), G("c00000000021"), 3, "GB", "SCT", "EDH", "爱丁堡", "Edinburgh", null, 56.0, -3.2, 550_000, null),
-            new(G("c00000000031"), G("c00000000001"), 2, "GB", "WLS", "WLS", "威尔士", "Wales", null, 52.1, -3.8, 3_100_000, null),
-            new(G("c00000000032"), G("c00000000031"), 3, "GB", "WLS", "CDF", "加的夫", "Cardiff", null, 51.5, -3.2, 370_000, null),
-            // 日本
-            new(G("d00000000001"), null, 1, "JP", null, "JP", "日本", "Japan", null, 36.2, 138.3, 125_000_000, null),
-            new(G("d00000000011"), G("d00000000001"), 2, "JP", "13", "130000", "东京都", "Tokyo", null, 35.7, 139.7, 14_000_000, null),
-            new(G("d00000000012"), G("d00000000011"), 3, "JP", "13", "130010", "东京特别区", "Tokyo Special Wards", null, 35.7, 139.7, 9_700_000, null),
-            new(G("d00000000021"), G("d00000000001"), 2, "JP", "27", "270000", "大阪府", "Osaka", null, 34.7, 135.5, 8_800_000, null),
-            new(G("d00000000022"), G("d00000000021"), 3, "JP", "27", "271000", "大阪市", "Osaka City", null, 34.7, 135.5, 2_700_000, null),
-            new(G("d00000000031"), G("d00000000001"), 2, "JP", "26", "260000", "京都府", "Kyoto", null, 35.0, 135.8, 2_500_000, null),
-            new(G("d00000000032"), G("d00000000031"), 3, "JP", "26", "261000", "京都市", "Kyoto City", null, 35.0, 135.8, 1_500_000, null)
+            new("CN", "CN", null, 0, "country", "active", null, "", null, "中国", "China", null, 35.0, 105.0, 1_410_000_000, null),
+            new("CN", "110000", "CN", 1, "municipality", "active", "CN-11", "", null, "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
+            new("CN", "110100", "110000", 2, "city", "active", null, "", null, "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
+            new("CN", "310000", "CN", 1, "municipality", "active", "CN-31", "", null, "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
+            new("CN", "310100", "310000", 2, "city", "active", null, "", null, "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
+            new("CN", "120000", "CN", 1, "municipality", "active", "CN-12", "", null, "天津市", "Tianjin", null, 39.1, 117.2, 13_900_000, null),
+            new("CN", "120100", "120000", 2, "city", "active", null, "", null, "天津市", "Tianjin", null, 39.1, 117.2, 13_900_000, null),
+            new("CN", "500000", "CN", 1, "municipality", "active", "CN-50", "", null, "重庆市", "Chongqing", null, 29.6, 106.5, 32_100_000, null),
+            new("CN", "500100", "500000", 2, "city", "active", null, "", null, "重庆市", "Chongqing", null, 29.6, 106.5, 32_100_000, null),
+            new("CN", "440000", "CN", 1, "province", "active", "CN-44", "", null, "广东省", "Guangdong", null, 23.4, 113.3, 126_000_000, null),
+            new("CN", "440100", "440000", 2, "prefecture_city", "active", null, "", null, "广州市", "Guangzhou", null, 23.1, 113.3, 18_700_000, null),
+            new("CN", "440300", "440000", 2, "prefecture_city", "active", null, "", null, "深圳市", "Shenzhen", null, 22.5, 114.1, 17_600_000, null),
+            new("CN", "441900", "440000", 2, "prefecture_city", "active", null, "", null, "东莞市", "Dongguan", null, 23.0, 113.8, 10_500_000, null),
+            new("CN", "130000", "CN", 1, "province", "active", "CN-13", "", null, "河北省", "Hebei", null, 38.0, 114.5, 74_600_000, null),
+            new("CN", "130100", "130000", 2, "prefecture_city", "active", null, "", null, "石家庄市", "Shijiazhuang", null, 38.0, 114.5, 11_200_000, null),
+            new("CN", "130200", "130000", 2, "prefecture_city", "active", null, "", null, "唐山市", "Tangshan", null, 39.6, 118.2, 7_700_000, null),
+            new("CN", "140000", "CN", 1, "province", "active", "CN-14", "", null, "山西省", "Shanxi", null, 37.9, 112.5, 34_900_000, null),
+            new("CN", "140100", "140000", 2, "prefecture_city", "active", null, "", null, "太原市", "Taiyuan", null, 37.9, 112.5, 5_300_000, null),
+            new("CN", "150000", "CN", 1, "autonomous_region", "active", "CN-15", "", null, "内蒙古自治区", "Inner Mongolia", null, 40.8, 111.7, 24_000_000, null),
+            new("CN", "150100", "150000", 2, "prefecture_city", "active", null, "", null, "呼和浩特市", "Hohhot", null, 40.8, 111.7, 3_400_000, null),
+            new("CN", "150200", "150000", 2, "prefecture_city", "active", null, "", null, "包头市", "Baotou", null, 40.7, 109.8, 2_700_000, null),
+            new("CN", "210000", "CN", 1, "province", "active", "CN-21", "", null, "辽宁省", "Liaoning", null, 41.8, 123.4, 42_600_000, null),
+            new("CN", "210100", "210000", 2, "prefecture_city", "active", null, "", null, "沈阳市", "Shenyang", null, 41.8, 123.4, 9_100_000, null),
+            new("CN", "210200", "210000", 2, "prefecture_city", "active", null, "", null, "大连市", "Dalian", null, 38.9, 121.6, 7_500_000, null),
+            new("CN", "220000", "CN", 1, "province", "active", "CN-22", "", null, "吉林省", "Jilin", null, 43.9, 125.3, 24_100_000, null),
+            new("CN", "220100", "220000", 2, "prefecture_city", "active", null, "", null, "长春市", "Changchun", null, 43.9, 125.3, 9_100_000, null),
+            new("CN", "230000", "CN", 1, "province", "active", "CN-23", "", null, "黑龙江省", "Heilongjiang", null, 45.8, 126.5, 31_900_000, null),
+            new("CN", "230100", "230000", 2, "prefecture_city", "active", null, "", null, "哈尔滨市", "Harbin", null, 45.8, 126.5, 10_100_000, null),
+            new("CN", "320000", "CN", 1, "province", "active", "CN-32", "", null, "江苏省", "Jiangsu", null, 32.1, 118.8, 84_700_000, null),
+            new("CN", "320100", "320000", 2, "prefecture_city", "active", null, "", null, "南京市", "Nanjing", null, 32.1, 118.8, 9_400_000, null),
+            new("CN", "320500", "320000", 2, "prefecture_city", "active", null, "", null, "苏州市", "Suzhou", null, 31.3, 120.6, 12_700_000, null),
+            new("CN", "320200", "320000", 2, "prefecture_city", "active", null, "", null, "无锡市", "Wuxi", null, 31.5, 120.3, 7_500_000, null),
+            new("CN", "330000", "CN", 1, "province", "active", "CN-33", "", null, "浙江省", "Zhejiang", null, 30.3, 120.2, 64_600_000, null),
+            new("CN", "330100", "330000", 2, "prefecture_city", "active", null, "", null, "杭州市", "Hangzhou", null, 30.3, 120.2, 12_200_000, null),
+            new("CN", "330200", "330000", 2, "prefecture_city", "active", null, "", null, "宁波市", "Ningbo", null, 29.9, 121.5, 9_400_000, null),
+            new("CN", "340000", "CN", 1, "province", "active", "CN-34", "", null, "安徽省", "Anhui", null, 31.9, 117.3, 61_000_000, null),
+            new("CN", "340100", "340000", 2, "prefecture_city", "active", null, "", null, "合肥市", "Hefei", null, 31.8, 117.2, 9_400_000, null),
+            new("CN", "350000", "CN", 1, "province", "active", "CN-35", "", null, "福建省", "Fujian", null, 26.1, 119.3, 41_500_000, null),
+            new("CN", "350100", "350000", 2, "prefecture_city", "active", null, "", null, "福州市", "Fuzhou", null, 26.1, 119.3, 8_400_000, null),
+            new("CN", "350200", "350000", 2, "prefecture_city", "active", null, "", null, "厦门市", "Xiamen", null, 24.5, 118.1, 5_200_000, null),
+            new("CN", "360000", "CN", 1, "province", "active", "CN-36", "", null, "江西省", "Jiangxi", null, 28.7, 115.9, 45_200_000, null),
+            new("CN", "360100", "360000", 2, "prefecture_city", "active", null, "", null, "南昌市", "Nanchang", null, 28.7, 115.9, 6_400_000, null),
+            new("CN", "370000", "CN", 1, "province", "active", "CN-37", "", null, "山东省", "Shandong", null, 36.7, 117.1, 101_500_000, null),
+            new("CN", "370100", "370000", 2, "prefecture_city", "active", null, "", null, "济南市", "Jinan", null, 36.7, 117.1, 9_200_000, null),
+            new("CN", "370200", "370000", 2, "prefecture_city", "active", null, "", null, "青岛市", "Qingdao", null, 36.1, 120.4, 10_100_000, null),
+            new("CN", "410000", "CN", 1, "province", "active", "CN-41", "", null, "河南省", "Henan", null, 34.7, 113.6, 99_400_000, null),
+            new("CN", "410100", "410000", 2, "prefecture_city", "active", null, "", null, "郑州市", "Zhengzhou", null, 34.7, 113.6, 12_600_000, null),
+            new("CN", "420000", "CN", 1, "province", "active", "CN-42", "", null, "湖北省", "Hubei", null, 30.6, 114.3, 57_700_000, null),
+            new("CN", "420100", "420000", 2, "prefecture_city", "active", null, "", null, "武汉市", "Wuhan", null, 30.6, 114.3, 12_300_000, null),
+            new("CN", "430000", "CN", 1, "province", "active", "CN-43", "", null, "湖南省", "Hunan", null, 28.2, 112.9, 66_400_000, null),
+            new("CN", "430100", "430000", 2, "prefecture_city", "active", null, "", null, "长沙市", "Changsha", null, 28.2, 112.9, 10_000_000, null),
+            new("CN", "450000", "CN", 1, "autonomous_region", "active", "CN-45", "", null, "广西壮族自治区", "Guangxi", null, 22.8, 108.3, 50_100_000, null),
+            new("CN", "450100", "450000", 2, "prefecture_city", "active", null, "", null, "南宁市", "Nanning", null, 22.8, 108.3, 8_700_000, null),
+            new("CN", "460000", "CN", 1, "province", "active", "CN-46", "", null, "海南省", "Hainan", null, 20.0, 110.3, 10_100_000, null),
+            new("CN", "460100", "460000", 2, "prefecture_city", "active", null, "", null, "海口市", "Haikou", null, 20.0, 110.3, 2_900_000, null),
+            new("CN", "510000", "CN", 1, "province", "active", "CN-51", "", null, "四川省", "Sichuan", null, 30.7, 104.1, 83_700_000, null),
+            new("CN", "510100", "510000", 2, "prefecture_city", "active", null, "", null, "成都市", "Chengdu", null, 30.6, 104.1, 20_900_000, null),
+            new("CN", "520000", "CN", 1, "province", "active", "CN-52", "", null, "贵州省", "Guizhou", null, 26.6, 106.6, 38_600_000, null),
+            new("CN", "520100", "520000", 2, "prefecture_city", "active", null, "", null, "贵阳市", "Guiyang", null, 26.6, 106.6, 6_000_000, null),
+            new("CN", "530000", "CN", 1, "province", "active", "CN-53", "", null, "云南省", "Yunnan", null, 25.0, 102.7, 47_200_000, null),
+            new("CN", "530100", "530000", 2, "prefecture_city", "active", null, "", null, "昆明市", "Kunming", null, 24.9, 102.8, 8_500_000, null),
+            new("CN", "540000", "CN", 1, "autonomous_region", "active", "CN-54", "", null, "西藏自治区", "Tibet", null, 29.7, 91.1, 3_600_000, null),
+            new("CN", "540100", "540000", 2, "prefecture_city", "active", null, "", null, "拉萨市", "Lhasa", null, 29.7, 91.1, 900_000, null),
+            new("CN", "610000", "CN", 1, "province", "active", "CN-61", "", null, "陕西省", "Shaanxi", null, 34.3, 108.9, 39_500_000, null),
+            new("CN", "610100", "610000", 2, "prefecture_city", "active", null, "", null, "西安市", "Xi'an", null, 34.3, 108.9, 12_900_000, null),
+            new("CN", "620000", "CN", 1, "province", "active", "CN-62", "", null, "甘肃省", "Gansu", null, 36.1, 103.8, 25_000_000, null),
+            new("CN", "620100", "620000", 2, "prefecture_city", "active", null, "", null, "兰州市", "Lanzhou", null, 36.1, 103.8, 4_400_000, null),
+            new("CN", "630000", "CN", 1, "province", "active", "CN-63", "", null, "青海省", "Qinghai", null, 36.6, 101.8, 5_900_000, null),
+            new("CN", "630100", "630000", 2, "prefecture_city", "active", null, "", null, "西宁市", "Xining", null, 36.6, 101.8, 2_500_000, null),
+            new("CN", "640000", "CN", 1, "autonomous_region", "active", "CN-64", "", null, "宁夏回族自治区", "Ningxia", null, 38.5, 106.3, 7_200_000, null),
+            new("CN", "640100", "640000", 2, "prefecture_city", "active", null, "", null, "银川市", "Yinchuan", null, 38.5, 106.3, 3_000_000, null),
+            new("CN", "650000", "CN", 1, "autonomous_region", "active", "CN-65", "", null, "新疆维吾尔自治区", "Xinjiang", null, 43.8, 87.6, 25_900_000, null),
+            new("CN", "650100", "650000", 2, "prefecture_city", "active", null, "", null, "乌鲁木齐市", "Urumqi", null, 43.8, 87.6, 4_100_000, null),
+            new("CN", "710000", "CN", 1, "province", "active", "CN-71", "", null, "台湾省", "Taiwan", null, 25.0, 121.5, 23_500_000, null),
+            new("CN", "710100", "710000", 2, "prefecture_city", "active", null, "", null, "台北市", "Taipei", null, 25.0, 121.6, 2_600_000, null),
+            new("CN", "810000", "CN", 1, "sar", "active", "CN-81", "", null, "香港特别行政区", "Hong Kong", null, 22.3, 114.2, 7_300_000, null),
+            new("CN", "820000", "CN", 1, "sar", "active", "CN-82", "", null, "澳门特别行政区", "Macao", null, 22.2, 113.5, 700_000, null),
+            new("US", "US", null, 0, "country", "active", null, "", null, "美国", "United States", null, 39.8, -98.6, 331_000_000, null),
+            new("US", "060000", "US", 1, "state", "active", null, "", null, "加利福尼亚州", "California", null, 36.8, -119.4, 39_000_000, null),
+            new("US", "060400", "060000", 2, "county", "active", null, "", null, "洛杉矶县", "Los Angeles", null, 34.1, -118.2, 9_900_000, null),
+            new("US", "480000", "US", 1, "state", "active", null, "", null, "得克萨斯州", "Texas", null, 31.5, -99.3, 29_100_000, null),
+            new("US", "482000", "480000", 2, "county", "active", null, "", null, "哈里斯县", "Harris", null, 29.8, -95.4, 4_700_000, null),
+            new("US", "360000", "US", 1, "state", "active", null, "", null, "纽约州", "New York", null, 42.9, -75.5, 19_700_000, null),
+            new("US", "360400", "360000", 2, "county", "active", null, "", null, "纽约县", "New York County", null, 40.8, -74.0, 1_600_000, null),
+            new("GB", "GB", null, 0, "country", "active", null, "", null, "英国", "United Kingdom", null, 54.0, -2.0, 67_000_000, null),
+            new("GB", "ENG", "GB", 1, "province", "active", "GB-ENG", "", null, "英格兰", "England", null, 52.4, -1.5, 56_000_000, null),
+            new("GB", "LND", "ENG", 2, "city", "active", null, "", null, "伦敦市", "London", null, 51.5, -0.1, 8_900_000, null),
+            new("GB", "SCT", "GB", 1, "province", "active", "GB-SCT", "", null, "苏格兰", "Scotland", null, 56.8, -4.2, 5_500_000, null),
+            new("GB", "EDH", "SCT", 2, "city", "active", null, "", null, "爱丁堡", "Edinburgh", null, 56.0, -3.2, 550_000, null),
+            new("GB", "WLS", "GB", 1, "province", "active", "GB-WLS", "", null, "威尔士", "Wales", null, 52.1, -3.8, 3_100_000, null),
+            new("GB", "CDF", "WLS", 2, "city", "active", null, "", null, "加的夫", "Cardiff", null, 51.5, -3.2, 370_000, null),
+            new("JP", "JP", null, 0, "country", "active", null, "", null, "日本", "Japan", null, 36.2, 138.3, 125_000_000, null),
+            new("JP", "130000", "JP", 1, "province", "active", "JP-13", "", null, "东京都", "Tokyo", null, 35.7, 139.7, 14_000_000, null),
+            new("JP", "130010", "130000", 2, "city", "active", null, "", null, "东京特别区", "Tokyo Special Wards", null, 35.7, 139.7, 9_700_000, null),
+            new("JP", "270000", "JP", 1, "province", "active", "JP-27", "", null, "大阪府", "Osaka", null, 34.7, 135.5, 8_800_000, null),
+            new("JP", "271000", "270000", 2, "city", "active", null, "", null, "大阪市", "Osaka City", null, 34.7, 135.5, 2_700_000, null),
+            new("JP", "260000", "JP", 1, "province", "active", "JP-26", "", null, "京都府", "Kyoto", null, 35.0, 135.8, 2_500_000, null),
+            new("JP", "261000", "260000", 2, "city", "active", null, "", null, "京都市", "Kyoto City", null, 35.0, 135.8, 1_500_000, null)
         ];
     }
 
@@ -881,7 +874,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
         return await base.SendAsync(request, cancellationToken);
     }
 
-    private static void RemoveTranslations(string kind, Guid id)
+    private static void RemoveTranslations(string kind, string id)
     {
         var prefix = $"{kind}/{id}/";
         foreach (var key in Translations.Keys
@@ -904,7 +897,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
     }
 
     // 按语言链合并译文，先命中的语言优先；未命中的字段由调用方回退主表值。
-    private Dictionary<string, string> FindTranslations(string kind, Guid id, string culture)
+    private Dictionary<string, string> FindTranslations(string kind, string id, string culture)
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         lock (Gate)
@@ -930,7 +923,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
     private AirportResponse Localize(AirportResponse airport, string culture)
     {
-        var values = FindTranslations("airport", airport.Id, culture);
+        var values = FindTranslations("airport", airport.Id.ToString(), culture);
         return airport with
         {
             Name = Pick(values, "Name") ?? airport.Name,
@@ -940,7 +933,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
     private NewsArticleView Localize(NewsArticleView article, string culture)
     {
-        var values = FindTranslations("news", article.Id, culture);
+        var values = FindTranslations("news", article.Id.ToString(), culture);
         return article with
         {
             Title = Pick(values, "Title") ?? article.Title,
@@ -951,13 +944,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
     private RegionView Localize(RegionView region, string culture)
     {
-        var values = FindTranslations("region", region.Id, culture);
+        var values = FindTranslations("region", $"{region.CountryCode}/{region.Code}", culture);
         return region with { Name = Pick(values, "Name") ?? region.Name };
     }
 
     private RegionTreeView Localize(RegionTreeView node, string culture)
     {
-        var values = FindTranslations("region", node.Id, culture);
+        var values = FindTranslations("region", $"{node.CountryCode}/{node.Code}", culture);
         return node with
         {
             Name = Pick(values, "Name") ?? node.Name,

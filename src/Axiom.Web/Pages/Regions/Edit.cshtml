@@ -1,4 +1,4 @@
-@page "{id:guid}"
+@page "{country}/{code}"
 @model Axiom.Web.Pages.Regions.EditModel
 @{
     ViewData["Title"] = Localizer["Regions.Edit.Title"];
@@ -9,7 +9,9 @@
         <li class="breadcrumb-item"><a asp-page="/Regions/Index">@Localizer["Regions.Title"]</a></li>
         @if (Model.Region is not null)
         {
-            <li class="breadcrumb-item"><a asp-page="/Regions/Detail" asp-route-id="@Model.Region.Id">@Model.Region.Name</a></li>
+            <li class="breadcrumb-item">
+                <a asp-page="/Regions/Detail" asp-route-country="@Model.Region.CountryCode" asp-route-code="@Model.Region.Code">@Model.Region.Name</a>
+            </li>
         }
         <li class="breadcrumb-item active" aria-current="page">@Localizer["Regions.Edit.Title"]</li>
     </ol>
@@ -29,7 +31,8 @@
     @if (Model.Region is not null)
     {
         <div class="page-actions">
-            <a class="btn btn-outline-secondary" asp-page="/Regions/Detail" asp-route-id="@Model.Region.Id">@Localizer["Common.View"]</a>
+            <a class="btn btn-outline-secondary" asp-page="/Regions/Detail"
+               asp-route-country="@Model.Region.CountryCode" asp-route-code="@Model.Region.Code">@Localizer["Common.View"]</a>
         </div>
     }
 </div>
@@ -45,10 +48,13 @@
 
 @if (Model.Region is not null)
 {
-    <form method="post" asp-route-id="@Model.Region.Id" class="card form-card" id="region-edit-form">
-        <input type="hidden" asp-for="Input.Level" />
+    <form method="post" asp-route-country="@Model.Region.CountryCode" asp-route-code="@Model.Region.Code"
+          class="card form-card" id="region-edit-form">
+        <input type="hidden" asp-for="Input.Depth" />
         <input type="hidden" asp-for="Input.CountryCode" />
-        <input type="hidden" asp-for="Input.Admin1Code" />
+        <input type="hidden" asp-for="Input.Code" />
+        <input type="hidden" asp-for="Input.ParentCode" />
+        <input type="hidden" asp-for="Input.Type" />
 
         <div class="form-section">
             <div class="section-heading">
@@ -59,40 +65,40 @@
 
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">@Localizer["Regions.Detail.Level"]</label>
-                    <input class="form-control" value="@Localizer[$"Regions.Level.{Model.Region.Level}"]" readonly />
+                    <label class="form-label">@Localizer["Regions.Detail.Depth"]</label>
+                    <input class="form-control" value="@DepthLabel(Model.Region.Depth)" readonly />
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label">@Localizer["Regions.Detail.Code"]</label>
+                    <input class="form-control" value="@Model.Region.Code" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">@Localizer["Regions.Detail.Type"]</label>
+                    <input class="form-control" value="@Model.Region.Type" readonly />
+                </div>
+
                 <div class="col-md-4">
                     <label class="form-label">@Localizer["Regions.Detail.Country"]</label>
                     <input class="form-control" value="@Model.Region.CountryCode" readonly />
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">@Localizer["Regions.Detail.GeoNameId"]</label>
-                    <input class="form-control" value="@Model.Region.GeoNameId" readonly />
-                </div>
 
-                @if (Model.Region.Level > 1)
+                @if (Model.Region.Depth > 0)
                 {
                     <div class="col-md-6">
-                        <label asp-for="Input.ParentId" class="form-label">
+                        <label asp-for="Input.ParentCode" class="form-label">
                             @Localizer["Field.Region.Parent"]<span class="required-mark" aria-hidden="true">*</span>
                         </label>
-                        <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
+                        <select asp-for="Input.ParentCode" asp-items="Model.ParentOptions" class="form-select">
                             <option value="">@Localizer["Regions.Form.SelectParent"]</option>
                         </select>
-                        <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                        <span asp-validation-for="Input.ParentCode" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">@Localizer["Regions.Detail.Admin1Code"]</label>
-                        <input class="form-control" value="@Model.Region.Admin1Code" readonly />
+                        <label class="form-label">@Localizer["Regions.Detail.ParentCode"]</label>
+                        <input class="form-control" value="@Model.Region.ParentCode" readonly />
                     </div>
                 }
 
-                <div class="col-md-6">
-                    <label asp-for="Input.Code" class="form-label"></label>
-                    <input asp-for="Input.Code" class="form-control" autocomplete="off" />
-                    <span asp-validation-for="Input.Code" class="text-danger"></span>
-                </div>
                 <div class="col-md-6">
                     <label asp-for="Input.Name" class="form-label">
                         @Localizer["Field.Region.Name"]<span class="required-mark" aria-hidden="true">*</span>
@@ -109,6 +115,11 @@
                     <label asp-for="Input.LocalName" class="form-label"></label>
                     <input asp-for="Input.LocalName" class="form-control" />
                     <span asp-validation-for="Input.LocalName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.CodeIso" class="form-label"></label>
+                    <input asp-for="Input.CodeIso" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="Input.CodeIso" class="text-danger"></span>
                 </div>
             </div>
         </div>
@@ -140,11 +151,16 @@
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
             <a class="btn btn-outline-secondary" asp-page="/Regions/Detail"
-               asp-route-id="@Model.Region.Id">@Localizer["Common.Cancel"]</a>
+               asp-route-country="@Model.Region.CountryCode" asp-route-code="@Model.Region.Code">@Localizer["Common.Cancel"]</a>
         </div>
     </form>
 }
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+}
+
+@functions {
+    private string DepthLabel(int depth) =>
+        depth is >= 0 and <= 3 ? Localizer[$"Regions.Depth.{depth}"].Value : $"D{depth}";
 }

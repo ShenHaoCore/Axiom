@@ -2,13 +2,13 @@
 namespace Axiom.SharedKernel.Localization;
 
 /// <summary>翻译表中最小的行：实体、语言、字段、值。</summary>
-public readonly record struct TranslationValue(Guid EntityId, string Culture, string Field, string Value);
+public readonly record struct TranslationValue(string EntityId, string Culture, string Field, string Value);
 
 public sealed class TranslationLookup
 {
-    private readonly Dictionary<(Guid EntityId, string Field), string> values;
+    private readonly Dictionary<(string EntityId, string Field), string> values;
 
-    private TranslationLookup(Dictionary<(Guid EntityId, string Field), string> values)
+    private TranslationLookup(Dictionary<(string EntityId, string Field), string> values)
     {
         this.values = values;
     }
@@ -27,7 +27,7 @@ public sealed class TranslationLookup
             byCulture[row.Culture].Add(row);
         }
 
-        var merged = new Dictionary<(Guid, string), string>();
+        var merged = new Dictionary<(string, string), string>();
         foreach (var culture in cultureChain)
         {
             if (!byCulture.TryGetValue(culture, out var cultureRows))
@@ -45,6 +45,6 @@ public sealed class TranslationLookup
     }
 
     /// <summary>取翻译值；没有翻译时返回 null，由调用方回退到主表字段。</summary>
-    public string? Find(Guid entityId, string field) =>
+    public string? Find(string entityId, string field) =>
         values.TryGetValue((entityId, field), out var value) ? value : null;
 }

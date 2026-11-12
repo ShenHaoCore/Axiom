@@ -1,88 +1,84 @@
 // 行政区列表 / 详情 DTO，映射网关返回的 JSON。
+// 按 (country, code) 复合业务键标识，对齐 geo_division 数据集结构。
 namespace Axiom.Web.Models;
 
 public sealed record RegionView(
-    Guid Id,
-    Guid? ParentId,
-    int Level,
     string CountryCode,
-    string? Admin1Code,
     string Code,
+    string? ParentCode,
+    int Depth,
+    string Type,
+    string Status,
+    string? CodeIso,
+    string SortKey,
+    string? Abbrev,
     string Name,
     string? AsciiName,
     string? LocalName,
     double? Latitude,
     double? Longitude,
     long? Population,
-    int? GeoNameId);
+    int? GeoNameId)
+{
+    /// <summary>翻译查找使用的实体标识（CN.110000）。</summary>
+    public string TranslationKey => $"{CountryCode}.{Code}";
+}
 
 public sealed record RegionTreeView(
-    Guid Id,
-    int Level,
     string CountryCode,
-    string? Admin1Code,
     string Code,
+    string? ParentCode,
+    int Depth,
+    string Type,
     string Name,
     long? Population,
     IReadOnlyList<RegionTreeView> Children);
 
-/// <summary>/children 接口的子级条目：ChildCount 渲染展开箭头，SameNameChildCount 识别直辖市。</summary>
+/// <summary>/children 接口的子级条目：ChildCount 渲染展开箭头，SameNameChildCount 合并同名市级记录，Type 驱动徽标。</summary>
 public sealed record RegionChildView(
-    Guid Id,
-    int Level,
     string CountryCode,
-    string? Admin1Code,
     string Code,
+    string? ParentCode,
+    int Depth,
+    string Type,
     string Name,
     long? Population,
     int ChildCount,
     int SameNameChildCount);
 
+/// <summary>与 ReferenceData API 的 type 字符串口径保持一致的常量。</summary>
+public static class RegionTypes
+{
+    public const string Country = "country";
+    public const string Province = "province";
+    public const string Municipality = "municipality";
+    public const string AutonomousRegion = "autonomous_region";
+    public const string SpecialAdministrativeRegion = "sar";
+    public const string State = "state";
+    public const string PrefectureCity = "prefecture_city";
+    public const string District = "district";
+    public const string County = "county";
+    public const string Other = "other";
+}
+
 /// <summary>行政区树单个节点的展示模型（服务端渲染节点行 + 空的惰性子级容器）。</summary>
 public sealed record RegionNodeViewModel(
-    Guid Id,
-    int Level,
+    string CountryCode,
     string Code,
+    int Depth,
+    string Type,
     string Name,
     long? Population,
-    bool HasChildren,
-    bool IsMunicipality,
-    bool IsAutonomousRegion,
-    bool IsSpecialAdministrativeRegion)
+    bool HasChildren)
 {
-    private static readonly HashSet<string> AutonomousRegionCodes = new(StringComparer.Ordinal)
-    {
-        "15",   // 内蒙古自治区
-        "45",   // 广西壮族自治区
-        "54",   // 西藏自治区
-        "64",   // 宁夏回族自治区
-        "65"    // 新疆维吾尔自治区
-    };
-
-    private static readonly HashSet<string> SpecialAdministrativeRegionCodes = new(StringComparer.Ordinal)
-    {
-        "81",   // 香港特别行政区
-        "82"    // 澳门特别行政区
-    };
-
     /// <summary>由 /children 接口返回的子级构造展示模型。</summary>
     public static RegionNodeViewModel FromChild(RegionChildView child) => new(
-        child.Id,
-        child.Level,
+        child.CountryCode,
         child.Code,
+        child.Depth,
+        child.Type,
         child.Name,
         child.Population,
         // 与父级同名的下级（直辖市市级重复）会被合并隐藏，不参与展开判断。
-        HasChildren: child.ChildCount > child.SameNameChildCount,
-        IsMunicipality: child is { Level: 2, SameNameChildCount: > 0 },
-        // 中国五个自治区的行政区划代码以 Admin1Code 前缀识别。
-        IsAutonomousRegion: child.CountryCode == "CN"
-                            && child.Level == 2
-                            && child.Admin1Code is not null
-                            && AutonomousRegionCodes.Contains(child.Admin1Code),
-        // 中国两个特别行政区以 Admin1Code 前缀识别。
-        IsSpecialAdministrativeRegion: child.CountryCode == "CN"
-                                       && child.Level == 2
-                                       && child.Admin1Code is not null
-                                       && SpecialAdministrativeRegionCodes.Contains(child.Admin1Code));
+        HasChildren: child.ChildCount > child.SameNameChildCount);
 }

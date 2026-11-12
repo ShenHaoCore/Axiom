@@ -1,4 +1,4 @@
-// 行政区翻译子表实体：位于聚合之外，按 (行政区, 语言, 字段) 唯一。
+// 行政区翻译子表实体：位于聚合之外，按 (国家, 区划代码, 语言, 字段) 唯一。
 namespace Axiom.ReferenceData.Domain.Entities;
 
 public sealed class RegionTranslation
@@ -8,18 +8,20 @@ public sealed class RegionTranslation
     {
     }
 
-    public RegionTranslation(Guid regionId, string culture, string field, string value)
+    public RegionTranslation(string regionCountryCode, string regionCode, string culture, string field, string value)
     {
-        Id = Guid.NewGuid();
-        RegionId = regionId;
+        RegionCountryCode = regionCountryCode;
+        RegionCode = regionCode;
         Culture = culture;
         Field = field;
         Value = value;
     }
 
-    public Guid Id { get; private set; }
+    /// <summary>复合业务键之一：ISO 3166-1 alpha-2。</summary>
+    public string RegionCountryCode { get; private set; } = null!;
 
-    public Guid RegionId { get; private set; }
+    /// <summary>复合业务键之二：区划代码。</summary>
+    public string RegionCode { get; private set; } = null!;
 
     public string Culture { get; private set; } = null!;
 

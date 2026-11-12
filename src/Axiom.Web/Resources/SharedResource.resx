@@ -140,19 +140,54 @@
   <data name="Regions.SearchResults" xml:space="preserve"><value>搜索结果</value></data>
   <data name="Regions.SearchTotal" xml:space="preserve"><value>共 {0} 条</value></data>
   <data name="Regions.NoMatch" xml:space="preserve"><value>未找到匹配 "{0}" 的行政区。</value></data>
-  <data name="Regions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
+    <data name="Regions.Depth.0" xml:space="preserve"><value>国家</value></data>
+  <data name="Regions.Depth.1" xml:space="preserve"><value>省/州</value></data>
+  <data name="Regions.Depth.2" xml:space="preserve"><value>地级市</value></data>
+  <data name="Regions.Depth.3" xml:space="preserve"><value>区/县</value></data>
+  <data name="Regions.Type.Province" xml:space="preserve"><value>省</value></data>
+  <data name="Regions.Type.Municipality" xml:space="preserve"><value>直辖市</value></data>
+  <data name="Regions.Type.AutonomousRegion" xml:space="preserve"><value>自治区</value></data>
+  <data name="Regions.Type.SpecialAdministrativeRegion" xml:space="preserve"><value>特别行政区</value></data>
+  <data name="Regions.Type.State" xml:space="preserve"><value>州</value></data>
+  <data name="Regions.Type.PrefectureCity" xml:space="preserve"><value>地级市</value></data>
+  <data name="Regions.Type.Prefecture" xml:space="preserve"><value>地区</value></data>
+  <data name="Regions.Type.AutonomousPrefecture" xml:space="preserve"><value>自治州</value></data>
+  <data name="Regions.Type.League" xml:space="preserve"><value>盟</value></data>
+  <data name="Regions.Type.City" xml:space="preserve"><value>市</value></data>
+  <data name="Regions.Type.County" xml:space="preserve"><value>县</value></data>
+  <data name="Regions.Type.CountyCity" xml:space="preserve"><value>县级市</value></data>
+  <data name="Regions.Type.District" xml:space="preserve"><value>市辖区</value></data>
+  <data name="Regions.Type.AutonomousCounty" xml:space="preserve"><value>自治县</value></data>
+  <data name="Regions.Type.Banner" xml:space="preserve"><value>旗</value></data>
+  <data name="Regions.Type.AutonomousBanner" xml:space="preserve"><value>自治旗</value></data>
+  <data name="Regions.Type.SpecialZone" xml:space="preserve"><value>特区</value></data>
+  <data name="Regions.Type.ForestryArea" xml:space="preserve"><value>林区</value></data>
+  <data name="Regions.Type.Other" xml:space="preserve"><value>其他</value></data>
+  <data name="Regions.Detail.Depth" xml:space="preserve"><value>层级深度</value></data>
+  <data name="Regions.Detail.Type" xml:space="preserve"><value>类型</value></data>
+  <data name="Regions.Detail.CodeIso" xml:space="preserve"><value>ISO 3166-2 代码</value></data>
+  <data name="Regions.Detail.ParentCode" xml:space="preserve"><value>上级代码</value></data>
+  <data name="Regions.Detail.Status" xml:space="preserve"><value>状态</value></data>
+  <data name="Regions.Detail.Abbrev" xml:space="preserve"><value>缩写</value></data>
+  <data name="Field.Region.Depth" xml:space="preserve"><value>层级深度</value></data>
+  <data name="Field.Region.Type" xml:space="preserve"><value>类型</value></data>
+  <data name="Field.Region.CodeIso" xml:space="preserve"><value>ISO 3166-2 代码</value></data>
+  <data name="Validation.Region.DepthRange" xml:space="preserve"><value>深度必须为 0 到 3。</value></data>
+  <data name="Validation.Region.ParentCodeTooLong" xml:space="preserve"><value>上级代码最多 50 个字符。</value></data>
+  <data name="Validation.Region.TypeTooLong" xml:space="preserve"><value>类型最多 32 个字符。</value></data>
+  <data name="Validation.Region.CodeIsoTooLong" xml:space="preserve"><value>ISO 代码最多 16 个字符。</value></data>
+  <data name="Validation.Region.CodeRequired" xml:space="preserve"><value>区划代码不能为空。</value></data>
+  <data name="Regions.Hint.Code" xml:space="preserve"><value>国别内唯一的区划代码（如 110000），创建后不可修改。</value></data>
+  <data name="Regions.Hint.Type" xml:space="preserve"><value>留空时按国家与深度自动推导。</value></data>
+  <data name="Regions.Form.TypeDefault" xml:space="preserve"><value>自动推导</value></data>
+  <data name="Regions.Form.ParentNotFound" xml:space="preserve"><value>上级行政区不存在。</value></data>
+<data name="Regions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
   <data name="Regions.Column.Level" xml:space="preserve"><value>层级</value></data>
   <data name="Regions.Column.Name" xml:space="preserve"><value>名称</value></data>
   <data name="Regions.Column.Code" xml:space="preserve"><value>代码</value></data>
   <data name="Regions.Column.Country" xml:space="preserve"><value>国家</value></data>
-  <data name="Regions.Column.Admin1" xml:space="preserve"><value>Admin1</value></data>
+  <data name="Regions.Column.ProvinceCode" xml:space="preserve"><value>省/州代码</value></data>
   <data name="Regions.Column.Population" xml:space="preserve"><value>人口</value></data>
-  <data name="Regions.Level.1" xml:space="preserve"><value>国家</value></data>
-  <data name="Regions.Level.2" xml:space="preserve"><value>省/州</value></data>
-  <data name="Regions.Level.3" xml:space="preserve"><value>市</value></data>
-  <data name="Regions.Municipality" xml:space="preserve"><value>直辖市</value></data>
-  <data name="Regions.AutonomousRegion" xml:space="preserve"><value>自治区</value></data>
-  <data name="Regions.SpecialAdministrativeRegion" xml:space="preserve"><value>特别行政区</value></data>
   <data name="Regions.LoadCountriesFailed" xml:space="preserve"><value>无法加载国家列表。</value></data>
   <data name="Regions.SearchFailed" xml:space="preserve"><value>搜索行政区失败。</value></data>
   <data name="Regions.LoadTreeFailed" xml:space="preserve"><value>无法加载 {0} 的行政区层级。</value></data>
@@ -166,16 +201,12 @@
   <data name="Regions.Detail.BackToTree" xml:space="preserve"><value>返回层级树</value></data>
   <data name="Regions.Detail.BasicInfo" xml:space="preserve"><value>基本信息</value></data>
   <data name="Regions.Detail.GeoData" xml:space="preserve"><value>地理数据</value></data>
-  <data name="Regions.Detail.Level" xml:space="preserve"><value>层级</value></data>
   <data name="Regions.Detail.Code" xml:space="preserve"><value>代码</value></data>
   <data name="Regions.Detail.Country" xml:space="preserve"><value>国家</value></data>
-  <data name="Regions.Detail.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
   <data name="Regions.Detail.AsciiName" xml:space="preserve"><value>Ascii 名</value></data>
   <data name="Regions.Detail.GeoNameId" xml:space="preserve"><value>GeoNames ID</value></data>
   <data name="Regions.Detail.Population" xml:space="preserve"><value>人口</value></data>
   <data name="Regions.Detail.Coordinates" xml:space="preserve"><value>经纬度</value></data>
-  <data name="Regions.Detail.ParentId" xml:space="preserve"><value>父节点 ID</value></data>
-  <data name="Regions.Detail.RecordId" xml:space="preserve"><value>记录 ID</value></data>
   <data name="Regions.Detail.Meta" xml:space="preserve"><value>记录信息</value></data>
   <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>无法加载行政区详情。</value></data>
   <data name="Regions.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这个行政区吗？</value></data>
@@ -195,15 +226,14 @@
   <data name="Regions.Section.IdentityHint" xml:space="preserve"><value>行政区在当前国家层级中的位置与代码。</value></data>
   <data name="Regions.Section.Geo" xml:space="preserve"><value>地理与人口</value></data>
   <data name="Regions.Section.GeoHint" xml:space="preserve"><value>可选信息，用于地图展示与统计。</value></data>
-  <data name="Regions.Hint.Admin1Code" xml:space="preserve"><value>一级行政区代码，最多 20 个字符。</value></data>
+  <data name="Regions.Hint.ProvinceCode" xml:space="preserve"><value>所属省级行政区代码（省级记录为自身代码），最多 20 个字符。</value></data>
   <data name="Regions.Edit.LoadFailed" xml:space="preserve"><value>无法加载行政区内容。</value></data>
   <data name="Regions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
   <data name="Regions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
-  <data name="Regions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
+  <data name="Regions.Form.UniqueConflict" xml:space="preserve"><value>相同国家下，行政区代码已存在。</value></data>
   <data name="Regions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
-  <data name="Field.Region.Level" xml:space="preserve"><value>层级</value></data>
   <data name="Field.Region.CountryCode" xml:space="preserve"><value>国家代码</value></data>
-  <data name="Field.Region.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
+  <data name="Field.Region.ProvinceCode" xml:space="preserve"><value>省/州代码</value></data>
   <data name="Field.Region.Code" xml:space="preserve"><value>行政区代码</value></data>
   <data name="Field.Region.AsciiName" xml:space="preserve"><value>Ascii 名</value></data>
   <data name="Field.Region.LocalName" xml:space="preserve"><value>当地名称</value></data>
@@ -211,7 +241,6 @@
   <data name="Field.Region.Longitude" xml:space="preserve"><value>经度</value></data>
   <data name="Field.Region.Population" xml:space="preserve"><value>人口</value></data>
   <data name="Field.Region.Parent" xml:space="preserve"><value>父级行政区</value></data>
-  <data name="Validation.Region.LevelRange" xml:space="preserve"><value>层级必须为国家、省/州或市。</value></data>
   <data name="Validation.Region.CountryCodeRequired" xml:space="preserve"><value>国家代码必填。</value></data>
   <data name="Validation.Region.CountryCodeFormat" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
   <data name="Validation.Region.Admin1CodeTooLong" xml:space="preserve"><value>Admin1 Code 不能超过 20 个字符。</value></data>

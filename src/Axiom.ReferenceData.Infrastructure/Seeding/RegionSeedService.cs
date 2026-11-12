@@ -1,4 +1,5 @@
 // 启动时同步行政区层级：先内置国家，再尝试 GeoNames 增量。
+// 全部按 (country, code) 复合业务键 upsert，与 geo_division 数据集的键口径一致。
 using Axiom.ReferenceData.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,16 +41,16 @@ public sealed class RegionSeedService(
 
     private async Task SeedAsync(ReferenceDataDbContext dbContext, CancellationToken cancellationToken)
     {
-        // Phase 1: 内置国家
+        // Phase 1: 内置国家（depth 0，code = ISO 国家代码）
         var countries = await downloader.LoadBuiltInCountriesAsync(cancellationToken);
-        var countryIdByCode = await UpsertCountriesAsync(dbContext, countries, cancellationToken);
-        logger.LogInformation("内置国家种子完成：{Count} 个国家。", countryIdByCode.Count);
+        var countryCodes = await UpsertCountriesAsync(dbContext, countries, cancellationToken);
+        logger.LogInformation("内置国家种子完成：{Count} 个国家。", countryCodes.Count);
 
-        // Phase 2: GeoNames 一级行政区
+        // Phase 2: GeoNames 一级行政区（depth 1）
         List<GeoNamesDownloader.Admin1Row>? admin1List = null;
         try
         {
-            admin1List = await downloader.DownloadAdmin1CodesAsync(cancellationToken);
+            admin1List = await downloader.DownloadProvinceCodesAsync(cancellationToken);
         }
         catch (Exception exception)
         {
@@ -57,20 +58,19 @@ public sealed class RegionSeedService(
             admin1List = null;
         }
 
-        var admin1IdByKey = new Dictionary<string, Guid>();
         if (admin1List is { Count: > 0 })
         {
-            admin1IdByKey = await UpsertAdmin1Async(dbContext, admin1List, countryIdByCode, cancellationToken);
-            logger.LogInformation("GeoNames admin1 种子完成：{Count} 条。", admin1IdByKey.Count);
+            var count = await UpsertProvincesAsync(dbContext, admin1List, countryCodes, cancellationToken);
+            logger.LogInformation("GeoNames 一级行政区种子完成：{Count} 条。", count);
         }
 
-        // Phase 3: GeoNames 城市（人口 ≥ MinPopulation）
+        // Phase 3: GeoNames 城市（depth 2，人口 ≥ MinPopulation）
         try
         {
             var cities = await downloader.DownloadCitiesAsync(cancellationToken);
             if (cities.Count > 0)
             {
-                var cityCount = await UpsertCitiesAsync(dbContext, cities, countryIdByCode, admin1IdByKey, cancellationToken);
+                var cityCount = await UpsertCitiesAsync(dbContext, cities, countryCodes, cancellationToken);
                 logger.LogInformation("GeoNames 城市种子完成：{Count} 条。", cityCount);
             }
         }
@@ -84,46 +84,31 @@ public sealed class RegionSeedService(
         logger.LogInformation("行政区种子全部完成：数据库共 {Total} 条 Region。", total);
     }
 
-    private static async Task<Dictionary<string, Guid>> UpsertCountriesAsync(
+    private static async Task<Dictionary<string, string>> UpsertCountriesAsync(
         ReferenceDataDbContext dbContext,
         List<GeoNamesDownloader.CountrySeed> countries,
         CancellationToken cancellationToken)
     {
-        var codeToId = new Dictionary<string, Guid>(StringComparer.Ordinal);
         var existing = await dbContext.Regions
             .AsNoTracking()
-            .Where(r => r.Level == RegionLevel.Country)
-            .ToDictionaryAsync(r => r.CountryCode, r => r.Id, cancellationToken);
+            .Where(r => r.Depth == 0)
+            .ToDictionaryAsync(r => r.CountryCode, r => r.Code, cancellationToken);
 
         var toAdd = new List<Region>();
         foreach (var country in countries)
         {
-            if (existing.TryGetValue(country.Code, out var id))
+            // 国家行：code 即 ISO 国家代码，与 (country, code) 复合键中的 country 相同。
+            if (existing.TryGetValue(country.Code, out _))
             {
-                codeToId[country.Code] = id;
                 continue;
             }
 
-            // 同 CountryCode+Level+Code 唯一键可能有其他条目，也尝试复用
-            var dup = await dbContext.Regions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    r => r.CountryCode == country.Code && r.Level == RegionLevel.Country && r.Code == country.Code,
-                    cancellationToken);
-            if (dup is not null)
-            {
-                codeToId[country.Code] = dup.Id;
-                continue;
-            }
-
-            var region = Region.Create(
-                RegionLevel.Country,
-                country.Code,
-                country.Name,
+            toAdd.Add(Region.Create(
+                depth: 0,
+                countryCode: country.Code,
                 code: country.Code,
-                asciiName: country.Name);
-            toAdd.Add(region);
-            codeToId[country.Code] = region.Id;
+                name: country.Name,
+                asciiName: country.Name));
         }
 
         if (toAdd.Count > 0)
@@ -132,62 +117,44 @@ public sealed class RegionSeedService(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return codeToId;
+        return countries.ToDictionary(c => c.Code, c => c.Code);
     }
 
-    private static async Task<Dictionary<string, Guid>> UpsertAdmin1Async(
+    private async Task<int> UpsertProvincesAsync(
         ReferenceDataDbContext dbContext,
         List<GeoNamesDownloader.Admin1Row> admin1List,
-        Dictionary<string, Guid> countryIdByCode,
+        Dictionary<string, string> countryCodes,
         CancellationToken cancellationToken)
     {
-        var keyToId = new Dictionary<string, Guid>(StringComparer.Ordinal);
         var existing = await dbContext.Regions
             .AsNoTracking()
-            .Where(r => r.Level == RegionLevel.Admin1)
-            .Select(r => new { r.CountryCode, r.Admin1Code, r.Id })
-            .Where(r => r.Admin1Code != null)
-            .ToDictionaryAsync(
-                r => $"{r.CountryCode}.{r.Admin1Code}",
-                r => r.Id,
-                cancellationToken);
-
-        foreach (var row in admin1List)
-        {
-            keyToId[$"{row.CountryCode}.{row.Admin1Code}"] = existing.TryGetValue($"{row.CountryCode}.{row.Admin1Code}", out var eId)
-                ? eId
-                : Guid.Empty;
-        }
+            .Where(r => r.Depth == 1)
+            .Select(r => new { r.CountryCode, r.Code })
+            .ToDictionaryAsync(r => $"{r.CountryCode}.{r.Code}", cancellationToken);
 
         var toAdd = new List<Region>();
         foreach (var row in admin1List)
         {
-            var key = $"{row.CountryCode}.{row.Admin1Code}";
+            var key = $"{row.CountryCode}.{row.Code}";
             if (existing.ContainsKey(key)) continue;
-            if (!countryIdByCode.TryGetValue(row.CountryCode, out var countryId)) continue;
+            if (!countryCodes.TryGetValue(row.CountryCode, out var countryCode)) continue;
 
             // GeoNameId 唯一键可能冲突（同一条目已存在），跳过。
-            var dupByGeoNameId = row.GeoNameId > 0
-                ? await dbContext.Regions.AsNoTracking().FirstOrDefaultAsync(
-                    r => r.GeoNameId == row.GeoNameId, cancellationToken)
-                : null;
-            if (dupByGeoNameId is not null)
+            if (row.GeoNameId > 0 && await dbContext.Regions.AsNoTracking().AnyAsync(
+                    r => r.GeoNameId == row.GeoNameId, cancellationToken))
             {
-                keyToId[key] = dupByGeoNameId.Id;
                 continue;
             }
 
-            var region = Region.Create(
-                RegionLevel.Admin1,
-                row.CountryCode,
-                row.Name,
-                admin1Code: row.Admin1Code,
-                code: row.Admin1Code,
+            toAdd.Add(Region.Create(
+                depth: 1,
+                countryCode: row.CountryCode,
+                code: row.Code,
+                name: row.Name,
+                parentCode: countryCode,
                 asciiName: row.AsciiName,
-                parentId: countryId,
-                geoNameId: row.GeoNameId);
-            toAdd.Add(region);
-            keyToId[key] = region.Id;
+                geoNameId: row.GeoNameId,
+                type: RegionTypeIngestion.DeriveForProvince(row.CountryCode, row.Code)));
         }
 
         if (toAdd.Count > 0)
@@ -196,19 +163,18 @@ public sealed class RegionSeedService(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return keyToId;
+        return toAdd.Count;
     }
 
-    private static async Task<int> UpsertCitiesAsync(
+    private async Task<int> UpsertCitiesAsync(
         ReferenceDataDbContext dbContext,
         List<GeoNamesDownloader.CityRow> cities,
-        Dictionary<string, Guid> countryIdByCode,
-        Dictionary<string, Guid> admin1IdByKey,
+        Dictionary<string, string> countryCodes,
         CancellationToken cancellationToken)
     {
         var existingGeoIds = await dbContext.Regions
             .AsNoTracking()
-            .Where(r => r.Level == RegionLevel.City && r.GeoNameId.HasValue)
+            .Where(r => r.GeoNameId.HasValue)
             .Select(r => r.GeoNameId!.Value)
             .ToHashSetAsync(cancellationToken);
 
@@ -216,31 +182,24 @@ public sealed class RegionSeedService(
         foreach (var city in cities)
         {
             if (existingGeoIds.Contains(city.GeoNameId)) continue;
-            if (!countryIdByCode.TryGetValue(city.CountryCode, out var countryId)) continue;
+            if (!countryCodes.TryGetValue(city.CountryCode, out var countryCode)) continue;
 
-            Guid? parentId = null;
-            if (!string.IsNullOrEmpty(city.Admin1Code))
-            {
-                if (admin1IdByKey.TryGetValue($"{city.CountryCode}.{city.Admin1Code}", out var admin1Id))
-                {
-                    parentId = admin1Id;
-                }
-            }
+            // 上级一级行政区必须存在（城市挂 depth 1 行）。
+            if (string.IsNullOrEmpty(city.ParentCode)) continue;
 
-            var region = Region.Create(
-                RegionLevel.City,
-                city.CountryCode,
-                city.Name,
-                admin1Code: city.Admin1Code,
+            toAdd.Add(Region.Create(
+                depth: 2,
+                countryCode: city.CountryCode,
                 code: city.GeoNameId.ToString(),
+                name: city.Name,
+                parentCode: city.ParentCode,
                 asciiName: city.AsciiName,
                 localName: ExtractLocalName(city.AlternateNames),
                 latitude: city.Latitude,
                 longitude: city.Longitude,
                 population: city.Population,
-                parentId: parentId,
-                geoNameId: city.GeoNameId);
-            toAdd.Add(region);
+                geoNameId: city.GeoNameId,
+                type: RegionTypeIngestion.ForGeoNamesCity()));
         }
 
         // 分批插入避免参数爆炸
@@ -257,7 +216,11 @@ public sealed class RegionSeedService(
 
     private static string? ExtractLocalName(string? alternateNames)
     {
-        if (string.IsNullOrWhiteSpace(alternateNames)) return null;
+        if (string.IsNullOrWhiteSpace(alternateNames))
+        {
+            return null;
+        }
+
         // 简化：取第一个逗号分隔项作为本地名（GeoNames 中文 alternateNames 通常是逗号分隔多语言）。
         var commaIndex = alternateNames.IndexOf(',');
         var first = commaIndex > 0 ? alternateNames[..commaIndex] : alternateNames;

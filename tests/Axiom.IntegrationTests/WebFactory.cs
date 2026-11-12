@@ -21,9 +21,9 @@ namespace Axiom.IntegrationTests;
 public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 {
     internal static readonly Guid AirportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    internal static readonly Guid RegionCountryId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-    internal static readonly Guid RegionAdmin1Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
-    internal static readonly Guid RegionCityId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    internal const string RegionCountryCode = "CN";
+    internal const string RegionProvinceCode = "JS";
+    internal const string RegionCityCode = "SZ";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -51,19 +51,24 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
         private const string ManageToken = "test-access-token";
         private const string ReadToken = "test-read-access-token";
         private readonly Dictionary<Guid, AirportState> _airports = new();
-        private readonly Dictionary<Guid, RegionView> _regions = new();
+        private readonly Dictionary<string, RegionView> _regions = new();
+
+        private static string RegionKey(string countryCode, string code) => $"{countryCode}/{code}";
 
         public GatewayStubHandler()
         {
             _airports.Add(AirportId, new AirportState(
                 new AirportResponse(AirportId, "SHA", "上海浦东国际机场", "CN", "上海", 31.1443, 121.8083),
                 1));
-            _regions.Add(RegionCountryId, new RegionView(
-                RegionCountryId, null, 1, "CN", null, "CN", "中国", "China", "中国", null, null, 1400000000, null));
-            _regions.Add(RegionAdmin1Id, new RegionView(
-                RegionAdmin1Id, RegionCountryId, 2, "CN", "JS", "JS", "江苏", "Jiangsu", "江苏", null, null, 85000000, null));
-            _regions.Add(RegionCityId, new RegionView(
-                RegionCityId, RegionAdmin1Id, 3, "CN", "JS", "SZ", "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
+            _regions.Add(RegionKey(RegionCountryCode, RegionCountryCode), new RegionView(
+                RegionCountryCode, RegionCountryCode, null, 0, "country", "active",
+                null, string.Empty, null, "中国", "China", "中国", null, null, 1400000000, null));
+            _regions.Add(RegionKey(RegionCountryCode, RegionProvinceCode), new RegionView(
+                RegionCountryCode, RegionProvinceCode, RegionCountryCode, 1, "province", "active",
+                "CN-JS", string.Empty, null, "江苏", "Jiangsu", "江苏", null, null, 85000000, null));
+            _regions.Add(RegionKey(RegionCountryCode, RegionCityCode), new RegionView(
+                RegionCountryCode, RegionCityCode, RegionProvinceCode, 2, "prefecture_city", "active",
+                null, string.Empty, null, "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -235,9 +240,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             {
                 var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
                 IEnumerable<RegionView> regions = _regions.Values;
-                if (query.TryGetValue("level", out var levelValue) && int.TryParse(levelValue.ToString(), out var parsedLevel))
+                if (query.TryGetValue("depth", out var depthValue) && int.TryParse(depthValue.ToString(), out var parsedDepth))
                 {
-                    regions = regions.Where(region => region.Level == parsedLevel);
+                    regions = regions.Where(region => region.Depth == parsedDepth);
                 }
 
                 if (query.TryGetValue("countryCode", out var countryCode) && !string.IsNullOrWhiteSpace(countryCode))
@@ -245,9 +250,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                     regions = regions.Where(region => region.CountryCode == countryCode.ToString().ToUpperInvariant());
                 }
 
-                if (query.TryGetValue("admin1Code", out var admin1Code) && !string.IsNullOrWhiteSpace(admin1Code))
+                if (query.TryGetValue("parentCode", out var parentCode) && !string.IsNullOrWhiteSpace(parentCode))
                 {
-                    regions = regions.Where(region => region.Admin1Code == admin1Code.ToString());
+                    regions = regions.Where(region => region.ParentCode == parentCode.ToString());
                 }
 
                 if (query.TryGetValue("q", out var q) && !string.IsNullOrWhiteSpace(q))
@@ -277,28 +282,30 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             }
 
             var input = await request.Content!.ReadFromJsonAsync<RegionCreatePayload>(cancellationToken);
-            var level = ParseLevel(input?.Level);
-            if (input?.CountryCode is null || input.Name is null || level is null)
+            if (input?.CountryCode is null || input.Name is null || input.Code is null
+                || input.Depth is null or < 0 or > 3)
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
 
             var normalizedCountry = input.CountryCode.ToUpperInvariant();
-            var code = (input.Code ?? input.Name).ToUpperInvariant();
+            var code = input.Code.ToUpperInvariant();
             if (_regions.Values.Any(region =>
-                    region.CountryCode == normalizedCountry && region.Level == level && region.Code == code))
+                    region.CountryCode == normalizedCountry && region.Code == code))
             {
                 return new HttpResponseMessage(HttpStatusCode.Conflict);
             }
 
-            var id = Guid.NewGuid();
             var region = new RegionView(
-                id,
-                level == 1 ? null : input.ParentId,
-                level.Value,
                 normalizedCountry,
-                input.Admin1Code,
                 code,
+                input.Depth == 0 ? null : input.ParentCode?.ToUpperInvariant(),
+                input.Depth.Value,
+                input.Type ?? (input.Depth == 0 ? "country" : "province"),
+                "active",
+                input.CodeIso,
+                string.Empty,
+                null,
                 input.Name,
                 input.AsciiName,
                 input.LocalName,
@@ -306,9 +313,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 input.Longitude,
                 input.Population,
                 null);
-            _regions.Add(id, region);
+            _regions.Add(RegionKey(normalizedCountry, code), region);
             var response = Json(HttpStatusCode.Created, region);
-            response.Headers.Location = new Uri($"/api/regions/{id}", UriKind.Relative);
+            response.Headers.Location = new Uri($"/api/regions/{normalizedCountry}/{code}", UriKind.Relative);
             return response;
         }
 
@@ -316,22 +323,22 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
         {
             var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
             var countryCode = query["countryCode"].ToString().ToUpperInvariant();
-            var country = _regions.Values.FirstOrDefault(region => region.Level == 1 && region.CountryCode == countryCode);
+            var country = _regions.Values.FirstOrDefault(region => region.Depth == 0 && region.CountryCode == countryCode);
             return country is null
                 ? new HttpResponseMessage(HttpStatusCode.NotFound)
                 : Json(HttpStatusCode.OK, BuildTree(country));
         }
 
         private RegionTreeView BuildTree(RegionView region) => new(
-            region.Id,
-            region.Level,
             region.CountryCode,
-            region.Admin1Code,
             region.Code,
+            region.ParentCode,
+            region.Depth,
+            region.Type,
             region.Name,
             region.Population,
             _regions.Values
-                .Where(child => child.ParentId == region.Id)
+                .Where(child => child.CountryCode == region.CountryCode && child.ParentCode == region.Code)
                 .OrderBy(child => child.Code)
                 .Select(BuildTree)
                 .ToList());
@@ -339,32 +346,36 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
         // 单级子级：childCount 渲染展开箭头，sameNameChildCount 支撑直辖市合并展示。
         private HttpResponseMessage RegionChildren(string path)
         {
-            var idSegment = path.Split('/', StringSplitOptions.RemoveEmptyEntries) switch
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 5)
             {
-                [_, _, var id, _] when Guid.TryParse(id, out var parsed) => parsed,
-                _ => Guid.Empty
-            };
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
 
-            if (!_regions.TryGetValue(idSegment, out var parent))
+            var country = segments[2].ToUpperInvariant();
+            var parentCode = segments[3].ToUpperInvariant();
+            if (!_regions.TryGetValue(RegionKey(country, parentCode), out var parent))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
 
             var items = _regions.Values
-                .Where(child => child.ParentId == parent.Id)
+                .Where(child => child.CountryCode == country && child.ParentCode == parent.Code)
                 .OrderBy(child => child.Code)
                 .Select(child => new
                 {
-                    child.Id,
-                    child.Level,
                     child.CountryCode,
-                    child.Admin1Code,
                     child.Code,
+                    child.ParentCode,
+                    child.Depth,
+                    child.Type,
                     child.Name,
                     child.Population,
-                    childCount = _regions.Values.Count(grandchild => grandchild.ParentId == child.Id),
+                    childCount = _regions.Values.Count(grandchild =>
+                        grandchild.CountryCode == country && grandchild.ParentCode == child.Code),
                     sameNameChildCount = _regions.Values.Count(grandchild =>
-                        grandchild.ParentId == child.Id
+                        grandchild.CountryCode == country
+                        && grandchild.ParentCode == child.Code
                         && string.Equals(grandchild.Name?.Trim(), child.Name?.Trim(), StringComparison.Ordinal))
                 }).ToList();
             return Json(HttpStatusCode.OK, items);
@@ -377,14 +388,21 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             CancellationToken cancellationToken)
         {
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            if (!Guid.TryParse(segments[2], out var id) || !_regions.TryGetValue(id, out var region))
+            if (segments.Length < 4)
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
 
-            if (segments.Length > 3 && segments[3] == "translations")
+            var country = segments[2].ToUpperInvariant();
+            var code = segments[3].ToUpperInvariant();
+            if (!_regions.TryGetValue(RegionKey(country, code), out var region))
             {
-                var culture = segments.Length > 4 ? segments[4] : "en";
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+
+            if (segments.Length > 4 && segments[4] == "translations")
+            {
+                var culture = segments.Length > 5 ? segments[5] : "en";
                 return Json(HttpStatusCode.OK, new TranslationView(culture, new Dictionary<string, string>()));
             }
 
@@ -400,12 +418,13 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (request.Method == HttpMethod.Delete)
             {
-                if (_regions.Values.Any(child => child.ParentId == id))
+                if (_regions.Values.Any(child =>
+                        child.CountryCode == country && child.ParentCode == code))
                 {
                     return new HttpResponseMessage(HttpStatusCode.BadRequest);
                 }
 
-                _regions.Remove(id);
+                _regions.Remove(RegionKey(country, code));
                 return new HttpResponseMessage(HttpStatusCode.NoContent);
             }
 
@@ -415,17 +434,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             }
 
             var input = await request.Content!.ReadFromJsonAsync<RegionUpdatePayload>(cancellationToken);
-            if (input is null || input.ParentId == id)
+            if (input is null)
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
-            }
-
-            var code = string.IsNullOrWhiteSpace(input.Code) ? region.Code : input.Code.ToUpperInvariant();
-            if (_regions.Values.Any(other =>
-                    other.Id != id && other.CountryCode == region.CountryCode &&
-                    other.Level == region.Level && other.Code == code))
-            {
-                return new HttpResponseMessage(HttpStatusCode.Conflict);
             }
 
             var updated = region with
@@ -433,25 +444,15 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 Name = string.IsNullOrWhiteSpace(input.Name) ? region.Name : input.Name.Trim(),
                 AsciiName = string.IsNullOrWhiteSpace(input.AsciiName) ? region.AsciiName : input.AsciiName.Trim(),
                 LocalName = string.IsNullOrWhiteSpace(input.LocalName) ? region.LocalName : input.LocalName.Trim(),
-                Code = code,
                 Latitude = input.Latitude ?? region.Latitude,
                 Longitude = input.Longitude ?? region.Longitude,
-                Population = input.Population ?? region.Population,
-                ParentId = input.ParentId ?? region.ParentId
+                Population = input.Population ?? region.Population
             };
-            _regions[id] = updated;
+            _regions[RegionKey(country, code)] = updated;
             return Json(HttpStatusCode.OK, updated);
         }
 
         private string AirportETag(Guid id) => $"\"{id:N}-{_airports[id].Version}\"";
-
-        private static int? ParseLevel(string? level) => level?.Trim().ToUpperInvariant() switch
-        {
-            "1" or "COUNTRY" => 1,
-            "2" or "ADMIN1" => 2,
-            "3" or "CITY" => 3,
-            _ => null
-        };
 
         private static HttpResponseMessage Json<T>(HttpStatusCode statusCode, T body, string? eTag = null)
         {
@@ -468,17 +469,18 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
         private sealed class RegionCreatePayload
         {
-            public string? Level { get; init; }
+            public int? Depth { get; init; }
             public string? CountryCode { get; init; }
-            public string? Admin1Code { get; init; }
+            public string? ParentCode { get; init; }
             public string? Code { get; init; }
+            public string? Type { get; init; }
+            public string? CodeIso { get; init; }
             public string? Name { get; init; }
             public string? AsciiName { get; init; }
             public string? LocalName { get; init; }
             public double? Latitude { get; init; }
             public double? Longitude { get; init; }
             public long? Population { get; init; }
-            public Guid? ParentId { get; init; }
         }
 
         private sealed class RegionUpdatePayload
@@ -486,11 +488,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             public string? Name { get; init; }
             public string? AsciiName { get; init; }
             public string? LocalName { get; init; }
-            public string? Code { get; init; }
             public double? Latitude { get; init; }
             public double? Longitude { get; init; }
             public long? Population { get; init; }
-            public Guid? ParentId { get; init; }
         }
     }
 

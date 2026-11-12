@@ -1,4 +1,4 @@
-// 行政区详情页，并维护非默认语言下的名称译文。
+// 行政区详情页，并维护非默认语言下的名称译文。按 (country, code) 复合业务键寻址。
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Localization;
@@ -65,9 +65,11 @@ public sealed class DetailModel(
     [BindProperty]
     public string? CountryCode { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
+    public string? RegionCode { get; private set; }
+
+    public async Task<IActionResult> OnGetAsync(string country, string code, CancellationToken cancellationToken = default)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        var failure = await LoadRegionAsync(country, code, cancellationToken);
         if (failure is not null)
         {
             return failure;
@@ -78,18 +80,18 @@ public sealed class DetailModel(
             return Page();
         }
 
-        var translationFailure = await LoadTranslationsAsync(id, cancellationToken);
+        var translationFailure = await LoadTranslationsAsync(country, code, cancellationToken);
         return translationFailure ?? Page();
     }
 
-    public async Task<IActionResult> OnPostTranslationsAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OnPostTranslationsAsync(string country, string code, CancellationToken cancellationToken = default)
     {
         if (!TranslationsLoaded)
         {
-            return RedirectToPage("/Regions/Detail", new { id });
+            return RedirectToPage("/Regions/Detail", new { country, code });
         }
 
-        var (saved, actionResult) = await SaveTranslationsAsync(id, cancellationToken);
+        var (saved, actionResult) = await SaveTranslationsAsync(country, code, cancellationToken);
         if (!saved)
         {
             if (actionResult is not null)
@@ -98,17 +100,17 @@ public sealed class DetailModel(
             }
 
             ErrorMessage = localizer["Translations.SaveFailed"].Value;
-            var failure = await LoadRegionAsync(id, cancellationToken);
+            var failure = await LoadRegionAsync(country, code, cancellationToken);
             return failure ?? Page();
         }
 
         TempData["StatusMessage"] = localizer["Translations.Saved"].Value;
-        return RedirectToPage("/Regions/Detail", new { id });
+        return RedirectToPage("/Regions/Detail", new { country, code });
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OnPostDeleteAsync(string country, string code, CancellationToken cancellationToken = default)
     {
-        using var response = await regionClient.DeleteAsync(id, cancellationToken);
+        using var response = await regionClient.DeleteAsync(country, code, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -127,22 +129,25 @@ public sealed class DetailModel(
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
             ErrorMessage = localizer["Regions.Detail.DeleteHasChildren"].Value;
-            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+            return await ReloadAfterDeleteFailureAsync(country, code, cancellationToken);
         }
 
         if (!response.IsSuccessStatusCode)
         {
             ErrorMessage = localizer["Regions.Detail.DeleteFailed"].Value;
-            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+            return await ReloadAfterDeleteFailureAsync(country, code, cancellationToken);
         }
 
         StatusMessage = localizer["Regions.Detail.Deleted"].Value;
-        return RedirectToPage("/Regions/Index", new { countryCode = CountryCode });
+        return RedirectToPage("/Regions/Index", new { countryCode = country });
     }
 
-    private async Task<IActionResult> ReloadAfterDeleteFailureAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> ReloadAfterDeleteFailureAsync(
+        string country,
+        string code,
+        CancellationToken cancellationToken)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        var failure = await LoadRegionAsync(country, code, cancellationToken);
         if (failure is not null)
         {
             return failure;
@@ -153,13 +158,13 @@ public sealed class DetailModel(
             return Page();
         }
 
-        var translationFailure = await LoadTranslationsAsync(id, cancellationToken);
+        var translationFailure = await LoadTranslationsAsync(country, code, cancellationToken);
         return translationFailure ?? Page();
     }
 
-    private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadRegionAsync(string country, string code, CancellationToken cancellationToken)
     {
-        using var response = await regionClient.GetAsync(id, cancellationToken);
+        using var response = await regionClient.GetAsync(country, code, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -182,15 +187,17 @@ public sealed class DetailModel(
         }
 
         Region = await response.Content.ReadFromJsonAsync<RegionView>(cancellationToken);
+        CountryCode = Region?.CountryCode;
+        RegionCode = Region?.Code;
         return null;
     }
 
-    private async Task<IActionResult?> LoadTranslationsAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadTranslationsAsync(string country, string code, CancellationToken cancellationToken)
     {
         var loaded = new Dictionary<string, RegionTranslationInput>();
         foreach (var culture in EditableCultures)
         {
-            using var response = await regionClient.GetTranslationsAsync(id, culture, cancellationToken);
+            using var response = await regionClient.GetTranslationsAsync(country, code, culture, cancellationToken);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 return Challenge();
@@ -223,7 +230,8 @@ public sealed class DetailModel(
     }
 
     private async Task<(bool Saved, IActionResult? ActionResult)> SaveTranslationsAsync(
-        Guid id,
+        string country,
+        string code,
         CancellationToken cancellationToken)
     {
         foreach (var culture in EditableCultures)
@@ -231,8 +239,8 @@ public sealed class DetailModel(
             Translations.TryGetValue(culture, out var input);
             var values = input?.ToValues() ?? new Dictionary<string, string>();
             using var response = values.Count == 0
-                ? await regionClient.DeleteTranslationsAsync(id, culture, cancellationToken)
-                : await regionClient.SaveTranslationsAsync(id, culture, values, cancellationToken);
+                ? await regionClient.DeleteTranslationsAsync(country, code, culture, cancellationToken)
+                : await regionClient.SaveTranslationsAsync(country, code, culture, values, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {

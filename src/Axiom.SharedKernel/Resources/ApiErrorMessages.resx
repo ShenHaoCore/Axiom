@@ -21,12 +21,14 @@
   <data name="News.Article.NotFound" xml:space="preserve"><value>指定的新闻不存在：{0:N}。</value></data>
   <data name="News.Article.ConcurrencyConflict" xml:space="preserve"><value>新闻已被其他请求修改，请重新获取后再操作。</value></data>
   <data name="News.Validation.InvalidStatus" xml:space="preserve"><value>状态必须是 Draft、Published 或 Archived。</value></data>
-  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>指定的行政区不存在：{0:N}。</value></data>
-  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>相同国家+层级+代码的行政区已存在：{0}/L{1}/{2}。</value></data>
-  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>行政区 {0:N} 存在下级，无法删除。</value></data>
+  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>指定的行政区不存在：{0}/{1}。</value></data>
+  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>相同国家+代码的行政区已存在：{0}/{1}。</value></data>
+  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>行政区 {0}/{1} 存在下级，无法删除。</value></data>
   <data name="ReferenceData.Region.CountryNotFound" xml:space="preserve"><value>国家 {0} 不存在。</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidLevel" xml:space="preserve"><value>level 必须是 Country/Admin1/City。</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="ReferenceData.Region.ParentNotFound" xml:space="preserve"><value>上级行政区 {1} 在国家 {0} 下不存在。</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidDepth" xml:space="preserve"><value>depth 必须位于 0（国家）到 3（县级）之间。</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidStatus" xml:space="preserve"><value>status 必须是 active 或 deprecated。</value></data>
+<data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
   <data name="ReferenceData.Region.Validation.LatitudeOutOfRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
   <data name="ReferenceData.Region.Validation.LongitudeOutOfRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
   <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>指定的地点不存在：{0:N}。</value></data>

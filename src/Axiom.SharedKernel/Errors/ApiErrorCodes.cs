@@ -35,7 +35,9 @@ public static class ApiErrorCodes
     public const string REGION_UNIQUE_KEY_CONFLICT = "ReferenceData.Region.UniqueKeyConflict";
     public const string REGION_HAS_CHILDREN = "ReferenceData.Region.HasChildren";
     public const string REGION_COUNTRY_NOT_FOUND = "ReferenceData.Region.CountryNotFound";
-    public const string REGION_INVALID_LEVEL = "ReferenceData.Region.Validation.InvalidLevel";
+    public const string REGION_PARENT_NOT_FOUND = "ReferenceData.Region.ParentNotFound";
+    public const string REGION_INVALID_DEPTH = "ReferenceData.Region.Validation.InvalidDepth";
+    public const string REGION_INVALID_STATUS = "ReferenceData.Region.Validation.InvalidStatus";
     public const string REGION_INVALID_COUNTRY_CODE = "ReferenceData.Region.Validation.InvalidCountryCode";
     public const string REGION_LATITUDE_OUT_OF_RANGE = "ReferenceData.Region.Validation.LatitudeOutOfRange";
     public const string REGION_LONGITUDE_OUT_OF_RANGE = "ReferenceData.Region.Validation.LongitudeOutOfRange";

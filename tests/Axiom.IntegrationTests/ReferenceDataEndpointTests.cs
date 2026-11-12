@@ -129,7 +129,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             "/api/regions",
             ReferenceDataPermissions.READ,
             new CreateRegionInput(
-                "1",
+                0,
                 "ZZ",
                 Code: Guid.NewGuid().ToString("N"),
                 Name: "只读权限回归国家"));
@@ -158,26 +158,51 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             return created!;
         }
 
-        async Task DeleteRegion(Guid id)
+        async Task DeleteRegion(string country, string code)
         {
-            using var request = CreateRequest(HttpMethod.Delete, $"/api/regions/{id}", ManagePermissions);
+            using var request = CreateRequest(
+                HttpMethod.Delete, $"/api/regions/{country}/{code}", ManagePermissions);
             var response = await _client.SendAsync(request);
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
         // 直辖市在数据源中是省、市两条同名记录（如 GeoNames 的行政区划与人口聚居点）。
         var municipalityName = $"测试直辖市 {suffix}";
-        var country = await CreateRegion(new CreateRegionInput("1", countryCode, Code: countryCode, Name: $"测试国家 {suffix}"));
+        var country = await CreateRegion(new CreateRegionInput(
+            0, countryCode, Code: countryCode, Name: $"测试国家 {suffix}"));
         var municipality = await CreateRegion(new CreateRegionInput(
-            "2", countryCode, Admin1Code: $"M{suffix}", Code: $"M{suffix}",
-            Name: municipalityName, ParentId: country.Id));
+            1, countryCode, Code: $"M{suffix}", ParentCode: countryCode,
+            Name: municipalityName, Type: "municipality"));
+        municipality.Type.Should().Be("municipality", "创建时声明的行政区划类型应持久化");
+
+        using var invalidTypeRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/regions",
+            ManagePermissions,
+            new CreateRegionInput(
+                1, countryCode, Code: $"MX{suffix}", ParentCode: countryCode,
+                Name: $"超长类型 {suffix}", Type: new string('x', 40)));
+        var invalidTypeResponse = await _client.SendAsync(invalidTypeRequest);
+        invalidTypeResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var missingParentRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/regions",
+            ManagePermissions,
+            new CreateRegionInput(
+                1, countryCode, Code: $"MP{suffix}", ParentCode: $"NOPE{suffix}",
+                Name: $"缺失上级 {suffix}"));
+        var missingParentResponse = await _client.SendAsync(missingParentRequest);
+        missingParentResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        // 同名市级重复行：挂在省级节点下（GB/T 码不同、名称相同），前端合并隐藏。
         var duplicate = await CreateRegion(new CreateRegionInput(
-            "3", countryCode, Admin1Code: $"M{suffix}", Code: $"MD-{suffix}",
-            Name: municipalityName, ParentId: municipality.Id));
+            2, countryCode, Code: $"MD{suffix}", ParentCode: $"M{suffix}",
+            Name: municipalityName));
 
         using var request = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{country.Id}/children",
+            $"/api/regions/{countryCode}/{country.Code}/children",
             ReferenceDataPermissions.READ);
         var response = await _client.SendAsync(request);
         var content = await response.Content.ReadAsStringAsync();
@@ -185,15 +210,16 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var children = await response.Content.ReadFromJsonAsync<List<RegionChildDto>>();
         children.Should().NotBeNull(content);
         var node = children!.Should().ContainSingle().Which;
-        node.Id.Should().Be(municipality.Id);
+        node.Code.Should().Be($"M{suffix}");
         node.Name.Should().Be(municipalityName);
+        node.Type.Should().Be("municipality", "类型应随子级接口下发，驱动前端徽标");
         node.ChildCount.Should().Be(1);
         node.SameNameChildCount.Should().Be(1, "同名市级记录应被前端合并隐藏");
 
         // 清理：先删市级重复，再删省级与国家。
-        await DeleteRegion(duplicate.Id);
-        await DeleteRegion(municipality.Id);
-        await DeleteRegion(country.Id);
+        await DeleteRegion(countryCode, $"MD{suffix}");
+        await DeleteRegion(countryCode, $"M{suffix}");
+        await DeleteRegion(countryCode, countryCode);
     }
 
     [Fact]
@@ -202,44 +228,44 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var testId = Guid.NewGuid();
         var suffix = testId.ToString("N")[..8].ToUpperInvariant();
         var countryCode = $"X{(char)('A' + testId.ToByteArray()[0] % 26)}";
-        var admin1Code = $"A{suffix}";
+        var provinceCode = $"A{suffix}";
         var cityCode = $"CITY-{suffix}";
         var countryInput = new CreateRegionInput(
-            "1",
+            0,
             countryCode,
             Code: countryCode,
             Name: $"回归国家 {suffix}");
         var country = await CreateRegion(countryInput);
-        country.Level.Should().Be(1);
+        country.Depth.Should().Be(0);
         country.CountryCode.Should().Be(countryCode);
-        country.ParentId.Should().BeNull();
+        country.ParentCode.Should().BeNull();
 
-        var admin1Input = new CreateRegionInput(
-            "2",
+        var provinceInput = new CreateRegionInput(
+            1,
             countryCode,
-            Admin1Code: admin1Code,
-            Code: admin1Code,
+            Code: provinceCode,
+            ParentCode: countryCode,
             Name: $"回归省州 {suffix}",
-            ParentId: country.Id);
-        var admin1 = await CreateRegion(admin1Input);
-        admin1.Level.Should().Be(2);
-        admin1.ParentId.Should().Be(country.Id);
+            Type: "province");
+        var province = await CreateRegion(provinceInput);
+        province.Depth.Should().Be(1);
+        province.ParentCode.Should().Be(countryCode);
+        province.Type.Should().Be("province");
 
         var cityInput = new CreateRegionInput(
-            "3",
+            2,
             countryCode,
-            Admin1Code: admin1Code,
             Code: cityCode,
+            ParentCode: provinceCode,
             Name: $"回归城市 {suffix}",
             AsciiName: $"Regression City {suffix}",
             LocalName: $"本地城市 {suffix}",
             Latitude: 31.2,
             Longitude: 121.5,
-            Population: 1234,
-            ParentId: admin1.Id);
+            Population: 1234);
         var city = await CreateRegion(cityInput);
-        city.Level.Should().Be(3);
-        city.ParentId.Should().Be(admin1.Id);
+        city.Depth.Should().Be(2);
+        city.ParentCode.Should().Be(provinceCode);
         city.GeoNameId.Should().BeNull();
 
         using var duplicateRequest = CreateJsonRequest(
@@ -257,7 +283,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         using var detailRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{city.Id}",
+            $"/api/regions/{countryCode}/{cityCode}",
             ReferenceDataPermissions.READ);
         var detailResponse = await _client.SendAsync(detailRequest);
         var detailContent = await detailResponse.Content.ReadAsStringAsync();
@@ -276,15 +302,14 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var list = await listResponse.Content.ReadFromJsonAsync<PagedResponse<RegionDto>>();
         list.Should().NotBeNull(listContent);
         list!.TotalCount.Should().Be(3);
-        list.Items.Select(item => item.Id).Should().BeEquivalentTo(new[] { country.Id, admin1.Id, city.Id });
+        list.Items.Select(item => item.Code).Should().BeEquivalentTo(new[] { countryCode, provinceCode, cityCode });
 
         using var updateRequest = CreateJsonRequest(
             HttpMethod.Put,
-            $"/api/regions/{city.Id}",
+            $"/api/regions/{countryCode}/{cityCode}",
             ManagePermissions,
             new UpdateRegionInput(
                 Name: $"回归城市（已更新）{suffix}",
-                Code: $"{cityCode}-UPDATED",
                 Latitude: 30.2,
                 Longitude: 120.5,
                 Population: 5678));
@@ -294,69 +319,68 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var updated = await updateResponse.Content.ReadFromJsonAsync<RegionDto>();
         updated.Should().NotBeNull(updateContent);
         updated!.Name.Should().Be($"回归城市（已更新）{suffix}");
-        updated.Code.Should().Be($"{cityCode}-UPDATED");
+        updated.Code.Should().Be(cityCode);
         updated.Latitude.Should().Be(30.2);
         updated.Longitude.Should().Be(120.5);
         updated.Population.Should().Be(5678);
-        updated.Level.Should().Be(3);
+        updated.Depth.Should().Be(2);
         updated.CountryCode.Should().Be(countryCode);
-        updated.Admin1Code.Should().Be(admin1Code);
-        updated.ParentId.Should().Be(admin1.Id);
+        updated.ParentCode.Should().Be(provinceCode);
 
         using var treeRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/tree?countryCode={countryCode}&depth=3",
+            $"/api/regions/tree?countryCode={countryCode}&depth=2",
             ReferenceDataPermissions.READ);
         var treeResponse = await _client.SendAsync(treeRequest);
         var treeContent = await treeResponse.Content.ReadAsStringAsync();
         treeResponse.StatusCode.Should().Be(HttpStatusCode.OK, treeContent);
         var tree = await treeResponse.Content.ReadFromJsonAsync<RegionTreeDto>();
         tree.Should().NotBeNull(treeContent);
-        tree!.Id.Should().Be(country.Id);
-        var admin1Node = tree.Children.Should().ContainSingle().Which;
-        admin1Node.Id.Should().Be(admin1.Id);
-        var cityNode = admin1Node.Children.Should().ContainSingle().Which;
-        cityNode.Id.Should().Be(city.Id);
+        tree!.Code.Should().Be(countryCode);
+        tree.Depth.Should().Be(0);
+        var provinceNode = tree.Children.Should().ContainSingle().Which;
+        provinceNode.Code.Should().Be(provinceCode);
+        var cityNode = provinceNode.Children.Should().ContainSingle().Which;
+        cityNode.Code.Should().Be(cityCode);
         cityNode.Name.Should().Be(updated.Name);
-        cityNode.Code.Should().Be(updated.Code);
 
         // 单级子级接口：惰性树数据源，附带下级数量与同名下级数量。
         using var childrenRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{country.Id}/children",
+            $"/api/regions/{countryCode}/{countryCode}/children",
             ReferenceDataPermissions.READ);
         var childrenResponse = await _client.SendAsync(childrenRequest);
         var childrenContent = await childrenResponse.Content.ReadAsStringAsync();
         childrenResponse.StatusCode.Should().Be(HttpStatusCode.OK, childrenContent);
         var children = await childrenResponse.Content.ReadFromJsonAsync<List<RegionChildDto>>();
         children.Should().NotBeNull(childrenContent);
-        var childAdmin1 = children!.Should().ContainSingle().Which;
-        childAdmin1.Id.Should().Be(admin1.Id);
-        childAdmin1.Name.Should().Be(admin1Node.Name);
-        childAdmin1.ChildCount.Should().Be(1);
-        childAdmin1.SameNameChildCount.Should().Be(0);
+        var childProvince = children!.Should().ContainSingle().Which;
+        childProvince.Code.Should().Be(provinceCode);
+        childProvince.Name.Should().Be(provinceNode.Name);
+        childProvince.ChildCount.Should().Be(1);
+        childProvince.SameNameChildCount.Should().Be(0);
 
         using var cityChildrenRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{admin1.Id}/children",
+            $"/api/regions/{countryCode}/{provinceCode}/children",
             ReferenceDataPermissions.READ);
         var cityChildrenResponse = await _client.SendAsync(cityChildrenRequest);
         var cityChildrenContent = await cityChildrenResponse.Content.ReadAsStringAsync();
         cityChildrenResponse.StatusCode.Should().Be(HttpStatusCode.OK, cityChildrenContent);
         var cityChildren = await cityChildrenResponse.Content.ReadFromJsonAsync<List<RegionChildDto>>();
         cityChildren.Should().NotBeNull(cityChildrenContent);
-        cityChildren!.Should().ContainSingle().Which.Id.Should().Be(city.Id);
+        cityChildren!.Should().ContainSingle().Which.Code.Should().Be(cityCode);
 
         using var missingChildrenRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{Guid.NewGuid()}/children",
+            $"/api/regions/{countryCode}/NOPE/children",
             ReferenceDataPermissions.READ);
         var missingChildrenResponse = await _client.SendAsync(missingChildrenRequest);
         missingChildrenResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
         using var protectedDeleteRequest = CreateRequest(
             HttpMethod.Delete,
-            $"/api/regions/{admin1.Id}",
+            $"/api/regions/{countryCode}/{provinceCode}",
             ManagePermissions);
         var protectedDeleteResponse = await _client.SendAsync(protectedDeleteRequest);
         var protectedDeleteContent = await protectedDeleteResponse.Content.ReadAsStringAsync();
@@ -366,15 +390,15 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         protectedDeleteProblem!.Status.Should().Be((int)HttpStatusCode.BadRequest);
         protectedDeleteProblem.Title.Should().NotBeNullOrWhiteSpace();
 
-        await DeleteRegion(city.Id);
-        await DeleteRegion(admin1.Id);
-        await DeleteRegion(country.Id);
+        await DeleteRegion(countryCode, cityCode);
+        await DeleteRegion(countryCode, provinceCode);
+        await DeleteRegion(countryCode, countryCode);
 
-        foreach (var id in new[] { city.Id, admin1.Id, country.Id })
+        foreach (var code in new[] { cityCode, provinceCode, countryCode })
         {
             using var notFoundRequest = CreateRequest(
                 HttpMethod.Get,
-                $"/api/regions/{id}",
+                $"/api/regions/{countryCode}/{code}",
                 ReferenceDataPermissions.READ);
             var notFoundResponse = await _client.SendAsync(notFoundRequest);
             var notFoundContent = await notFoundResponse.Content.ReadAsStringAsync();
@@ -392,9 +416,10 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             return created!;
         }
 
-        async Task DeleteRegion(Guid id)
+        async Task DeleteRegion(string country, string code)
         {
-            using var request = CreateRequest(HttpMethod.Delete, $"/api/regions/{id}", ManagePermissions);
+            using var request = CreateRequest(
+                HttpMethod.Delete, $"/api/regions/{country}/{code}", ManagePermissions);
             var response = await _client.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             response.StatusCode.Should().Be(HttpStatusCode.NoContent, content);

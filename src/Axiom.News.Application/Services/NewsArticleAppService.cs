@@ -158,7 +158,7 @@ public sealed class NewsArticleAppService(
     // ---------- 私有辅助方法 ----------
 
     private static TranslationValue ToTranslationValue(NewsArticleTranslation row) =>
-        new(row.NewsArticleId, row.Culture, row.Field, row.Value);
+        new(row.NewsArticleId.ToString(), row.Culture, row.Field, row.Value);
 
     private static Dictionary<string, string> ValidateTranslationValues(IReadOnlyDictionary<string, string> values)
     {

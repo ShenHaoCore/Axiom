@@ -35,34 +35,56 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
 
         modelBuilder.Entity<Region>(entity =>
         {
-            entity.ToTable("regions");
-            entity.HasKey(region => region.Id);
-            entity.Property(region => region.Level).HasConversion<int>();
+            // 对齐 geo_division 数据集：复合业务主键 (country, code)，ParentCode 复合外键自连。
+            entity.ToTable("regions", table =>
+            {
+                table.HasCheckConstraint("CK_regions_depth", "\"Depth\" >= 0 AND \"Depth\" <= 3");
+                table.HasCheckConstraint("CK_regions_parent_root", "(\"ParentCode\" IS NULL) = (\"Depth\" = 0)");
+                table.HasCheckConstraint("CK_regions_status", "\"Status\" IN ('active', 'deprecated')");
+            });
+            entity.HasKey(region => new { region.CountryCode, region.Code });
             entity.Property(region => region.CountryCode).HasMaxLength(2).IsRequired();
-            entity.Property(region => region.Admin1Code).HasMaxLength(10);
             entity.Property(region => region.Code).HasMaxLength(50).IsRequired();
+            entity.Property(region => region.ParentCode).HasMaxLength(50);
+            entity.Property(region => region.Depth);
+            entity.Property(region => region.Type).HasMaxLength(Region.MaxTypeLength).IsRequired();
+            entity.Property(region => region.Status).HasMaxLength(Region.MaxStatusLength).IsRequired();
+            entity.Property(region => region.CodeIso).HasMaxLength(Region.MaxCodeIsoLength);
+            entity.Property(region => region.SortKey).HasMaxLength(Region.MaxSortKeyLength).IsRequired();
+            entity.Property(region => region.Abbrev).HasMaxLength(Region.MaxAbbrevLength).IsRequired();
             entity.Property(region => region.Name).HasMaxLength(200).IsRequired();
             entity.Property(region => region.AsciiName).HasMaxLength(200);
             entity.Property(region => region.LocalName).HasMaxLength(200);
             entity.Property(region => region.Population);
             entity.Property(region => region.GeoNameId);
             entity.HasIndex(region => region.GeoNameId).IsUnique();
-            entity.HasIndex(region => new { region.CountryCode, region.Level, region.Code }).IsUnique();
-            entity.HasIndex(region => new { region.CountryCode, region.Level });
+            entity.HasIndex(region => new { region.CountryCode, region.ParentCode });
+            entity.HasIndex(region => new { region.CountryCode, region.Depth });
+            entity.HasIndex(region => region.CodeIso).IsUnique();
+            entity.HasOne(region => region.Parent)
+                .WithMany(region => region.Children)
+                .HasForeignKey(region => new { region.CountryCode, region.ParentCode })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RegionTranslation>(entity =>
         {
             entity.ToTable("region_translations");
-            entity.HasKey(translation => translation.Id);
+            entity.HasKey(translation => new
+            {
+                translation.RegionCountryCode,
+                translation.RegionCode,
+                translation.Culture,
+                translation.Field
+            });
+            entity.Property(translation => translation.RegionCountryCode).HasMaxLength(2).IsRequired();
+            entity.Property(translation => translation.RegionCode).HasMaxLength(50).IsRequired();
             entity.Property(translation => translation.Culture).HasMaxLength(16).IsRequired();
             entity.Property(translation => translation.Field).HasMaxLength(32).IsRequired();
             entity.Property(translation => translation.Value).HasMaxLength(Region.MaxNameLength).IsRequired();
-            entity.HasIndex(translation => new { translation.RegionId, translation.Culture, translation.Field })
-                .IsUnique();
             entity.HasOne<Region>()
                 .WithMany()
-                .HasForeignKey(translation => translation.RegionId)
+                .HasForeignKey(translation => new { translation.RegionCountryCode, translation.RegionCode })
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -83,19 +105,23 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // 分层重构曾把消息列配置改窄（128/text），此处按 AddOutboxRetry 迁移的既定意图恢复：
+        // Payload 使用 jsonb、长度与复合索引保持与已部署库一致，避免模型与真实库漂移。
         modelBuilder.Entity<OutboxMessage>(entity =>
         {
             entity.ToTable("outbox_messages");
             entity.HasKey(message => message.Id);
-            entity.Property(message => message.EventType).HasMaxLength(128).IsRequired();
-            entity.Property(message => message.Payload).IsRequired();
+            entity.Property(message => message.EventType).HasMaxLength(150).IsRequired();
+            entity.Property(message => message.Payload).HasColumnType("jsonb").IsRequired();
+            entity.Property(message => message.LastError).HasMaxLength(500);
+            entity.HasIndex(message => new { message.PublishedAtUtc, message.NextAttemptAtUtc });
         });
 
         modelBuilder.Entity<InboxMessage>(entity =>
         {
             entity.ToTable("inbox_messages");
             entity.HasKey(message => new { message.EventId, message.Consumer });
-            entity.Property(message => message.Consumer).HasMaxLength(128).IsRequired();
+            entity.Property(message => message.Consumer).HasMaxLength(100).IsRequired();
         });
     }
 }

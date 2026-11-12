@@ -1,11 +1,16 @@
 @model Axiom.Web.Models.RegionNodeViewModel
 
+@{
+    // 节点的 DOM 锚点与详情/编辑链接都使用复合业务键 (country, code)。
+    var nodeKey = $"{Model.CountryCode}-{Model.Code}";
+}
+
 <div class="region-node">
     <div class="region-row">
         @if (Model.HasChildren)
         {
             <a class="region-toggle" data-bs-toggle="collapse"
-               href="#node-@Model.Id" role="button" aria-expanded="false" aria-controls="node-@Model.Id" aria-label="@Model.Name">
+               href="#node-@nodeKey" role="button" aria-expanded="false" aria-controls="node-@nodeKey" aria-label="@Model.Name">
                 <span class="region-chevron" aria-hidden="true">▶</span>
             </a>
         }
@@ -13,36 +18,37 @@
         {
             <span class="region-leaf-dot" aria-hidden="true">•</span>
         }
-        <span class="badge-soft @LevelClass(Model.Level)">@LevelLabel(Model)</span>
-        <a asp-page="/Regions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
+        <span class="badge-soft @BadgeClass">@BadgeLabel</span>
+        <a asp-page="/Regions/Detail" asp-route-country="@Model.CountryCode" asp-route-code="@Model.Code">@Model.Name</a>
         @if (Model.Population.HasValue)
         {
             <span class="text-muted small num">@Model.Population.Value.ToString("N0")</span>
         }
-        <a class="btn btn-ghost ms-auto" asp-page="/Regions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+        <a class="btn btn-ghost ms-auto" asp-page="/Regions/Edit" asp-route-country="@Model.CountryCode" asp-route-code="@Model.Code">@Localizer["Common.Edit"]</a>
     </div>
     @if (Model.HasChildren)
     {
         @* 子级不在服务端预渲染：首次展开时由 site.js 惰性拉取 _RegionChildren 片段。 *@
-        <div id="node-@Model.Id" class="collapse">
+        <div id="node-@nodeKey" class="collapse">
             <div class="region-children" data-children-container
-                 data-children-url="@Url.Page("/Regions/Index", "Children", new { id = Model.Id })"
+                 data-children-url="@Url.Page("/Regions/Index", "Children", new { country = Model.CountryCode, code = Model.Code })"
                  data-error-text="@Localizer["Regions.LoadChildrenFailed"]"></div>
         </div>
     }
 </div>
 
 @functions {
-    // 直辖市、自治区、特别行政区单独命名，与普通省/州区分。
-    string LevelLabel(Axiom.Web.Models.RegionNodeViewModel node) =>
-        node.IsMunicipality
-            ? Localizer["Regions.Municipality"].Value
-            : node.IsSpecialAdministrativeRegion
-                ? Localizer["Regions.SpecialAdministrativeRegion"].Value
-                : node.IsAutonomousRegion
-                    ? Localizer["Regions.AutonomousRegion"].Value
-                    : node.Level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{node.Level}"].Value : $"L{node.Level}";
+    // 类型由数据库 type 字段驱动（直辖市/自治区/特别行政区等），未知类型回退到深度通用名称。
+    string BadgeLabel => Model.Type switch
+    {
+        Axiom.Web.Models.RegionTypes.Municipality => Localizer["Regions.Type.Municipality"].Value,
+        Axiom.Web.Models.RegionTypes.AutonomousRegion => Localizer["Regions.Type.AutonomousRegion"].Value,
+        Axiom.Web.Models.RegionTypes.SpecialAdministrativeRegion => Localizer["Regions.Type.SpecialAdministrativeRegion"].Value,
+        Axiom.Web.Models.RegionTypes.PrefectureCity => Localizer["Regions.Type.PrefectureCity"].Value,
+        Axiom.Web.Models.RegionTypes.District => Localizer["Regions.Type.District"].Value,
+        Axiom.Web.Models.RegionTypes.County => Localizer["Regions.Type.County"].Value,
+        _ => Localizer[$"Regions.Depth.{Model.Depth}"].Value
+    };
 
-    static string LevelClass(int level) =>
-        level is >= 1 and <= 3 ? $"level-{level}" : "level-default";
+    string BadgeClass => Model.Depth is >= 0 and <= 3 ? $"level-{Model.Depth + 1}" : "level-default";
 }

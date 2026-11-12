@@ -186,7 +186,7 @@ public sealed class ReferenceLocationAppService(
     }
 
     private static TranslationValue ToTranslationValue(ReferenceLocationTranslation row) =>
-        new(row.ReferenceLocationId, row.Culture, row.Field, row.Value);
+        new(row.ReferenceLocationId.ToString(), row.Culture, row.Field, row.Value);
 
     private static Dictionary<string, string> ValidateTranslationValues(IReadOnlyDictionary<string, string> values)
     {

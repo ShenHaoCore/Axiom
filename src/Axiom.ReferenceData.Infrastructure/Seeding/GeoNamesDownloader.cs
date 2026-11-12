@@ -15,19 +15,19 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
         configuration["GeoNames:AllCountriesUrl"] ?? "http://download.geonames.org/export/dump/allCountries.zip");
     private readonly long _minPopulation = configuration.GetValue<long>("GeoNames:MinPopulation", 500_000);
 
-    // 一级行政区关键字段：admin1Code (CC.ADM1), name, geonameid, countryCode
+    // 一级行政区关键字段：code (CC.ADM1，作为 depth 1 行的业务代码), name, geonameid, countryCode
     public sealed record Admin1Row(
         string CountryCode,
-        string Admin1Code,
+        string Code,
         string Name,
         string? AsciiName,
         int GeoNameId);
 
-    // 城市关键字段：geonameid, countryCode, admin1Code, name, population, lat/lng
+    // 城市关键字段：geonameid, countryCode, parentCode(上级一级行政区代码), name, population, lat/lng
     public sealed record CityRow(
         int GeoNameId,
         string CountryCode,
-        string? Admin1Code,
+        string? ParentCode,
         string Name,
         string? AsciiName,
         string? AlternateNames,
@@ -48,7 +48,7 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
         return countries ?? new List<CountrySeed>();
     }
 
-    public async Task<List<Admin1Row>> DownloadAdmin1CodesAsync(CancellationToken cancellationToken)
+    public async Task<List<Admin1Row>> DownloadProvinceCodesAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("下载 GeoNames admin1CodesASCII.txt ...");
         var content = await httpClient.GetStringAsync(_admin1Url, cancellationToken);
@@ -63,13 +63,13 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
             var dotIndex = code.IndexOf('.');
             if (dotIndex <= 0 || dotIndex >= code.Length - 1) continue;
             var countryCode = code[..dotIndex];
-            var admin1Code = code[(dotIndex + 1)..];
+            var provinceCode = code[(dotIndex + 1)..];
             if (int.TryParse(parts[3], out var geoNameId))
             {
-                result.Add(new Admin1Row(countryCode, admin1Code, parts[1], parts[2], geoNameId));
+                result.Add(new Admin1Row(countryCode, provinceCode, parts[1], parts[2], geoNameId));
             }
         }
-        logger.LogInformation("GeoNames admin1Codes 解析完成：{Count} 条。", result.Count);
+        logger.LogInformation("GeoNames provinceCodes 解析完成：{Count} 条。", result.Count);
         return result;
     }
 
@@ -126,7 +126,7 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
                 result.Add(new CityRow(
                     GeoNameId: geoNameId,
                     CountryCode: countryCode,
-                    Admin1Code: string.IsNullOrWhiteSpace(parts[10]) ? null : parts[10],
+                    ParentCode: string.IsNullOrWhiteSpace(parts[10]) ? null : parts[10],
                     Name: parts[1],
                     AsciiName: string.IsNullOrWhiteSpace(parts[2]) ? null : parts[2],
                     AlternateNames: string.IsNullOrWhiteSpace(parts[3]) ? null : parts[3],

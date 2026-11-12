@@ -1,4 +1,4 @@
-@page "{id:guid?}"
+@page "{country}/{code}"
 @model Axiom.Web.Pages.Regions.DetailModel
 @{
     ViewData["Title"] = Localizer["Regions.Detail.Title"];
@@ -26,13 +26,14 @@
                 }
             </h1>
             <p class="page-description">
-                @LevelLabel(r.Level) · @r.CountryCode · <code>@r.Code</code>
+                @DepthLabel(r.Depth) · @r.CountryCode · <code>@r.Code</code>
             </p>
         </div>
         <div class="page-actions">
             <a class="btn btn-outline-secondary" asp-page="/Regions/Index"
                asp-route-countryCode="@r.CountryCode">@Localizer["Regions.Detail.BackToTree"]</a>
-            <a class="btn btn-primary" asp-page="/Regions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+            <a class="btn btn-primary" asp-page="/Regions/Edit"
+               asp-route-country="@r.CountryCode" asp-route-code="@r.Code">@Localizer["Common.Edit"]</a>
         </div>
     </div>
 
@@ -52,10 +53,14 @@
                 <div class="card-body">
                     <dl class="detail-list">
                         <div class="detail-row">
-                            <dt class="detail-label">@Localizer["Regions.Detail.Level"]</dt>
+                            <dt class="detail-label">@Localizer["Regions.Detail.Depth"]</dt>
                             <dd class="detail-value">
-                                <span class="badge-soft @(r.Level is >= 1 and <= 3 ? $"level-{r.Level}" : "level-default")">@LevelLabel(r.Level)</span>
+                                <span class="badge-soft @(r.Depth is >= 0 and <= 3 ? $"level-{r.Depth + 1}" : "level-default")">@DepthLabel(r.Depth)</span>
                             </dd>
+                        </div>
+                        <div class="detail-row">
+                            <dt class="detail-label">@Localizer["Regions.Detail.Type"]</dt>
+                            <dd class="detail-value"><code>@r.Type</code></dd>
                         </div>
                         <div class="detail-row">
                             <dt class="detail-label">@Localizer["Regions.Detail.Code"]</dt>
@@ -65,11 +70,11 @@
                             <dt class="detail-label">@Localizer["Regions.Detail.Country"]</dt>
                             <dd class="detail-value">@r.CountryCode</dd>
                         </div>
-                        @if (r.Admin1Code is not null)
+                        @if (r.CodeIso is not null)
                         {
                             <div class="detail-row">
-                                <dt class="detail-label">@Localizer["Regions.Detail.Admin1Code"]</dt>
-                                <dd class="detail-value"><code>@r.Admin1Code</code></dd>
+                                <dt class="detail-label">@Localizer["Regions.Detail.CodeIso"]</dt>
+                                <dd class="detail-value"><code>@r.CodeIso</code></dd>
                             </div>
                         }
                         @if (r.AsciiName is not null)
@@ -117,7 +122,8 @@
                 <div class="card">
                     <div class="card-header">@Localizer["Translations.Title"]</div>
                     <div class="card-body">
-                        <form method="post" asp-page-handler="Translations" asp-route-id="@r.Id">
+                        <form method="post" asp-page-handler="Translations"
+                              asp-route-country="@r.CountryCode" asp-route-code="@r.Code">
                             <input type="hidden" asp-for="TranslationsLoaded" />
                             <p class="text-muted">@Localizer["Translations.Hint"]</p>
 
@@ -150,16 +156,23 @@
                                 </span>
                             </div>
                         }
-                        @if (r.ParentId.HasValue)
+                        @if (r.ParentCode is not null)
                         {
                             <div class="meta-item">
-                                <span class="meta-item-label">@Localizer["Regions.Detail.ParentId"]</span>
-                                <span class="meta-item-value"><code>@r.ParentId.Value.ToString("N")</code></span>
+                                <span class="meta-item-label">@Localizer["Regions.Detail.ParentCode"]</span>
+                                <span class="meta-item-value"><code>@r.ParentCode</code></span>
+                            </div>
+                        }
+                        @if (r.Abbrev is not null)
+                        {
+                            <div class="meta-item">
+                                <span class="meta-item-label">@Localizer["Regions.Detail.Abbrev"]</span>
+                                <span class="meta-item-value"><code>@r.Abbrev</code></span>
                             </div>
                         }
                         <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Regions.Detail.RecordId"]</span>
-                            <span class="meta-item-value"><code>@r.Id.ToString("N")</code></span>
+                            <span class="meta-item-label">@Localizer["Regions.Detail.Status"]</span>
+                            <span class="meta-item-value"><code>@r.Status</code></span>
                         </div>
                     </div>
                 </div>
@@ -169,7 +182,8 @@
                 <div class="card-header">@Localizer["Common.DangerZone"]</div>
                 <div class="card-body">
                     <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
-                    <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id"
+                    <form method="post" asp-page-handler="Delete"
+                          asp-route-country="@r.CountryCode" asp-route-code="@r.Code"
                           data-confirm="@deleteConfirm">
                         <input type="hidden" name="CountryCode" value="@r.CountryCode" />
                         <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
@@ -181,6 +195,6 @@
 }
 
 @functions {
-    private string LevelLabel(int level) =>
-        level is >= 1 and <= 3 ? Localizer[$"Regions.Level.{level}"].Value : $"L{level}";
+    private string DepthLabel(int depth) =>
+        depth is >= 0 and <= 3 ? Localizer[$"Regions.Depth.{depth}"].Value : $"D{depth}";
 }

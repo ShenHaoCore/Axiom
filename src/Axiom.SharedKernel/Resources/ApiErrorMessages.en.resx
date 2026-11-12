@@ -21,12 +21,14 @@
   <data name="News.Article.NotFound" xml:space="preserve"><value>News article not found: {0}.</value></data>
   <data name="News.Article.ConcurrencyConflict" xml:space="preserve"><value>The article was modified by another request. Reload and try again.</value></data>
   <data name="News.Validation.InvalidStatus" xml:space="preserve"><value>Status must be Draft, Published or Archived.</value></data>
-  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>Region not found: {0}.</value></data>
-  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>A region with the same country, level and code already exists: {0}/L{1}/{2}.</value></data>
-  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>Region {0} has children and cannot be deleted.</value></data>
+  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>Region not found: {0}/{1}.</value></data>
+  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>A region with the same country and code already exists: {0}/{1}.</value></data>
+  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>Region {0}/{1} has children and cannot be deleted.</value></data>
   <data name="ReferenceData.Region.CountryNotFound" xml:space="preserve"><value>Country {0} was not found.</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidLevel" xml:space="preserve"><value>Level must be Country, Admin1 or City.</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
+  <data name="ReferenceData.Region.ParentNotFound" xml:space="preserve"><value>Parent region {1} does not exist under country {0}.</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidDepth" xml:space="preserve"><value>depth must be between 0 (country) and 3 (county level).</value></data>
+  <data name="ReferenceData.Region.Validation.InvalidStatus" xml:space="preserve"><value>status must be active or deprecated.</value></data>
+<data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
   <data name="ReferenceData.Region.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
   <data name="ReferenceData.Region.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
   <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>Location not found: {0}.</value></data>

@@ -4,17 +4,20 @@ using Axiom.SharedKernel.Errors;
 
 namespace Axiom.ReferenceData.Domain.Exceptions;
 
-public sealed class RegionNotFoundException(Guid id)
-    : AxiomException(ApiErrorCodes.REGION_NOT_FOUND, $"指定的行政区不存在：{id:N}。", id);
+public sealed class RegionNotFoundException(string countryCode, string code)
+    : AxiomException(ApiErrorCodes.REGION_NOT_FOUND, $"指定的行政区不存在：{countryCode}/{code}。", countryCode, code);
 
-public sealed class RegionUniqueKeyConflictException(string countryCode, int level, string code)
+public sealed class RegionUniqueKeyConflictException(string countryCode, string code)
     : AxiomException(
         ApiErrorCodes.REGION_UNIQUE_KEY_CONFLICT,
-        $"相同国家+层级+代码的行政区已存在：{countryCode}/L{level}/{code}。",
-        countryCode, level, code);
+        $"相同国家+代码的行政区已存在：{countryCode}/{code}。",
+        countryCode, code);
 
-public sealed class RegionHasChildrenException(Guid id)
-    : AxiomException(ApiErrorCodes.REGION_HAS_CHILDREN, $"行政区 {id:N} 存在下级，无法删除。", id);
+public sealed class RegionHasChildrenException(string countryCode, string code)
+    : AxiomException(ApiErrorCodes.REGION_HAS_CHILDREN, $"行政区 {countryCode}/{code} 存在下级，无法删除。", countryCode, code);
+
+public sealed class RegionParentNotFoundException(string countryCode, string? parentCode)
+    : AxiomException(ApiErrorCodes.REGION_PARENT_NOT_FOUND, $"上级行政区 {parentCode} 在国家 {countryCode} 下不存在。", countryCode, parentCode ?? string.Empty);
 
 public sealed class RegionCountryNotFoundException(string countryCode)
     : AxiomException(ApiErrorCodes.REGION_COUNTRY_NOT_FOUND, $"国家 {countryCode} 不存在。", countryCode);
@@ -46,8 +49,14 @@ public sealed class RegionValidationException : AxiomException
     public static RegionValidationException LongitudeOutOfRange() =>
         new("Longitude", ApiErrorCodes.REGION_LONGITUDE_OUT_OF_RANGE, "经度必须位于 -180 到 180 之间。");
 
-    public static RegionValidationException InvalidLevel() =>
-        new("Level", ApiErrorCodes.REGION_INVALID_LEVEL, "level 必须是 Country/Admin1/City。");
+    public static RegionValidationException InvalidDepth() =>
+        new("Depth", ApiErrorCodes.REGION_INVALID_DEPTH, "depth 必须位于 0（国家）到 3（县级）之间。");
+
+    public static RegionValidationException InvalidStatus() =>
+        new("Status", ApiErrorCodes.REGION_INVALID_STATUS, "status 必须是 active 或 deprecated。");
+
+    public static RegionValidationException ParentRequired() =>
+        new("ParentCode", ApiErrorCodes.VALIDATION_FIELD_REQUIRED, "该字段不能为空。", "ParentCode");
 
     public static RegionValidationException UnknownTranslatableField(string field) =>
         new(field, ApiErrorCodes.LOCALIZATION_UNSUPPORTED_FIELD, $"不支持翻译该字段：{field}。", field);

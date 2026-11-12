@@ -1,4 +1,4 @@
-// 使用当前 SSO 会话的访问令牌调用行政区网关。
+// 使用当前 SSO 会话的访问令牌调用行政区网关：全部按 (country, code) 复合业务键寻址。
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -14,16 +14,16 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
     public Task<HttpResponseMessage> ListAsync(
         int page,
         int pageSize,
-        int? level,
+        int? depth,
         string? countryCode,
-        string? admin1Code,
+        string? parentCode,
         string? q,
         CancellationToken cancellationToken = default)
     {
         var query = new List<string> { $"page={page}", $"pageSize={pageSize}" };
-        if (level.HasValue) query.Add($"level={level}");
+        if (depth.HasValue) query.Add($"depth={depth}");
         if (!string.IsNullOrWhiteSpace(countryCode)) query.Add($"countryCode={Uri.EscapeDataString(countryCode)}");
-        if (!string.IsNullOrWhiteSpace(admin1Code)) query.Add($"admin1Code={Uri.EscapeDataString(admin1Code)}");
+        if (!string.IsNullOrWhiteSpace(parentCode)) query.Add($"parentCode={Uri.EscapeDataString(parentCode)}");
         if (!string.IsNullOrWhiteSpace(q)) query.Add($"q={Uri.EscapeDataString(q)}");
         return SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/?{string.Join('&', query)}", null, cancellationToken);
     }
@@ -38,11 +38,17 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
             null,
             cancellationToken);
 
-    public Task<HttpResponseMessage> GetChildrenAsync(Guid parentId, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/{parentId}/children", null, cancellationToken);
+    public Task<HttpResponseMessage> GetChildrenAsync(
+        string countryCode,
+        string code,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, ItemPath(countryCode, code) + "/children", null, cancellationToken);
 
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{REGIONS_PATH}/{id}", null, cancellationToken);
+    public Task<HttpResponseMessage> GetAsync(
+        string countryCode,
+        string code,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, ItemPath(countryCode, code), null, cancellationToken);
 
     public Task<HttpResponseMessage> CreateAsync(RegionInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -50,76 +56,77 @@ public sealed class RegionClient(HttpClient httpClient, IHttpContextAccessor htt
             REGIONS_PATH,
             JsonContent.Create(new
             {
-                level = ApiLevel(input.Level),
+                depth = input.Depth,
                 countryCode = input.CountryCode,
-                admin1Code = input.Admin1Code,
                 code = input.Code,
+                parentCode = input.ParentCode,
+                type = input.Type,
                 name = input.Name,
                 asciiName = input.AsciiName,
                 localName = input.LocalName,
                 latitude = input.Latitude,
                 longitude = input.Longitude,
-                population = input.Population,
-                parentId = input.ParentId
+                population = input.Population
             }),
             cancellationToken);
 
     public Task<HttpResponseMessage> UpdateAsync(
-        Guid id,
+        string countryCode,
+        string code,
         RegionInput input,
         CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Put,
-            $"{REGIONS_PATH}/{id}",
+            ItemPath(countryCode, code),
             JsonContent.Create(new
             {
                 name = input.Name,
                 asciiName = input.AsciiName,
                 localName = input.LocalName,
-                code = input.Code,
                 latitude = input.Latitude,
                 longitude = input.Longitude,
                 population = input.Population,
-                parentId = input.ParentId
+                codeIso = input.CodeIso
             }),
             cancellationToken);
 
-    public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, $"{REGIONS_PATH}/{id}", null, cancellationToken);
+    public Task<HttpResponseMessage> DeleteAsync(
+        string countryCode,
+        string code,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, ItemPath(countryCode, code), null, cancellationToken);
 
     public Task<HttpResponseMessage> GetTranslationsAsync(
-        Guid id,
+        string countryCode,
+        string code,
         string culture,
         CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
+        SendAsync(HttpMethod.Get, TranslationPath(countryCode, code, culture), null, cancellationToken);
 
     public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
+        string countryCode,
+        string code,
         string culture,
         IReadOnlyDictionary<string, string> values,
         CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Put,
-            TranslationPath(id, culture),
+            TranslationPath(countryCode, code, culture),
             JsonContent.Create(new { values }),
             cancellationToken);
 
     public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
+        string countryCode,
+        string code,
         string culture,
         CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
+        SendAsync(HttpMethod.Delete, TranslationPath(countryCode, code, culture), null, cancellationToken);
 
-    private static string ApiLevel(int level) => level switch
-    {
-        1 => "Country",
-        2 => "Admin1",
-        3 => "City",
-        _ => throw new ArgumentOutOfRangeException(nameof(level), level, "行政区层级必须为 1、2 或 3。")
-    };
+    private static string ItemPath(string countryCode, string code) =>
+        $"{REGIONS_PATH}/{Uri.EscapeDataString(countryCode)}/{Uri.EscapeDataString(code)}";
 
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{REGIONS_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
+    private static string TranslationPath(string countryCode, string code, string culture) =>
+        $"{ItemPath(countryCode, code)}/translations/{Uri.EscapeDataString(culture)}";
 
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,

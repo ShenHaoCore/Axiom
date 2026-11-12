@@ -8,15 +8,21 @@ namespace Axiom.ReferenceData.Application.ObjectMapping;
 
 public static class RegionMapper
 {
+    /// <summary>翻译查找使用的实体标识：复合业务键的字符串形式（CN.110000）。</summary>
+    public static string TranslationKey(Region entity) => $"{entity.CountryCode}.{entity.Code}";
+
     /// <summary>映射为 DTO；传入翻译查找表时名称优先使用当前语言的译文。</summary>
     public static RegionDto ToDto(Region entity, TranslationLookup? translations = null) => new(
-        Id: entity.Id,
-        ParentId: entity.ParentId,
-        Level: (int)entity.Level,
         CountryCode: entity.CountryCode,
-        Admin1Code: entity.Admin1Code,
         Code: entity.Code,
-        Name: translations?.Find(entity.Id, RegionTranslationFields.Name) ?? entity.Name,
+        ParentCode: entity.ParentCode,
+        Depth: entity.Depth,
+        Type: entity.Type,
+        Status: entity.Status,
+        CodeIso: entity.CodeIso,
+        SortKey: entity.SortKey,
+        Abbrev: entity.Abbrev,
+        Name: translations?.Find(TranslationKey(entity), RegionTranslationFields.Name) ?? entity.Name,
         AsciiName: entity.AsciiName,
         LocalName: entity.LocalName,
         Latitude: entity.Latitude,
@@ -28,12 +34,12 @@ public static class RegionMapper
         Region entity,
         IReadOnlyList<RegionTreeDto> children,
         TranslationLookup? translations = null) => new(
-        Id: entity.Id,
-        Level: (int)entity.Level,
         CountryCode: entity.CountryCode,
-        Admin1Code: entity.Admin1Code,
         Code: entity.Code,
-        Name: translations?.Find(entity.Id, RegionTranslationFields.Name) ?? entity.Name,
+        ParentCode: entity.ParentCode,
+        Depth: entity.Depth,
+        Type: entity.Type,
+        Name: translations?.Find(TranslationKey(entity), RegionTranslationFields.Name) ?? entity.Name,
         Population: entity.Population,
         Children: children);
 }

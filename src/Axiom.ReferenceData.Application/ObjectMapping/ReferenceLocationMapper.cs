@@ -16,9 +16,9 @@ public static class ReferenceLocationMapper
         ConcurrencyToken: entity.ConcurrencyToken,
         Type: entity.Type.ToString(),
         Code: entity.Code,
-        Name: translations?.Find(entity.Id, ReferenceLocationTranslationFields.Name) ?? entity.Name,
+        Name: translations?.Find(entity.Id.ToString(), ReferenceLocationTranslationFields.Name) ?? entity.Name,
         CountryCode: entity.CountryCode,
-        City: translations?.Find(entity.Id, ReferenceLocationTranslationFields.City) ?? entity.City,
+        City: translations?.Find(entity.Id.ToString(), ReferenceLocationTranslationFields.City) ?? entity.City,
         Latitude: entity.Latitude,
         Longitude: entity.Longitude);
 

@@ -35,11 +35,11 @@
         </div>
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label class="form-label" for="region-level">@Localizer["Field.Region.Level"]</label>
-                <select class="form-select" id="region-level" name="level">
-                    @foreach (var level in Enumerable.Range(1, 3))
+                <label class="form-label" for="region-depth">@Localizer["Field.Region.Depth"]</label>
+                <select class="form-select" id="region-depth" name="depth">
+                    @foreach (var depth in Enumerable.Range(0, 4))
                     {
-                        <option value="@level" selected="@(Model.Input.Level == level)">@Localizer[$"Regions.Level.{level}"]</option>
+                        <option value="@depth" selected="@(Model.Input.Depth == depth)">@DepthLabel(depth)</option>
                     }
                 </select>
             </div>
@@ -62,7 +62,7 @@
 </div>
 
 <form method="post" class="card form-card" id="region-create-form">
-    <input type="hidden" asp-for="Input.Level" />
+    <input type="hidden" asp-for="Input.Depth" />
     <input type="hidden" asp-for="Input.CountryCode" />
 
     <div class="form-section">
@@ -74,35 +74,43 @@
 
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">@Localizer["Field.Region.Level"]</label>
-                <input class="form-control" value="@Localizer[$"Regions.Level.{Model.Input.Level}"]" readonly />
+                <label class="form-label">@Localizer["Regions.Detail.Depth"]</label>
+                <input class="form-control" value="@DepthLabel(Model.Input.Depth)" readonly />
             </div>
             <div class="col-md-4">
-                <label class="form-label">@Localizer["Field.Region.CountryCode"]</label>
+                <label class="form-label">@Localizer["Regions.Detail.Country"]</label>
                 <input class="form-control" value="@Model.Input.CountryCode" readonly />
             </div>
             <div class="col-md-4">
-                <label asp-for="Input.Code" class="form-label"></label>
+                <label asp-for="Input.Code" class="form-label">
+                    @Localizer["Field.Region.Code"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
                 <input asp-for="Input.Code" class="form-control" autocomplete="off" />
+                <div class="form-text">@Localizer["Regions.Hint.Code"]</div>
                 <span asp-validation-for="Input.Code" class="text-danger"></span>
             </div>
 
-            @if (Model.Input.Level > 1)
+            @if (Model.Input.Depth > 0)
             {
                 <div class="col-md-6">
-                    <label asp-for="Input.ParentId" class="form-label">
+                    <label asp-for="Input.ParentCode" class="form-label">
                         @Localizer["Field.Region.Parent"]<span class="required-mark" aria-hidden="true">*</span>
                     </label>
-                    <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
+                    <select asp-for="Input.ParentCode" asp-items="Model.ParentOptions" class="form-select">
                         <option value="">@Localizer["Regions.Form.SelectParent"]</option>
                     </select>
-                    <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                    <span asp-validation-for="Input.ParentCode" class="text-danger"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Input.Admin1Code" class="form-label"></label>
-                    <input asp-for="Input.Admin1Code" class="form-control" autocomplete="off" />
-                    <div class="form-text">@Localizer["Regions.Hint.Admin1Code"]</div>
-                    <span asp-validation-for="Input.Admin1Code" class="text-danger"></span>
+                    <label asp-for="Input.Type" class="form-label"></label>
+                    <select asp-for="Input.Type" class="form-select">
+                        <option value="">@Localizer["Regions.Form.TypeDefault"]</option>
+                        @foreach (var type in RegionTypeOptions(Model.Input.Depth))
+                        {
+                            <option value="@type.Value" selected="@(Model.Input.Type == type.Value)">@type.Label</option>
+                        }
+                    </select>
+                    <div class="form-text">@Localizer["Regions.Hint.Type"]</div>
                 </div>
             }
 
@@ -122,6 +130,11 @@
                 <label asp-for="Input.LocalName" class="form-label"></label>
                 <input asp-for="Input.LocalName" class="form-control" />
                 <span asp-validation-for="Input.LocalName" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.CodeIso" class="form-label"></label>
+                <input asp-for="Input.CodeIso" class="form-control" autocomplete="off" placeholder="CN-11" />
+                <span asp-validation-for="Input.CodeIso" class="text-danger"></span>
             </div>
         </div>
     </div>
@@ -159,4 +172,49 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+}
+
+@functions {
+    private string DepthLabel(int depth) =>
+        depth is >= 0 and <= 3 ? Localizer[$"Regions.Depth.{depth}"].Value : $"D{depth}";
+
+    // 类型选项按深度给出国别口径（geo_division type）的常见取值；留空由服务端推导默认值。
+    private static (string Value, string LabelKey)[] TypeOptions(int depth) => depth switch
+    {
+        1 =>
+        [
+            ("province", "Regions.Type.Province"),
+            ("municipality", "Regions.Type.Municipality"),
+            ("autonomous_region", "Regions.Type.AutonomousRegion"),
+            ("sar", "Regions.Type.SpecialAdministrativeRegion"),
+            ("state", "Regions.Type.State")
+        ],
+        2 =>
+        [
+            ("prefecture_city", "Regions.Type.PrefectureCity"),
+            ("prefecture", "Regions.Type.Prefecture"),
+            ("autonomous_prefecture", "Regions.Type.AutonomousPrefecture"),
+            ("league", "Regions.Type.League"),
+            ("city", "Regions.Type.City"),
+            ("county", "Regions.Type.County")
+        ],
+        3 =>
+        [
+            ("district", "Regions.Type.District"),
+            ("county", "Regions.Type.County"),
+            ("county_city", "Regions.Type.CountyCity"),
+            ("autonomous_county", "Regions.Type.AutonomousCounty"),
+            ("banner", "Regions.Type.Banner"),
+            ("autonomous_banner", "Regions.Type.AutonomousBanner"),
+            ("special_zone", "Regions.Type.SpecialZone"),
+            ("forestry_area", "Regions.Type.ForestryArea"),
+            ("other", "Regions.Type.Other")
+        ],
+        _ => []
+    };
+
+    private (string Value, string Label)[] RegionTypeOptions(int depth) =>
+        TypeOptions(depth)
+            .Select(option => (option.Value, Label: Localizer[option.LabelKey].Value))
+            .ToArray();
 }

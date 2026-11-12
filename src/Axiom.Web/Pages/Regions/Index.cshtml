@@ -81,7 +81,7 @@
                         <th scope="col">@Localizer["Regions.Column.Name"]</th>
                         <th scope="col">@Localizer["Regions.Column.Code"]</th>
                         <th scope="col">@Localizer["Regions.Column.Country"]</th>
-                        <th scope="col">@Localizer["Regions.Column.Admin1"]</th>
+                        <th scope="col">@Localizer["Regions.Column.ProvinceCode"]</th>
                         <th scope="col" class="text-end">@Localizer["Regions.Column.Population"]</th>
                         <th scope="col" class="text-end">@Localizer["Common.Actions"]</th>
                     </tr>
@@ -89,21 +89,23 @@
                 <tbody>
                     @foreach (var r in Model.SearchResults)
                     {
-                        var label = r.Level is >= 1 and <= 3
-                            ? Localizer[$"Regions.Level.{r.Level}"].Value
-                            : $"L{r.Level}";
-                        var levelClass = r.Level is >= 1 and <= 3 ? $"level-{r.Level}" : "level-default";
+                        var label = r.Depth is >= 0 and <= 3
+                            ? Localizer[$"Regions.Depth.{r.Depth}"].Value
+                            : $"D{r.Depth}";
+                        var levelClass = r.Depth is >= 0 and <= 3 ? $"level-{r.Depth + 1}" : "level-default";
                         <tr>
                             <td><span class="badge-soft @levelClass">@label</span></td>
                             <td>@r.Name</td>
                             <td class="cell-muted"><code>@r.Code</code></td>
                             <td>@r.CountryCode</td>
-                            <td class="cell-muted">@r.Admin1Code</td>
+                            <td class="cell-muted">@r.ParentCode</td>
                             <td class="cell-num text-end">@(r.Population?.ToString("N0") ?? "-")</td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="btn btn-ghost" asp-page="/Regions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
-                                    <a class="btn btn-ghost" asp-page="/Regions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+                                    <a class="btn btn-ghost" asp-page="/Regions/Detail"
+                                       asp-route-country="@r.CountryCode" asp-route-code="@r.Code">@Localizer["Common.View"]</a>
+                                    <a class="btn btn-ghost" asp-page="/Regions/Edit"
+                                       asp-route-country="@r.CountryCode" asp-route-code="@r.Code">@Localizer["Common.Edit"]</a>
                                 </div>
                             </td>
                         </tr>
@@ -152,9 +154,8 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
             {
                 <partial name="_RegionTreeNode"
                          model="new Axiom.Web.Models.RegionNodeViewModel(
-                             country.Id, country.Level, country.Code, country.Name,
-                             country.Population, HasChildren: true, IsMunicipality: false,
-                             IsAutonomousRegion: false, IsSpecialAdministrativeRegion: false)" />
+                             country.CountryCode, country.Code, country.Depth, country.Type,
+                             country.Name, country.Population, HasChildren: true)" />
             }
         }
     </div>

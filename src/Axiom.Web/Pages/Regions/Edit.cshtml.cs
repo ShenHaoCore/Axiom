@@ -1,4 +1,5 @@
-// 编辑行政区名称、代码、地理信息和父级；层级与国家等标识字段保持只读。
+// 编辑行政区名称、译文相关字段与地理信息；Code / Depth / Type 等业务标识保持只读。
+// 按 (country, code) 复合业务键寻址。
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.Web.Clients;
@@ -27,9 +28,13 @@ public sealed class EditModel(
 
     public string? ErrorMessage { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
+    public string? EditCountryCode { get; private set; }
+
+    public string? EditCode { get; private set; }
+
+    public async Task<IActionResult> OnGetAsync(string country, string code, CancellationToken cancellationToken = default)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        var failure = await LoadRegionAsync(country, code, cancellationToken);
         if (failure is not null)
         {
             return failure;
@@ -40,9 +45,9 @@ public sealed class EditModel(
         return optionFailure ?? Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OnPostAsync(string country, string code, CancellationToken cancellationToken = default)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        var failure = await LoadRegionAsync(country, code, cancellationToken);
         if (failure is not null)
         {
             return failure;
@@ -54,13 +59,11 @@ public sealed class EditModel(
         }
 
         // 标识字段以服务端实体为准，防止隐藏字段被篡改。
-        Input.Level = Region.Level;
+        Input.Depth = Region.Depth;
         Input.CountryCode = Region.CountryCode;
-        Input.Admin1Code = Region.Admin1Code;
-        if (Input.Level == 1)
-        {
-            Input.ParentId = null;
-        }
+        Input.Code = Region.Code;
+        Input.ParentCode = Region.ParentCode;
+        Input.Type = Region.Type;
 
         var optionFailure = await LoadParentOptionsAsync(cancellationToken);
         if (optionFailure is not null)
@@ -68,13 +71,7 @@ public sealed class EditModel(
             return optionFailure;
         }
 
-        ValidateParent();
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        using var response = await regionClient.UpdateAsync(id, Input, cancellationToken);
+        using var response = await regionClient.UpdateAsync(country, code, Input, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -96,12 +93,6 @@ public sealed class EditModel(
             return Page();
         }
 
-        if (response.StatusCode == HttpStatusCode.Conflict)
-        {
-            ErrorMessage = localizer["Regions.Form.UniqueConflict"].Value;
-            return Page();
-        }
-
         if (!response.IsSuccessStatusCode)
         {
             ErrorMessage = localizer["Regions.Edit.SaveFailed"].Value;
@@ -109,12 +100,12 @@ public sealed class EditModel(
         }
 
         StatusMessage = localizer["Regions.Edit.Updated"].Value;
-        return RedirectToPage("/Regions/Detail", new { id });
+        return RedirectToPage("/Regions/Detail", new { country, code });
     }
 
-    private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadRegionAsync(string country, string code, CancellationToken cancellationToken)
     {
-        using var response = await regionClient.GetAsync(id, cancellationToken);
+        using var response = await regionClient.GetAsync(country, code, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -141,6 +132,11 @@ public sealed class EditModel(
         {
             ErrorMessage = localizer["Regions.Edit.LoadFailed"].Value;
         }
+        else
+        {
+            EditCountryCode = Region.CountryCode;
+            EditCode = Region.Code;
+        }
 
         return null;
     }
@@ -148,12 +144,12 @@ public sealed class EditModel(
     private async Task<IActionResult?> LoadParentOptionsAsync(CancellationToken cancellationToken)
     {
         ParentOptions = [];
-        if (Region is null || Region.Level == 1)
+        if (Region is null || Region.Depth == 0)
         {
             return null;
         }
 
-        using var response = await regionClient.GetTreeAsync(Region.CountryCode, depth: 3, cancellationToken);
+        using var response = await regionClient.GetTreeAsync(Region.CountryCode, depth: Region.Depth - 1, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -173,51 +169,32 @@ public sealed class EditModel(
         var tree = await response.Content.ReadFromJsonAsync<RegionTreeView>(cancellationToken);
         if (tree is not null)
         {
-            ParentOptions = BuildParentOptions(tree, Region.Level - 1, Region.Id);
+            ParentOptions = BuildParentOptions(tree, Region.Depth - 1, Region.Code);
         }
 
         return null;
     }
 
-    private void ValidateParent()
-    {
-        if (Input.Level == 1)
-        {
-            return;
-        }
-
-        if (!Input.ParentId.HasValue)
-        {
-            ModelState.AddModelError("Input.ParentId", localizer["Validation.Region.ParentRequired"].Value);
-            return;
-        }
-
-        if (ParentOptions.All(option => option.Value != Input.ParentId.Value.ToString()))
-        {
-            ModelState.AddModelError("Input.ParentId", localizer["Validation.Region.ParentInvalid"].Value);
-        }
-    }
-
     private static IReadOnlyList<SelectListItem> BuildParentOptions(
         RegionTreeView tree,
-        int parentLevel,
-        Guid editedId)
+        int parentDepth,
+        string editedCode)
     {
         var options = new List<SelectListItem>();
 
-        void Visit(RegionTreeView node, int depth, bool inEditedBranch)
+        void Visit(RegionTreeView node, int level, bool inEditedBranch)
         {
-            var excluded = inEditedBranch || node.Id == editedId;
-            if (!excluded && node.Level == parentLevel)
+            var excluded = inEditedBranch || node.Code == editedCode;
+            if (!excluded && node.Depth == parentDepth)
             {
                 options.Add(new SelectListItem(
-                    $"{new string('—', depth)} {node.Name} ({node.Code})",
-                    node.Id.ToString()));
+                    $"{new string('—', level)} {node.Name} ({node.Code})",
+                    node.Code));
             }
 
             foreach (var child in node.Children)
             {
-                Visit(child, depth + 1, excluded);
+                Visit(child, level + 1, excluded || child.Code == editedCode);
             }
         }
 
