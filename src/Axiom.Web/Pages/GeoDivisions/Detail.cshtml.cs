@@ -184,8 +184,9 @@ public sealed class DetailModel(
 
     private async Task LoadKindNamesAsync(CancellationToken cancellationToken)
     {
+        // 不带 category 过滤：取全部枚举后按 geo_division.kind* 分域合并（含各国专属类型）。
         using var response = await enumClient.ListAsync(
-            ReferenceEnumClient.GeoDivisionKindCategory,
+            category: null,
             pageSize: 200,
             cancellationToken: cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -200,6 +201,7 @@ public sealed class DetailModel(
         }
 
         KindNames = page.Items
+            .Where(item => item.Category.StartsWith(ReferenceEnumClient.GeoDivisionKindCategoryPrefix, StringComparison.Ordinal))
             .GroupBy(item => item.Code, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
     }

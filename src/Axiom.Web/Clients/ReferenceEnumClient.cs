@@ -11,6 +11,16 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
 {
     internal const string ENUMS_PATH = "/api/reference-data/enums";
     public const string GeoDivisionKindCategory = "geo_division.kind";
+    public const string GeoDivisionKindCategoryPrefix = "geo_division.kind.";
+
+    /// <summary>Kind 字典按国家分域：geo_division.kind.{country}；国家代码无效时回退通用域。</summary>
+    public static string GeoDivisionKindCategoryFor(string? countryCode)
+    {
+        var normalized = (countryCode ?? string.Empty).Trim();
+        return normalized.Length == 2 && normalized.All(char.IsAsciiLetter)
+            ? $"{GeoDivisionKindCategory}.{normalized.ToLowerInvariant()}"
+            : GeoDivisionKindCategory;
+    }
 
     public Task<HttpResponseMessage> ListAsync(
         string? category,

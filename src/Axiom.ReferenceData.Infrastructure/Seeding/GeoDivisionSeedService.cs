@@ -214,17 +214,19 @@ public sealed class GeoDivisionSeedService(
         ReferenceDataDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        var category = ReferenceEnumCategories.GeoDivisionKind;
+        var seeds = GeoDivisionKinds.SeedItems;
         var existing = await dbContext.ReferenceEnums
-            .Where(e => e.Category == category)
-            .Select(e => e.Code)
+            .Where(e => e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
+            .Select(e => new { e.Category, e.Code })
             .ToListAsync(cancellationToken);
-        var existingCodes = existing.ToHashSet(StringComparer.Ordinal);
+        var existingKeys = existing
+            .Select(e => $"{e.Category}.{e.Code}")
+            .ToHashSet(StringComparer.Ordinal);
 
         var toAdd = new List<ReferenceEnum>();
-        foreach (var (code, name, sortOrder) in GeoDivisionKinds.SeedItems)
+        foreach (var (category, code, name, sortOrder) in seeds)
         {
-            if (existingCodes.Contains(code))
+            if (existingKeys.Contains($"{category}.{code}"))
             {
                 continue;
             }

@@ -208,8 +208,9 @@ public sealed class CreateModel(
 
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
+        // Kind 选项按所选国家的分域字典；该国家未维护时回退通用域。
         using var response = await enumClient.ListAsync(
-            ReferenceEnumClient.GeoDivisionKindCategory,
+            ReferenceEnumClient.GeoDivisionKindCategoryFor(Input.CountryCode),
             pageSize: 200,
             cancellationToken: cancellationToken);
         var statusFailure = HandleStatus(response.StatusCode);

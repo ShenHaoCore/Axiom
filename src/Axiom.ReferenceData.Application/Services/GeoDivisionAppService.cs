@@ -145,12 +145,13 @@ public sealed class GeoDivisionAppService(
         CreateGeoDivisionInput input,
         CancellationToken ct = default)
     {
+        var countryCode = NormalizeCountryCode(input.CountryCode);
+
         // Kind 留空时按国家与深度推导默认类型；非空则按字典强校验。
         var kind = string.IsNullOrWhiteSpace(input.Kind)
-            ? GeoDivisionKinds.DeriveDefault(
-                NormalizeCountryCode(input.CountryCode) ?? string.Empty, input.Level, input.SubdivisionCode)
+            ? GeoDivisionKinds.DeriveDefault(countryCode ?? string.Empty, input.Level, input.SubdivisionCode)
             : GeoDivisionKinds.Normalize(input.Kind);
-        await EnsureKindExistsAsync(kind, ct);
+        await EnsureKindExistsAsync(kind, countryCode, ct);
 
         var entity = GeoDivision.Create(
             input.Level,
@@ -185,7 +186,7 @@ public sealed class GeoDivisionAppService(
 
         if (input.Kind is not null)
         {
-            await EnsureKindExistsAsync(GeoDivisionKinds.Normalize(input.Kind), ct);
+            await EnsureKindExistsAsync(GeoDivisionKinds.Normalize(input.Kind), entity.CountryCode, ct);
         }
 
         entity.Update(
@@ -313,11 +314,20 @@ public sealed class GeoDivisionAppService(
     private static string? NormalizeCountryCode(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 
-    private async Task EnsureKindExistsAsync(string kind, CancellationToken ct)
+    /// <summary>Kind 强校验：优先行所属国家的分域字典，未维护时回退通用兜底域。</summary>
+    private async Task EnsureKindExistsAsync(string kind, string? countryCode, CancellationToken ct)
     {
-        if (!await enumRepository.ExistsAsync(ReferenceEnumCategories.GeoDivisionKind, kind, ct))
+        var category = GeoDivisionKinds.CategoryFor(countryCode);
+        if (await enumRepository.ExistsAsync(category, kind, ct))
         {
-            throw GeoDivisionValidationException.InvalidKind();
+            return;
         }
+
+        if (await enumRepository.ExistsAsync(ReferenceEnumCategories.GeoDivisionKind, kind, ct))
+        {
+            return;
+        }
+
+        throw GeoDivisionValidationException.InvalidKind();
     }
 }

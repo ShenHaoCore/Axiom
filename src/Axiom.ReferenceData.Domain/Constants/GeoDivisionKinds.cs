@@ -47,46 +47,73 @@ public static class GeoDivisionKinds
     // 兜底
     public const string Other = "other";
 
-    /// <summary>种子与默认下拉用的约定项（显示名由字典表维护）。</summary>
-    public static IReadOnlyList<(string Code, string Name, int SortOrder)> SeedItems { get; } =
-    [
-        (Country, "国家", 0),
+    /// <summary>Kind 字典按国家分域：geo_division.kind.{country}，另留 geo_division.kind 作通用兜底。</summary>
+    public static string CategoryFor(string? countryCode)
+    {
+        var normalized = (countryCode ?? string.Empty).Trim();
+        return normalized.Length == 2 && normalized.All(char.IsAsciiLetter)
+            ? $"{ReferenceEnumCategories.GeoDivisionKind}.{normalized.ToLowerInvariant()}"
+            : ReferenceEnumCategories.GeoDivisionKind;
+    }
 
-        // 中国
-        (Province, "省", 10),
-        (Municipality, "直辖市", 11),
-        (AutonomousRegion, "自治区", 12),
-        (SpecialAdministrativeRegion, "特别行政区", 13),
-        (AutonomousPrefecture, "自治州", 14),
-        (PrefectureCity, "地级市", 15),
-        (Prefecture, "地区", 16),
-        (League, "盟", 17),
-        (CountyLevel, "省直辖县级行政区划", 18),
-        (County, "县", 19),
-        (CountyCity, "县级市", 20),
-        (District, "市辖区", 21),
-        (AutonomousCounty, "自治县", 22),
-        (Banner, "旗", 23),
-        (AutonomousBanner, "自治旗", 24),
-        (ForestryArea, "林区", 25),
-        (SpecialZone, "特区", 26),
-        (Other, "其他", 27),
+    /// <summary>
+    /// 种子项（Category, Code, 显示名, 排序）：通用兜底域 + 各国专属域，
+    /// 显示名由枚举字典表维护。
+    /// </summary>
+    public static IReadOnlyList<(string Category, string Code, string Name, int SortOrder)> SeedItems { get; } =
+        BuildSeedItems();
+
+    private static List<(string Category, string Code, string Name, int SortOrder)> BuildSeedItems()
+    {
+        // 通用兜底：未维护国别类型的国家使用
+        var baseKinds = new[] { (Country, "国家"), (Province, "省"), (PrefectureCity, "地级市"), (County, "县"), (City, "市"), (Other, "其他") };
+
+        // 中国：全量行政区划类型
+        var cn = new[]
+        {
+            (Country, "国家"), (Province, "省"), (Municipality, "直辖市"), (AutonomousRegion, "自治区"),
+            (SpecialAdministrativeRegion, "特别行政区"), (AutonomousPrefecture, "自治州"), (PrefectureCity, "地级市"),
+            (Prefecture, "地区"), (League, "盟"), (CountyLevel, "省直辖县级行政区划"), (County, "县"),
+            (CountyCity, "县级市"), (District, "市辖区"), (AutonomousCounty, "自治县"), (Banner, "旗"),
+            (AutonomousBanner, "自治旗"), (ForestryArea, "林区"), (SpecialZone, "特区"), (Other, "其他")
+        };
 
         // 美国
-        (State, "州", 40),
-        (County, "县", 41),
-        (Borough, "自治市镇", 42),
-        (Parish, "教区", 43),
-        (CensusArea, "人口普查区", 44),
-        (City, "市", 45),
+        var us = new[]
+        {
+            (Country, "国家"), (State, "州"), (County, "县"), (Borough, "自治市镇"),
+            (Parish, "教区"), (CensusArea, "人口普查区"), (City, "市"), (Other, "其他")
+        };
 
         // 英国
-        (ConstituentCountry, "构成国", 60),
+        var gb = new[] { (Country, "国家"), (ConstituentCountry, "构成国"), (City, "市"), (Other, "其他") };
 
         // 日本
-        (Metropolis, "都", 80),
-        (SpecialWard, "特别区", 81)
-    ];
+        var jp = new[]
+        {
+            (Country, "国家"), (Metropolis, "都"), (Prefecture, "府"), (SpecialWard, "特别区"),
+            (City, "市"), (Other, "其他")
+        };
+
+        var items = new List<(string, string, string, int)>();
+        var sort = 0;
+
+        void Add(string category, IEnumerable<(string Code, string Name)> kinds)
+        {
+            foreach (var (code, name) in kinds)
+            {
+                items.Add((category, code, name, sort++));
+            }
+        }
+
+        Add(ReferenceEnumCategories.GeoDivisionKind, baseKinds);
+        Add(CategoryFor("CN"), cn);
+        Add(CategoryFor("US"), us);
+        Add(CategoryFor("GB"), gb);
+        Add(CategoryFor("JP"), jp);
+
+        return items;
+    }
 
     /// <summary>规范化 Kind 输入：小写、去空白；空值兜底为 other。</summary>
     public static string Normalize(string? kind) =>

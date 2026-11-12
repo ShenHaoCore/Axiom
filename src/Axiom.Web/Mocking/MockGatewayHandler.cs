@@ -42,31 +42,47 @@ public sealed class MockGatewayHandler : DelegatingHandler
     [
         new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000000"), "geo_division.kind", "country", "国家", 1),
         new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"), "geo_division.kind", "province", "省", 2),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), "geo_division.kind", "municipality", "直辖市", 3),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"), "geo_division.kind", "autonomous_region", "自治区", 4),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004"), "geo_division.kind", "special_administrative_region", "特别行政区", 5),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000005"), "geo_division.kind", "autonomous_prefecture", "自治州", 6),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000006"), "geo_division.kind", "prefecture_city", "地级市", 7),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000007"), "geo_division.kind", "prefecture", "地区", 8),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000008"), "geo_division.kind", "league", "盟", 9),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000009"), "geo_division.kind", "county_level", "省直辖县级行政区划", 10),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000010"), "geo_division.kind", "county", "县", 11),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000011"), "geo_division.kind", "county_city", "县级市", 12),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000012"), "geo_division.kind", "district", "市辖区", 13),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000013"), "geo_division.kind", "autonomous_county", "自治县", 14),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000014"), "geo_division.kind", "banner", "旗", 15),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000015"), "geo_division.kind", "autonomous_banner", "自治旗", 16),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000016"), "geo_division.kind", "forestry_area", "林区", 17),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000017"), "geo_division.kind", "special_zone", "特区", 18),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000018"), "geo_division.kind", "other", "其他", 19),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000019"), "geo_division.kind", "state", "州", 20),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000020"), "geo_division.kind", "borough", "自治市镇", 21),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000021"), "geo_division.kind", "parish", "教区", 22),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000022"), "geo_division.kind", "census_area", "人口普查区", 23),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000023"), "geo_division.kind", "city", "市", 24),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000024"), "geo_division.kind", "constituent_country", "构成国", 25),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000025"), "geo_division.kind", "metropolis", "都", 26),
-        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000026"), "geo_division.kind", "special_ward", "特别区", 27)
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), "geo_division.kind", "prefecture_city", "地级市", 3),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"), "geo_division.kind", "county", "县", 4),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004"), "geo_division.kind", "city", "市", 5),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000005"), "geo_division.kind", "other", "其他", 6),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000006"), "geo_division.kind.cn", "country", "国家", 1),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000007"), "geo_division.kind.cn", "province", "省", 2),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000008"), "geo_division.kind.cn", "municipality", "直辖市", 3),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000009"), "geo_division.kind.cn", "autonomous_region", "自治区", 4),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000010"), "geo_division.kind.cn", "special_administrative_region", "特别行政区", 5),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000011"), "geo_division.kind.cn", "autonomous_prefecture", "自治州", 6),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000012"), "geo_division.kind.cn", "prefecture_city", "地级市", 7),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000013"), "geo_division.kind.cn", "prefecture", "地区", 8),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000014"), "geo_division.kind.cn", "league", "盟", 9),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000015"), "geo_division.kind.cn", "county_level", "省直辖县级行政区划", 10),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000016"), "geo_division.kind.cn", "county", "县", 11),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000017"), "geo_division.kind.cn", "county_city", "县级市", 12),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000018"), "geo_division.kind.cn", "district", "市辖区", 13),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000019"), "geo_division.kind.cn", "autonomous_county", "自治县", 14),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000020"), "geo_division.kind.cn", "banner", "旗", 15),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000021"), "geo_division.kind.cn", "autonomous_banner", "自治旗", 16),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000022"), "geo_division.kind.cn", "forestry_area", "林区", 17),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000023"), "geo_division.kind.cn", "special_zone", "特区", 18),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000024"), "geo_division.kind.cn", "other", "其他", 19),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000025"), "geo_division.kind.us", "country", "国家", 1),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000026"), "geo_division.kind.us", "state", "州", 2),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000027"), "geo_division.kind.us", "county", "县", 3),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000028"), "geo_division.kind.us", "borough", "自治市镇", 4),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000029"), "geo_division.kind.us", "parish", "教区", 5),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000030"), "geo_division.kind.us", "census_area", "人口普查区", 6),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000031"), "geo_division.kind.us", "city", "市", 7),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000032"), "geo_division.kind.us", "other", "其他", 8),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000033"), "geo_division.kind.gb", "country", "国家", 1),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000034"), "geo_division.kind.gb", "constituent_country", "构成国", 2),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000035"), "geo_division.kind.gb", "city", "市", 3),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000036"), "geo_division.kind.gb", "other", "其他", 4),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000037"), "geo_division.kind.jp", "country", "国家", 1),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000038"), "geo_division.kind.jp", "metropolis", "都", 2),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000039"), "geo_division.kind.jp", "prefecture", "府", 3),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000040"), "geo_division.kind.jp", "special_ward", "特别区", 4),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000041"), "geo_division.kind.jp", "city", "市", 5),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000042"), "geo_division.kind.jp", "other", "其他", 6)
     ];
 
     // 机场响应模型不含并发令牌，因此在 Mock 中与主数据分开维护。
@@ -816,7 +832,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
         var kind = string.IsNullOrWhiteSpace(value) ? "other" : value.Trim().ToLowerInvariant();
         lock (Gate)
         {
-            return Enums.Any(e => e.Category == "geo_division.kind" && e.Code == kind)
+            return Enums.Any(e => e.Category.StartsWith("geo_division.kind", StringComparison.Ordinal) && e.Code == kind)
                 ? kind
                 : null;
         }

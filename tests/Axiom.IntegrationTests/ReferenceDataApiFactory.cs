@@ -35,15 +35,15 @@ public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDat
     /// <summary>Testing 环境关闭 HostedService 种子，工厂侧补齐 Kind 字典。</summary>
     internal static void SeedGeoDivisionKinds(ReferenceDataDbContext context)
     {
-        var category = ReferenceEnumCategories.GeoDivisionKind;
         var existing = context.ReferenceEnums
-            .Where(e => e.Category == category)
-            .Select(e => e.Code)
+            .Where(e => e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
+            .Select(e => e.Category + "." + e.Code)
             .ToHashSet(StringComparer.Ordinal);
 
-        foreach (var (code, name, sortOrder) in GeoDivisionKinds.SeedItems)
+
+        foreach (var (category, code, name, sortOrder) in GeoDivisionKinds.SeedItems)
         {
-            if (existing.Contains(code))
+            if (existing.Contains(category + "." + code))
             {
                 continue;
             }

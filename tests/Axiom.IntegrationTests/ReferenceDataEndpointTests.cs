@@ -166,9 +166,9 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             Code: subdivisionCode,
             Name: $"回归省州 {suffix}",
             ParentId: country.Id);
-        var admin1 = await CreateRegion(admin1Input with { Kind = "municipality" });
+        var admin1 = await CreateRegion(admin1Input with { Kind = "province" });
         admin1.Level.Should().Be(2);
-        admin1.Kind.Should().Be("municipality");
+        admin1.Kind.Should().Be("province");
         admin1.ParentId.Should().Be(country.Id);
 
         var cityInput = new CreateGeoDivisionInput(
