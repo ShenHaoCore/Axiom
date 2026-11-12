@@ -61,11 +61,11 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 new AirportResponse(AirportId, "SHA", "上海浦东国际机场", "CN", "上海", 31.1443, 121.8083),
                 1));
             _geoDivisions.Add(GeoDivisionCountryId, new GeoDivisionView(
-                GeoDivisionCountryId, null, 1, "standard", "CN", null, "CN", "中国", "China", "中国", null, null, 1400000000, null));
+                GeoDivisionCountryId, null, 1, "country", "CN", null, "CN", "中国", "China", "中国", null, null, 1400000000, null));
             _geoDivisions.Add(GeoDivisionAdmin1Id, new GeoDivisionView(
-                GeoDivisionAdmin1Id, GeoDivisionCountryId, 2, "standard", "CN", "JS", "JS", "江苏", "Jiangsu", "江苏", null, null, 85000000, null));
+                GeoDivisionAdmin1Id, GeoDivisionCountryId, 2, "province", "CN", "JS", "JS", "江苏", "Jiangsu", "江苏", null, null, 85000000, null));
             _geoDivisions.Add(GeoDivisionCityId, new GeoDivisionView(
-                GeoDivisionCityId, GeoDivisionAdmin1Id, 3, "standard", "CN", "JS", "SZ", "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
+                GeoDivisionCityId, GeoDivisionAdmin1Id, 3, "prefecture_city", "CN", "JS", "SZ", "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -128,10 +128,33 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
         private static readonly IReadOnlyList<ReferenceEnumView> KindEnums =
         [
-            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"), "geo_division.kind", "standard", "标准", 0),
-            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), "geo_division.kind", "municipality", "直辖市", 1),
-            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"), "geo_division.kind", "autonomous_region", "自治区", 2),
-            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004"), "geo_division.kind", "special_administrative_region", "特别行政区", 3)
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"), "geo_division.kind", "country", "国家", 1),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), "geo_division.kind", "province", "省", 2),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"), "geo_division.kind", "municipality", "直辖市", 3),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004"), "geo_division.kind", "autonomous_region", "自治区", 4),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000005"), "geo_division.kind", "special_administrative_region", "特别行政区", 5),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000006"), "geo_division.kind", "autonomous_prefecture", "自治州", 6),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000007"), "geo_division.kind", "prefecture_city", "地级市", 7),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000008"), "geo_division.kind", "prefecture", "地区", 8),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000009"), "geo_division.kind", "league", "盟", 9),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000010"), "geo_division.kind", "county_level", "省直辖县级行政区划", 10),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000011"), "geo_division.kind", "county", "县", 11),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000012"), "geo_division.kind", "county_city", "县级市", 12),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000013"), "geo_division.kind", "district", "市辖区", 13),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000014"), "geo_division.kind", "autonomous_county", "自治县", 14),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000015"), "geo_division.kind", "banner", "旗", 15),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000016"), "geo_division.kind", "autonomous_banner", "自治旗", 16),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000017"), "geo_division.kind", "forestry_area", "林区", 17),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000018"), "geo_division.kind", "special_zone", "特区", 18),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000019"), "geo_division.kind", "other", "其他", 19),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000020"), "geo_division.kind", "state", "州", 20),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000021"), "geo_division.kind", "borough", "自治市镇", 21),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000022"), "geo_division.kind", "parish", "教区", 22),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000023"), "geo_division.kind", "census_area", "人口普查区", 23),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000024"), "geo_division.kind", "city", "市", 24),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000025"), "geo_division.kind", "constituent_country", "构成国", 25),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000026"), "geo_division.kind", "metropolis", "都", 26),
+            new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000027"), "geo_division.kind", "special_ward", "特别区", 27)
         ];
 
         private HttpResponseMessage AirportCollection()
@@ -351,7 +374,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 id,
                 input.Level == 1 ? null : input.ParentId,
                 input.Level,
-                string.IsNullOrWhiteSpace(input.Kind) ? "standard" : input.Kind.Trim().ToLowerInvariant(),
+                string.IsNullOrWhiteSpace(input.Kind) ? (input.Level == 1 ? "country" : "province") : input.Kind.Trim().ToLowerInvariant(),
                 normalizedCountry,
                 input.SubdivisionCode,
                 code,
@@ -499,9 +522,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 Longitude = input.Longitude ?? region.Longitude,
                 Population = input.Population ?? region.Population,
                 ParentId = input.ParentId ?? region.ParentId,
-                Kind = input.Kind is null
-                    ? region.Kind
-                    : string.IsNullOrWhiteSpace(input.Kind) ? "standard" : input.Kind.Trim().ToLowerInvariant()
+                Kind = string.IsNullOrWhiteSpace(input.Kind) ? region.Kind : input.Kind.Trim().ToLowerInvariant()
             };
             _geoDivisions[id] = updated;
             return Json(HttpStatusCode.OK, updated);

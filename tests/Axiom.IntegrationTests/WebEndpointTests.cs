@@ -466,7 +466,7 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         var fields = new List<KeyValuePair<string, string>>
         {
             new("Input.Level", level.ToString()),
-            new("Input.Kind", "standard"),
+            new("Input.Kind", "province"),
             new("Input.CountryCode", countryCode),
             new("Input.Code", code),
             new("Input.Name", name),

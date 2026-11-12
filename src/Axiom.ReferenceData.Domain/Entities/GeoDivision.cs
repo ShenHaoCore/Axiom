@@ -21,7 +21,7 @@ public sealed class GeoDivision
     public Guid Id { get; private set; }
     public Guid? ParentId { get; private set; }
     public int Level { get; private set; }
-    public string Kind { get; private set; } = GeoDivisionKinds.Standard;
+    public string Kind { get; private set; } = GeoDivisionKinds.Other;
     public string CountryCode { get; private set; } = null!;
     public string? SubdivisionCode { get; private set; }
     public string Code { get; private set; } = null!;

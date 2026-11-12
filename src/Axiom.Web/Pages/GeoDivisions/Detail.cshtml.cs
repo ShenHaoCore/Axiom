@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Axiom.SharedKernel.Localization;
+using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
 using Axiom.Web.Resources;
@@ -13,10 +14,27 @@ namespace Axiom.Web.Pages.GeoDivisions;
 
 public sealed class DetailModel(
     GeoDivisionClient regionClient,
+    ReferenceEnumClient enumClient,
     AxiomLocalizationOptions localizationOptions,
     IStringLocalizer<SharedResource> localizer) : PageModel
 {
     public GeoDivisionView? GeoDivision { get; private set; }
+
+    // Kind 显示名（来自枚举字典 reference_enums）
+    public IReadOnlyDictionary<string, string> KindNames { get; private set; } =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>Kind 显示名；字典缺失或未知类型回退到深度通用文案。</summary>
+    public string KindNameFor(string? kind, int level)
+    {
+        if (!string.IsNullOrWhiteSpace(kind)
+            && KindNames.TryGetValue(kind.Trim().ToLowerInvariant(), out var name))
+        {
+            return name;
+        }
+
+        return level is >= 1 and <= 4 ? localizer[$"GeoDivisions.Level.{level}"].Value : $"L{level}";
+    }
 
     /// <summary>默认语言（简体中文）原始数据：译文编辑器的原文参考，不随界面语言本地化。</summary>
     public GeoDivisionView? DefaultLanguageDivision { get; private set; }
@@ -73,6 +91,7 @@ public sealed class DetailModel(
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await LoadKindNamesAsync(cancellationToken);
         var failure = await LoadRegionAsync(id, cancellationToken);
         if (failure is not null)
         {
@@ -161,6 +180,28 @@ public sealed class DetailModel(
 
         var translationFailure = await LoadTranslationsAsync(id, cancellationToken);
         return translationFailure ?? Page();
+    }
+
+    private async Task LoadKindNamesAsync(CancellationToken cancellationToken)
+    {
+        using var response = await enumClient.ListAsync(
+            ReferenceEnumClient.GeoDivisionKindCategory,
+            pageSize: 200,
+            cancellationToken: cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
+        if (page is null)
+        {
+            return;
+        }
+
+        KindNames = page.Items
+            .GroupBy(item => item.Code, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
     }
 
     private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)

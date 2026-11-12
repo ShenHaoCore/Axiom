@@ -195,7 +195,7 @@ public sealed class GeoDivisionSeedService(
                 asciiName: row.AsciiName,
                 parentId: countryId,
                 geoNameId: row.GeoNameId,
-                kind: CnAdmin1Kinds.Resolve(row.CountryCode, row.Admin1Code));
+                kind: GeoDivisionKinds.DeriveDefault(row.CountryCode, 2, row.Admin1Code));
             toAdd.Add(region);
             keyToId[key] = region.Id;
         }
@@ -253,7 +253,7 @@ public sealed class GeoDivisionSeedService(
         var changed = false;
         foreach (var region in cnAdmin1)
         {
-            var kind = CnAdmin1Kinds.Resolve(region.CountryCode, region.SubdivisionCode);
+            var kind = GeoDivisionKinds.DeriveDefault(region.CountryCode, region.Level, region.SubdivisionCode);
             if (region.Kind == kind)
             {
                 continue;

@@ -26,7 +26,7 @@
                 }
             </h1>
             <p class="page-description">
-                @KindOrLevelLabel(r) · @r.CountryCode · <code>@r.Code</code>
+                @Model.KindNameFor(r.Kind, r.Level) · @r.CountryCode · <code>@r.Code</code>
             </p>
         </div>
         <div class="page-actions">
@@ -54,7 +54,7 @@
                         <div class="detail-row">
                             <dt class="detail-label">@Localizer["GeoDivisions.Detail.Level"]</dt>
                             <dd class="detail-value">
-                                <span class="badge-soft @(r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default")">@KindOrLevelLabel(r)</span>
+                                <span class="badge-soft @(r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default")">@Model.KindNameFor(r.Kind, r.Level)</span>
                             </dd>
                         </div>
                         <div class="detail-row">
@@ -180,16 +180,3 @@
     </div>
 }
 
-@functions {
-    private string KindOrLevelLabel(Axiom.Web.Models.GeoDivisionView region) =>
-        region.Kind switch
-        {
-            "municipality" => Localizer["GeoDivisions.Municipality"].Value,
-            "autonomous_region" => Localizer["GeoDivisions.AutonomousRegion"].Value,
-            "special_administrative_region" => Localizer["GeoDivisions.SpecialAdministrativeRegion"].Value,
-            "standard" or null or "" => region.Level is >= 1 and <= 4
-                ? Localizer[$"GeoDivisions.Level.{region.Level}"].Value
-                : $"L{region.Level}",
-            _ => region.Kind
-        };
-}

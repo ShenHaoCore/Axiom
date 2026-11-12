@@ -13,10 +13,27 @@ namespace Axiom.Web.Pages.GeoDivisions;
 
 public sealed class IndexModel(
     GeoDivisionClient regionClient,
+    ReferenceEnumClient enumClient,
     IStringLocalizer<SharedResource> localizer) : PageModel
 {
     // 国家列表：层级树的根节点 + 搜索下拉筛选项
     public IReadOnlyList<GeoDivisionView> Countries { get; private set; } = [];
+
+    // Kind 显示名（来自枚举字典 reference_enums，显示名由字典表维护）
+    public IReadOnlyDictionary<string, string> KindNames { get; private set; } =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>Kind 显示名；字典缺失或未知类型回退到深度通用文案。</summary>
+    public string KindNameFor(string? kind, int level)
+    {
+        if (!string.IsNullOrWhiteSpace(kind)
+            && KindNames.TryGetValue(kind.Trim().ToLowerInvariant(), out var name))
+        {
+            return name;
+        }
+
+        return level is >= 1 and <= 4 ? localizer[$"GeoDivisions.Level.{level}"].Value : $"L{level}";
+    }
 
     // 搜索结果
     public IReadOnlyList<GeoDivisionView> SearchResults { get; private set; } = [];
@@ -34,6 +51,7 @@ public sealed class IndexModel(
         string? q,
         CancellationToken cancellationToken = default)
     {
+        await LoadKindNamesAsync(cancellationToken);
         // 总是拉国家列表：树的根节点 + 下拉筛选
         var countriesResponse = await regionClient.ListAsync(1, 250, level: 1, null, null, null, cancellationToken);
         if (!countriesResponse.IsSuccessStatusCode)
@@ -80,6 +98,7 @@ public sealed class IndexModel(
     // 惰性加载：返回某节点子级的局部视图（含直辖市合并与展开箭头判断）。
     public async Task<IActionResult> OnGetChildrenAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await LoadKindNamesAsync(cancellationToken);
         var response = await regionClient.GetChildrenAsync(id, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -89,7 +108,30 @@ public sealed class IndexModel(
         }
 
         var children = await response.Content.ReadFromJsonAsync<List<GeoDivisionChildView>>(cancellationToken) ?? [];
-        return Partial("_GeoDivisionChildren", children.Select(GeoDivisionNodeViewModel.FromChild).ToList());
+        return Partial("_GeoDivisionChildren", children.Select(child =>
+            GeoDivisionNodeViewModel.FromChild(child, KindNameFor(child.Kind, child.Level))).ToList());
+    }
+
+    private async Task LoadKindNamesAsync(CancellationToken cancellationToken)
+    {
+        using var response = await enumClient.ListAsync(
+            ReferenceEnumClient.GeoDivisionKindCategory,
+            pageSize: 200,
+            cancellationToken: cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
+        if (page is null)
+        {
+            return;
+        }
+
+        KindNames = page.Items
+            .GroupBy(item => item.Code, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
     }
 
     private IActionResult HandleStatus(HttpStatusCode statusCode) =>

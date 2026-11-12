@@ -46,25 +46,18 @@ public sealed record GeoDivisionNodeViewModel(
     Guid Id,
     int Level,
     string Kind,
+    string KindName,
     string Code,
     string Name,
     long? Population,
     bool HasChildren)
 {
-    public bool IsMunicipality =>
-        string.Equals(Kind, "municipality", StringComparison.OrdinalIgnoreCase);
-
-    public bool IsAutonomousRegion =>
-        string.Equals(Kind, "autonomous_region", StringComparison.OrdinalIgnoreCase);
-
-    public bool IsSpecialAdministrativeRegion =>
-        string.Equals(Kind, "special_administrative_region", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>由 /children 接口返回的子级构造展示模型。</summary>
-    public static GeoDivisionNodeViewModel FromChild(GeoDivisionChildView child) => new(
+    /// <summary>由 /children 接口返回的子级构造展示模型；KindName 由页面模型按字典解析。</summary>
+    public static GeoDivisionNodeViewModel FromChild(GeoDivisionChildView child, string kindName) => new(
         child.Id,
         child.Level,
         child.Kind,
+        kindName,
         child.Code,
         child.Name,
         child.Population,

@@ -145,7 +145,12 @@ public sealed class GeoDivisionAppService(
         CreateGeoDivisionInput input,
         CancellationToken ct = default)
     {
-        await EnsureKindExistsAsync(GeoDivisionKinds.Normalize(input.Kind), ct);
+        // Kind 留空时按国家与深度推导默认类型；非空则按字典强校验。
+        var kind = string.IsNullOrWhiteSpace(input.Kind)
+            ? GeoDivisionKinds.DeriveDefault(
+                NormalizeCountryCode(input.CountryCode) ?? string.Empty, input.Level, input.SubdivisionCode)
+            : GeoDivisionKinds.Normalize(input.Kind);
+        await EnsureKindExistsAsync(kind, ct);
 
         var entity = GeoDivision.Create(
             input.Level,

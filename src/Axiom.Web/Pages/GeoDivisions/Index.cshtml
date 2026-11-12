@@ -152,7 +152,8 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
             {
                 <partial name="_GeoDivisionTreeNode"
                          model="new Axiom.Web.Models.GeoDivisionNodeViewModel(
-                             country.Id, country.Level, country.Kind, country.Code, country.Name,
+                             country.Id, country.Level, country.Kind,
+                             Model.KindNameFor(country.Kind, country.Level), country.Code, country.Name,
                              country.Population, HasChildren: true)" />
             }
         }

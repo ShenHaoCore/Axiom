@@ -13,7 +13,7 @@
         {
             <span class="region-leaf-dot" aria-hidden="true">•</span>
         }
-        <span class="badge-soft @LevelClass(Model.Level)">@KindOrLevelLabel(Model)</span>
+        <span class="badge-soft @LevelClass(Model.Level)">@Model.KindName</span>
         <a asp-page="/GeoDivisions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
         <code class="text-muted small">@Model.Code</code>
         <a class="btn btn-ghost ms-auto" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
@@ -30,18 +30,6 @@
 </div>
 
 @functions {
-    // Kind 优先：直辖市/自治区/特区；否则回退到层级文案。
-    string KindOrLevelLabel(GeoDivisionNodeViewModel node) =>
-        node.IsMunicipality
-            ? Localizer["GeoDivisions.Municipality"].Value
-            : node.IsSpecialAdministrativeRegion
-                ? Localizer["GeoDivisions.SpecialAdministrativeRegion"].Value
-                : node.IsAutonomousRegion
-                    ? Localizer["GeoDivisions.AutonomousRegion"].Value
-                    : node.Level is >= 1 and <= 4
-                        ? Localizer[$"GeoDivisions.Level.{node.Level}"].Value
-                        : $"L{node.Level}";
-
     static string LevelClass(int level) =>
         level is >= 1 and <= 4 ? $"level-{level}" : "level-default";
 }

@@ -155,7 +155,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             Name: $"回归国家 {suffix}");
         var country = await CreateRegion(countryInput);
         country.Level.Should().Be(1);
-        country.Kind.Should().Be("standard");
+        country.Kind.Should().Be("other", "未提供 Kind 时按深度兜底为 other");
         country.CountryCode.Should().Be(countryCode);
         country.ParentId.Should().BeNull();
 
@@ -612,7 +612,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             HttpMethod.Post,
             "/api/geo-divisions",
             ManagePermissions,
-            new CreateGeoDivisionInput(1, countryCode, Code: countryCode, Name: "引用 Kind 国家", Kind: "standard"));
+            new CreateGeoDivisionInput(1, countryCode, Code: countryCode, Name: "引用 Kind 国家", Kind: "country"));
         var countryResponse = await _client.SendAsync(countryRequest);
         var countryContent = await countryResponse.Content.ReadAsStringAsync();
         countryResponse.StatusCode.Should().Be(HttpStatusCode.Created, countryContent);
@@ -625,14 +625,14 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var kindsResponse = await _client.SendAsync(listKinds);
         kindsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var kinds = await kindsResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
-        var standard = kinds!.Items.Single(item => item.Code == "standard");
+        var countryKind = kinds!.Items.Single(item => item.Code == "country");
 
-        using var deleteStandardRequest = CreateRequest(
+        using var deleteInUseKindRequest = CreateRequest(
             HttpMethod.Delete,
-            $"/api/reference-data/enums/{standard.Id}",
+            $"/api/reference-data/enums/{countryKind.Id}",
             ManagePermissions);
-        var deleteStandardResponse = await _client.SendAsync(deleteStandardRequest);
-        deleteStandardResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var deleteInUseKindResponse = await _client.SendAsync(deleteInUseKindRequest);
+        deleteInUseKindResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         using var deleteCountry = CreateRequest(
             HttpMethod.Delete,
