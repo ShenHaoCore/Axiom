@@ -42,7 +42,11 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
         SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{parentId}/children", null, cancellationToken);
 
     public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken);
+        GetAsync(id, culture: null, cancellationToken);
+
+    /// <summary>读取行政区；culture 非空时覆盖 Accept-Language，用于取默认语言原文（绕开界面语言本地化）。</summary>
+    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
 
     public Task<HttpResponseMessage> CreateAsync(GeoDivisionInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -119,7 +123,8 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
         HttpMethod method,
         string path,
         HttpContent? content,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? acceptLanguage = null)
     {
         var httpContext = httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
@@ -128,7 +133,9 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
 
         using var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
-        request.Headers.TryAddWithoutValidation(ApiClientHeaders.AcceptLanguage, CultureInfo.CurrentUICulture.Name);
+        request.Headers.TryAddWithoutValidation(
+            ApiClientHeaders.AcceptLanguage,
+            acceptLanguage ?? CultureInfo.CurrentUICulture.Name);
         request.Content = content;
         return await httpClient.SendAsync(request, cancellationToken);
     }

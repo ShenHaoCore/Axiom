@@ -18,6 +18,9 @@ public sealed class DetailModel(
 {
     public GeoDivisionView? GeoDivision { get; private set; }
 
+    /// <summary>默认语言（简体中文）原始数据：译文编辑器的原文参考，不随界面语言本地化。</summary>
+    public GeoDivisionView? DefaultLanguageDivision { get; private set; }
+
     public string? ErrorMessage { get; private set; }
 
     [TempData]
@@ -38,6 +41,9 @@ public sealed class DetailModel(
                 return null;
             }
 
+            // 原文参考取默认语言原始名称，避免界面语言切换后原文页签跟着变。
+            var sourceName = DefaultLanguageDivision?.Name ?? region.Name;
+
             return new TranslationEditorModel(
                 TranslationEditorBuilder.CultureLabel(localizationOptions.DefaultCulture, localizer),
                 EditableCultures.Select(culture =>
@@ -50,7 +56,7 @@ public sealed class DetailModel(
                             localizer["Field.GeoDivision.Name"].Value,
                             $"Translations[{culture}].Name",
                             translation?.Name,
-                            region.Name,
+                            sourceName,
                             MaxLength: 200));
                 }).ToArray());
         }
@@ -159,6 +165,7 @@ public sealed class DetailModel(
 
     private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
     {
+        // 界面语言本地化版本：用于标题与详情字段展示。
         using var response = await regionClient.GetAsync(id, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -182,6 +189,14 @@ public sealed class DetailModel(
         }
 
         GeoDivision = await response.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken);
+
+        // 默认语言版本：显式以 DefaultCulture 作为 Accept-Language 再取一次，供原文页签使用。
+        using var defaultResponse = await regionClient.GetAsync(
+            id, localizationOptions.DefaultCulture, cancellationToken);
+        DefaultLanguageDivision = defaultResponse.IsSuccessStatusCode
+            ? await defaultResponse.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken)
+            : null;
+
         return null;
     }
 
