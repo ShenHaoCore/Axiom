@@ -1,0 +1,195 @@
+@page "{id:guid?}"
+@model Axiom.Web.Pages.GeoDivisions.DetailModel
+@{
+    ViewData["Title"] = Localizer["GeoDivisions.Detail.Title"];
+    var deleteConfirm = Localizer["GeoDivisions.Detail.DeleteConfirm"].Value;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/GeoDivisions/Index">@Localizer["GeoDivisions.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(Model.GeoDivision?.Name ?? Localizer["Common.View"].Value)</li>
+    </ol>
+</nav>
+
+@if (Model.GeoDivision is not null)
+{
+    var r = Model.GeoDivision;
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <h1>
+                @r.Name
+                @if (r.LocalName is not null)
+                {
+                    <small>@r.LocalName</small>
+                }
+            </h1>
+            <p class="page-description">
+                @KindOrLevelLabel(r) · @r.CountryCode · <code>@r.Code</code>
+            </p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-outline-secondary" asp-page="/GeoDivisions/Index"
+               asp-route-countryCode="@r.CountryCode">@Localizer["GeoDivisions.Detail.BackToTree"]</a>
+            <a class="btn btn-primary" asp-page="/GeoDivisions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+        </div>
+    </div>
+
+    @if (Model.StatusMessage is not null)
+    {
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    }
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    }
+
+    <div class="detail-layout">
+        <div class="detail-main">
+            <div class="card">
+                <div class="card-header">@Localizer["GeoDivisions.Detail.BasicInfo"]</div>
+                <div class="card-body">
+                    <dl class="detail-list">
+                        <div class="detail-row">
+                            <dt class="detail-label">@Localizer["GeoDivisions.Detail.Level"]</dt>
+                            <dd class="detail-value">
+                                <span class="badge-soft @(r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default")">@KindOrLevelLabel(r)</span>
+                            </dd>
+                        </div>
+                        <div class="detail-row">
+                            <dt class="detail-label">@Localizer["GeoDivisions.Detail.Code"]</dt>
+                            <dd class="detail-value"><code>@r.Code</code></dd>
+                        </div>
+                        <div class="detail-row">
+                            <dt class="detail-label">@Localizer["GeoDivisions.Detail.Country"]</dt>
+                            <dd class="detail-value">@r.CountryCode</dd>
+                        </div>
+                        @if (r.SubdivisionCode is not null)
+                        {
+                            <div class="detail-row">
+                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.SubdivisionCode"]</dt>
+                                <dd class="detail-value"><code>@r.SubdivisionCode</code></dd>
+                            </div>
+                        }
+                        @if (r.AsciiName is not null)
+                        {
+                            <div class="detail-row">
+                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.AsciiName"]</dt>
+                                <dd class="detail-value">@r.AsciiName</dd>
+                            </div>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">@Localizer["GeoDivisions.Detail.GeoData"]</div>
+                <div class="card-body">
+                    <dl class="detail-list">
+                        @if (r.Population.HasValue)
+                        {
+                            <div class="detail-row">
+                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Population"]</dt>
+                                <dd class="detail-value num">@r.Population.Value.ToString("N0")</dd>
+                            </div>
+                        }
+                        @if (r.Latitude.HasValue || r.Longitude.HasValue)
+                        {
+                            <div class="detail-row">
+                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Coordinates"]</dt>
+                                <dd class="detail-value num">@r.Latitude?.ToString("F4"), @r.Longitude?.ToString("F4")</dd>
+                            </div>
+                        }
+                        @if (!r.Population.HasValue && !r.Latitude.HasValue && !r.Longitude.HasValue)
+                        {
+                            <div class="detail-row">
+                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Population"]</dt>
+                                <dd class="detail-value text-muted">-</dd>
+                            </div>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
+            {
+                <div class="card">
+                    <div class="card-header">@Localizer["Translations.Title"]</div>
+                    <div class="card-body">
+                        <form method="post" asp-page-handler="Translations" asp-route-id="@r.Id">
+                            <input type="hidden" asp-for="TranslationsLoaded" />
+                            <p class="text-muted">@Localizer["Translations.Hint"]</p>
+
+                            <partial name="_TranslationEditor" model="editor" />
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning" role="alert">@Localizer["Translations.LoadFailed"]</div>
+            }
+        </div>
+
+        <aside class="detail-side">
+            <div class="card">
+                <div class="card-header">@Localizer["GeoDivisions.Detail.Meta"]</div>
+                <div class="card-body">
+                    <div class="meta-list">
+                        @if (r.GeoNameId.HasValue)
+                        {
+                            <div class="meta-item">
+                                <span class="meta-item-label">@Localizer["GeoDivisions.Detail.GeoNameId"]</span>
+                                <span class="meta-item-value">
+                                    <a href="https://www.geonames.org/@r.GeoNameId" target="_blank" rel="noopener">@r.GeoNameId</a>
+                                </span>
+                            </div>
+                        }
+                        @if (r.ParentId.HasValue)
+                        {
+                            <div class="meta-item">
+                                <span class="meta-item-label">@Localizer["GeoDivisions.Detail.ParentId"]</span>
+                                <span class="meta-item-value"><code>@r.ParentId.Value.ToString("N")</code></span>
+                            </div>
+                        }
+                        <div class="meta-item">
+                            <span class="meta-item-label">@Localizer["GeoDivisions.Detail.RecordId"]</span>
+                            <span class="meta-item-value"><code>@r.Id.ToString("N")</code></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card danger-zone">
+                <div class="card-header">@Localizer["Common.DangerZone"]</div>
+                <div class="card-body">
+                    <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id"
+                          data-confirm="@deleteConfirm">
+                        <input type="hidden" name="CountryCode" value="@r.CountryCode" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
+}
+
+@functions {
+    private string KindOrLevelLabel(Axiom.Web.Models.GeoDivisionView region) =>
+        region.Kind switch
+        {
+            "municipality" => Localizer["GeoDivisions.Municipality"].Value,
+            "autonomous_region" => Localizer["GeoDivisions.AutonomousRegion"].Value,
+            "special_administrative_region" => Localizer["GeoDivisions.SpecialAdministrativeRegion"].Value,
+            "standard" or null or "" => region.Level is >= 1 and <= 4
+                ? Localizer[$"GeoDivisions.Level.{region.Level}"].Value
+                : $"L{region.Level}",
+            _ => region.Kind
+        };
+}

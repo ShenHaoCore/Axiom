@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
@@ -13,10 +14,19 @@ namespace Axiom.Web.Mocking;
 
 public sealed class MockGatewayHandler : DelegatingHandler
 {
+    // 与真实网关一致的语言协商规则，供列表/详情套用已保存的译文。
+    private readonly AxiomLocalizationOptions localization;
+
+    public MockGatewayHandler(AxiomLocalizationOptions localization)
+    {
+        this.localization = localization;
+    }
+
     // 路径与各网关客户端共享同一常量，避免双份维护。
     private static readonly string AIRPORTS_PATH = ReferenceDataClient.AIRPORTS_PATH;
+    private static readonly string ENUMS_PATH = ReferenceEnumClient.ENUMS_PATH;
     private static readonly string ARTICLES_PATH = NewsClient.ARTICLES_PATH;
-    private static readonly string REGIONS_PATH = RegionClient.REGIONS_PATH;
+    private static readonly string GEO_DIVISIONS_PATH = GeoDivisionClient.GEO_DIVISIONS_PATH;
 
     // 进程内示例数据（仅开发 Mock 用），应用重启即重置。
     private static readonly object Gate = new();
@@ -26,6 +36,14 @@ public sealed class MockGatewayHandler : DelegatingHandler
         new(Guid.Parse("22222222-2222-2222-2222-222222222222"), "JFK", "纽约肯尼迪国际机场", "US", "纽约", 40.6413, -73.7781),
         new(Guid.Parse("33333333-3333-3333-3333-333333333333"), "LHR", "伦敦希思罗机场", "GB", "伦敦", 51.4700, -0.4543),
         new(Guid.Parse("44444444-4444-4444-4444-444444444444"), "NRT", "东京成田国际机场", "JP", "东京", 35.7720, 140.3929)
+    ];
+
+    private static readonly List<ReferenceEnumView> Enums =
+    [
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"), "geo_division.kind", "standard", "标准", 0),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), "geo_division.kind", "municipality", "直辖市", 1),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"), "geo_division.kind", "autonomous_region", "自治区", 2),
+        new(Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004"), "geo_division.kind", "special_administrative_region", "特别行政区", 3)
     ];
 
     // 机场响应模型不含并发令牌，因此在 Mock 中与主数据分开维护。
@@ -69,10 +87,66 @@ public sealed class MockGatewayHandler : DelegatingHandler
             new DateTimeOffset(2026, 10, 20, 10, 0, 0, TimeSpan.Zero))
     ];
 
-    private static readonly List<RegionView> Regions = LoadRegions();
+    private static readonly List<GeoDivisionView> GeoDivisions = LoadGeoDivisions();
 
     // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region。
     private static readonly Dictionary<string, Dictionary<string, string>> Translations = new();
+
+    // 本地 Mock 没有数据库，预置英文译文，保证切换语言后能直接看到业务数据切换。
+    static MockGatewayHandler()
+    {
+        SeedTranslations();
+    }
+
+    private static void SeedTranslations()
+    {
+        const string culture = "en";
+
+        void Set(string kind, Guid id, params (string Field, string Value)[] fields)
+        {
+            var key = $"{kind}/{id}/{culture}";
+            if (!Translations.TryGetValue(key, out var values))
+            {
+                Translations[key] = values = new Dictionary<string, string>(StringComparer.Ordinal);
+            }
+
+            foreach (var (field, value) in fields)
+            {
+                values[field] = value;
+            }
+        }
+
+        Set("airport", Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            ("Name", "Beijing Capital International Airport"), ("City", "Beijing"));
+        Set("airport", Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            ("Name", "John F. Kennedy International Airport"), ("City", "New York"));
+        Set("airport", Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            ("Name", "London Heathrow Airport"), ("City", "London"));
+        Set("airport", Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            ("Name", "Narita International Airport"), ("City", "Tokyo"));
+
+        // 行政区主数据已带 AsciiName，直接作为英文名，覆盖全部层级节点。
+        foreach (var region in GeoDivisions)
+        {
+            if (!string.IsNullOrWhiteSpace(region.AsciiName))
+            {
+                Set("region", region.Id, ("Name", region.AsciiName));
+            }
+        }
+
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
+            ("Title", "Axiom Platform 2026 Spring Release"),
+            ("Summary", "This release adds the region module, internationalization and developer mock support."),
+            ("Content", "Axiom shipped its 2026 spring release this month, covering region hierarchy browsing, multilingual UI and business data, and a mock authentication mode for developers."));
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),
+            ("Title", "Airport Data Onboarding Guide"),
+            ("Summary", "How to create airport records and maintain multilingual names."),
+            ("Content", "This guide walks through airport onboarding: enter the IATA code, country and city coordinates, then add English names on the translation page for multilingual display."));
+        Set("news", Guid.Parse("aaaaaaaa-0000-0000-0000-000000000003"),
+            ("Title", "Global Region Dataset Upgraded to v2"),
+            ("Summary", "The region dataset now includes population and geographic coordinates."),
+            ("Content", "Region dataset v2 adds population estimates and coordinates for province and city nodes, and fixes several administrative code mappings."));
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -81,6 +155,11 @@ public sealed class MockGatewayHandler : DelegatingHandler
         var path = request.RequestUri?.AbsolutePath.TrimEnd('/');
         if (path is not null)
         {
+            if (path.StartsWith(ENUMS_PATH, StringComparison.OrdinalIgnoreCase))
+            {
+                return await HandleEnumsAsync(request, path, cancellationToken);
+            }
+
             if (path.StartsWith(AIRPORTS_PATH, StringComparison.OrdinalIgnoreCase))
             {
                 return await HandleAirportsAsync(request, path, cancellationToken);
@@ -91,13 +170,128 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 return await HandleNewsAsync(request, path, cancellationToken);
             }
 
-            if (path.StartsWith(REGIONS_PATH, StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWith(GEO_DIVISIONS_PATH, StringComparison.OrdinalIgnoreCase))
             {
-                return await HandleRegionsAsync(request, path, cancellationToken);
+                return await HandleGeoDivisionsAsync(request, path, cancellationToken);
             }
         }
 
         return await base.SendAsync(request, cancellationToken);
+    }
+
+    // ---------- 枚举字典 ----------
+
+    private async Task<HttpResponseMessage> HandleEnumsAsync(
+        HttpRequestMessage request, string path, CancellationToken cancellationToken)
+    {
+        var rest = path[ENUMS_PATH.Length..].Trim('/');
+
+        if (rest.Length == 0)
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                var query = ParseQuery(request.RequestUri?.Query);
+                query.TryGetValue("category", out var category);
+                List<ReferenceEnumView> snapshot;
+                lock (Gate)
+                {
+                    snapshot = string.IsNullOrWhiteSpace(category)
+                        ? [.. Enums.OrderBy(e => e.Category).ThenBy(e => e.SortOrder).ThenBy(e => e.Code)]
+                        : Enums
+                            .Where(e => e.Category.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase))
+                            .OrderBy(e => e.SortOrder)
+                            .ThenBy(e => e.Code)
+                            .ToList();
+                }
+
+                return Json(Paged(snapshot), HttpStatusCode.OK);
+            }
+
+            if (request.Method == HttpMethod.Post)
+            {
+                using var body = await ReadJsonAsync(request, cancellationToken);
+                var category = Text(body, "category")?.Trim().ToLowerInvariant();
+                var code = Text(body, "code")?.Trim().ToLowerInvariant();
+                var name = Text(body, "name")?.Trim();
+                if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+                {
+                    return Problem(HttpStatusCode.BadRequest, "枚举创建请求无效。");
+                }
+
+                var sortOrder = (int?)Integer(body, "sortOrder") ?? 0;
+                lock (Gate)
+                {
+                    if (Enums.Any(e => e.Category == category && e.Code == code))
+                    {
+                        return Problem(HttpStatusCode.Conflict, "相同分类+代码的枚举项已存在。");
+                    }
+
+                    var created = new ReferenceEnumView(Guid.NewGuid(), category, code, name, sortOrder);
+                    Enums.Add(created);
+                    return Json(created, HttpStatusCode.Created);
+                }
+            }
+        }
+
+        if (Guid.TryParse(rest, out var id))
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                lock (Gate)
+                {
+                    var item = Enums.FirstOrDefault(e => e.Id == id);
+                    return item is null
+                        ? Problem(HttpStatusCode.NotFound, "未找到指定枚举项。")
+                        : Json(item, HttpStatusCode.OK);
+                }
+            }
+
+            if (request.Method == HttpMethod.Put)
+            {
+                using var body = await ReadJsonAsync(request, cancellationToken);
+                lock (Gate)
+                {
+                    var index = Enums.FindIndex(e => e.Id == id);
+                    if (index < 0)
+                    {
+                        return Problem(HttpStatusCode.NotFound, "未找到指定枚举项。");
+                    }
+
+                    var original = Enums[index];
+                    var updated = original with
+                    {
+                        Name = Text(body, "name")?.Trim() ?? original.Name,
+                        SortOrder = (int?)Integer(body, "sortOrder") ?? original.SortOrder
+                    };
+                    Enums[index] = updated;
+                    return Json(updated, HttpStatusCode.OK);
+                }
+            }
+
+            if (request.Method == HttpMethod.Delete)
+            {
+                lock (Gate)
+                {
+                    var index = Enums.FindIndex(e => e.Id == id);
+                    if (index < 0)
+                    {
+                        return Problem(HttpStatusCode.NotFound, "未找到指定枚举项。");
+                    }
+
+                    var item = Enums[index];
+                    if (item.Category == "geo_division.kind"
+                        && GeoDivisions.Any(r => r.Kind == item.Code))
+                    {
+                        return Problem(HttpStatusCode.Conflict, "枚举项仍被引用，无法删除。");
+                    }
+
+                    Enums.RemoveAt(index);
+                    return Empty(HttpStatusCode.NoContent);
+                }
+            }
+        }
+
+        return Empty(HttpStatusCode.NotFound);
     }
 
     // ---------- 机场 ----------
@@ -111,9 +305,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
         {
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 List<AirportResponse> snapshot;
                 lock (Gate) { snapshot = [.. Airports]; }
-                return Json(Paged(snapshot), HttpStatusCode.OK);
+                return Json(Paged(snapshot.Select(airport => Localize(airport, requestCulture)).ToList()), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -156,12 +351,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
                     var airport = Airports.FirstOrDefault(a => a.Id == id);
                     return airport is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定机场。")
-                        : Json(airport, HttpStatusCode.OK, AirportETags[id].ToString("N"));
+                        : Json(Localize(airport, requestCulture), HttpStatusCode.OK, AirportETags[id].ToString("N"));
                 }
             }
 
@@ -241,9 +437,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
         {
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 List<NewsArticleView> snapshot;
                 lock (Gate) { snapshot = [.. Articles]; }
-                return Json(Paged(snapshot), HttpStatusCode.OK);
+                return Json(Paged(snapshot.Select(article => Localize(article, requestCulture)).ToList()), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -284,12 +481,9 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 var index = Articles.FindIndex(a => a.Id == id);
                 if (request.Method == HttpMethod.Get)
                 {
-                    if (index < 0)
-                    {
-                        return Json(SampleArticle(id), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
-                    }
-
-                    return Json(Articles[index], HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
+                    var requestCulture = ResolveCulture(request);
+                    var article = index < 0 ? SampleArticle(id) : Articles[index];
+                    return Json(Localize(article, requestCulture), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
                 }
 
                 if (request.Method == HttpMethod.Put)
@@ -352,24 +546,25 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
     // ---------- 行政区 ----------
 
-    private async Task<HttpResponseMessage> HandleRegionsAsync(
+    private async Task<HttpResponseMessage> HandleGeoDivisionsAsync(
         HttpRequestMessage request, string path, CancellationToken cancellationToken)
     {
-        var rest = path[REGIONS_PATH.Length..].Trim('/');
+        var rest = path[GEO_DIVISIONS_PATH.Length..].Trim('/');
 
         if (rest.Length == 0)
         {
             if (request.Method == HttpMethod.Get)
             {
                 var query = ParseQuery(request.RequestUri?.Query);
+                var requestCulture = ResolveCulture(request);
                 var level = int.TryParse(query.GetValueOrDefault("level"), out var lv) ? lv : (int?)null;
                 var country = query.GetValueOrDefault("countryCode");
                 var keyword = query.GetValueOrDefault("q");
 
-                List<RegionView> matches;
+                List<GeoDivisionView> matches;
                 lock (Gate)
                 {
-                    matches = Regions
+                    matches = GeoDivisions
                         .Where(r => !level.HasValue || r.Level == level.Value)
                         .Where(r => string.IsNullOrWhiteSpace(country)
                             || string.Equals(r.CountryCode, country, StringComparison.OrdinalIgnoreCase))
@@ -379,7 +574,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                         .ToList();
                 }
 
-                return Json(Paged(matches), HttpStatusCode.OK);
+                return Json(Paged(matches.Select(region => Localize(region, requestCulture)).ToList()), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -387,19 +582,26 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 using var body = await ReadJsonAsync(request, cancellationToken);
                 var countryCode = Text(body, "countryCode")?.ToUpperInvariant();
                 var name = Text(body, "name");
-                if (!TryParseRegionLevel(Text(body, "level"), out var level)
+                if (!TryReadLevel(body, out var level)
                     || countryCode is null || name is null
                     || !TryReadParentId(body, out var parentId))
                 {
                     return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
                 }
 
-                var created = new RegionView(
+                var kind = ParseGeoDivisionKind(Text(body, "kind"));
+                if (kind is null)
+                {
+                    return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
+                }
+
+                var created = new GeoDivisionView(
                     Guid.NewGuid(),
                     level == 1 ? null : parentId,
                     level,
+                    kind,
                     countryCode,
-                    Text(body, "admin1Code"),
+                    Text(body, "subdivisionCode"),
                     Text(body, "code")?.ToUpperInvariant() ?? name,
                     name,
                     Text(body, "asciiName"),
@@ -411,12 +613,12 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
                 lock (Gate)
                 {
-                    if (RegionKeyExists(null, created.Level, created.CountryCode, created.Code))
+                    if (GeoDivisionKeyExists(null, created.Level, created.CountryCode, created.Code))
                     {
                         return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
                     }
 
-                    Regions.Add(created);
+                    GeoDivisions.Add(created);
                     return Json(created, HttpStatusCode.Created);
                 }
             }
@@ -425,7 +627,46 @@ public sealed class MockGatewayHandler : DelegatingHandler
         if (rest.Equals("tree", StringComparison.OrdinalIgnoreCase) && request.Method == HttpMethod.Get)
         {
             var country = ParseQuery(request.RequestUri?.Query).GetValueOrDefault("countryCode") ?? "CN";
-            return Json(BuildTree(country), HttpStatusCode.OK);
+            return Json(Localize(BuildTree(country), ResolveCulture(request)), HttpStatusCode.OK);
+        }
+
+        var restParts = rest.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (restParts.Length == 2
+            && restParts[1].Equals("children", StringComparison.OrdinalIgnoreCase)
+            && Guid.TryParse(restParts[0], out var childrenParentId)
+            && request.Method == HttpMethod.Get)
+        {
+            lock (Gate)
+            {
+                if (!GeoDivisions.Any(r => r.Id == childrenParentId))
+                {
+                    return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
+                }
+
+                var requestCulture = ResolveCulture(request);
+                var children = GeoDivisions
+                    .Where(r => r.ParentId == childrenParentId)
+                    .OrderBy(r => r.Code)
+                    .Select(child =>
+                    {
+                        var grandchildren = GeoDivisions.Where(g => g.ParentId == child.Id).ToList();
+                        var sameNameChildCount = grandchildren.Count(g =>
+                            string.Equals(g.Name.Trim(), child.Name.Trim(), StringComparison.Ordinal));
+                        return new GeoDivisionChildView(
+                            child.Id,
+                            child.Level,
+                            child.Kind,
+                            child.CountryCode,
+                            child.SubdivisionCode,
+                            child.Code,
+                            Name: Localize(child, requestCulture).Name,
+                            child.Population,
+                            grandchildren.Count,
+                            sameNameChildCount);
+                    })
+                    .ToList();
+                return Json(children, HttpStatusCode.OK);
+            }
         }
 
         if (TryParseSubResource(rest, out var id, out var culture))
@@ -437,12 +678,13 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
-                    var region = Regions.FirstOrDefault(r => r.Id == id);
+                    var region = GeoDivisions.FirstOrDefault(r => r.Id == id);
                     return region is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定行政区。")
-                        : Json(region, HttpStatusCode.OK);
+                        : Json(Localize(region, requestCulture), HttpStatusCode.OK);
                 }
             }
 
@@ -456,19 +698,32 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
                 lock (Gate)
                 {
-                    var index = Regions.FindIndex(r => r.Id == id);
+                    var index = GeoDivisions.FindIndex(r => r.Id == id);
                     if (index < 0)
                     {
                         return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
                     }
 
-                    var original = Regions[index];
-                    var updated = new RegionView(
+                    var original = GeoDivisions[index];
+                    var kind = original.Kind;
+                    if (body.RootElement.TryGetProperty("kind", out _))
+                    {
+                        var parsed = ParseGeoDivisionKind(Text(body, "kind"));
+                        if (parsed is null)
+                        {
+                            return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
+                        }
+
+                        kind = parsed;
+                    }
+
+                    var updated = new GeoDivisionView(
                         id,
                         original.Level == 1 ? null : parentId ?? original.ParentId,
                         original.Level,
+                        kind,
                         original.CountryCode,
-                        original.Admin1Code,
+                        original.SubdivisionCode,
                         Text(body, "code")?.ToUpperInvariant() ?? original.Code,
                         Text(body, "name") ?? original.Name,
                         Text(body, "asciiName") ?? original.AsciiName,
@@ -478,12 +733,12 @@ public sealed class MockGatewayHandler : DelegatingHandler
                         Integer(body, "population") ?? original.Population,
                         original.GeoNameId);
 
-                    if (RegionKeyExists(id, updated.Level, updated.CountryCode, updated.Code))
+                    if (GeoDivisionKeyExists(id, updated.Level, updated.CountryCode, updated.Code))
                     {
                         return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
                     }
 
-                    Regions[index] = updated;
+                    GeoDivisions[index] = updated;
                     return Json(updated, HttpStatusCode.OK);
                 }
             }
@@ -492,18 +747,18 @@ public sealed class MockGatewayHandler : DelegatingHandler
             {
                 lock (Gate)
                 {
-                    var index = Regions.FindIndex(r => r.Id == id);
+                    var index = GeoDivisions.FindIndex(r => r.Id == id);
                     if (index < 0)
                     {
                         return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
                     }
 
-                    if (Regions.Any(r => r.ParentId == id))
+                    if (GeoDivisions.Any(r => r.ParentId == id))
                     {
                         return Problem(HttpStatusCode.BadRequest, "行政区仍有子节点，不能删除。");
                     }
 
-                    Regions.RemoveAt(index);
+                    GeoDivisions.RemoveAt(index);
                     RemoveTranslations("region", id);
                     return Empty(HttpStatusCode.NoContent);
                 }
@@ -514,28 +769,34 @@ public sealed class MockGatewayHandler : DelegatingHandler
         return Empty(HttpStatusCode.NotFound);
     }
 
-    private static bool TryParseRegionLevel(string? value, out int level)
+    private static bool TryReadLevel(JsonDocument document, out int level)
     {
-        if (string.Equals(value, "Country", StringComparison.OrdinalIgnoreCase))
-        {
-            level = 1;
-            return true;
-        }
-
-        if (string.Equals(value, "Admin1", StringComparison.OrdinalIgnoreCase))
-        {
-            level = 2;
-            return true;
-        }
-
-        if (string.Equals(value, "City", StringComparison.OrdinalIgnoreCase))
-        {
-            level = 3;
-            return true;
-        }
-
         level = default;
-        return false;
+        if (document.RootElement.ValueKind != JsonValueKind.Object
+            || !document.RootElement.TryGetProperty("level", out var element))
+        {
+            return false;
+        }
+
+        if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out level) && level >= 1)
+        {
+            return true;
+        }
+
+        return element.ValueKind == JsonValueKind.String
+            && int.TryParse(element.GetString(), out level)
+            && level >= 1;
+    }
+
+    private static string? ParseGeoDivisionKind(string? value)
+    {
+        var kind = string.IsNullOrWhiteSpace(value) ? "standard" : value.Trim().ToLowerInvariant();
+        lock (Gate)
+        {
+            return Enums.Any(e => e.Category == "geo_division.kind" && e.Code == kind)
+                ? kind
+                : null;
+        }
     }
 
     private static bool TryReadParentId(JsonDocument document, out Guid? parentId)
@@ -558,76 +819,72 @@ public sealed class MockGatewayHandler : DelegatingHandler
         return false;
     }
 
-    private static bool RegionKeyExists(Guid? excludedId, int level, string countryCode, string code) =>
-        Regions.Any(region => (!excludedId.HasValue || region.Id != excludedId.Value)
+    private static bool GeoDivisionKeyExists(Guid? excludedId, int level, string countryCode, string code) =>
+        GeoDivisions.Any(region => (!excludedId.HasValue || region.Id != excludedId.Value)
             && region.Level == level
             && string.Equals(region.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase)
             && string.Equals(region.Code, code, StringComparison.OrdinalIgnoreCase));
 
-    private static RegionTreeView BuildTree(string countryCode)
+    private static GeoDivisionTreeView BuildTree(string countryCode)
     {
         lock (Gate)
         {
-            var root = Regions.FirstOrDefault(r => r.Level == 1
+            var root = GeoDivisions.FirstOrDefault(r => r.Level == 1
                 && string.Equals(r.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase));
-            if (root is null)
-            {
-                return new RegionTreeView(Guid.Empty, 1, countryCode, null, countryCode, countryCode, null, []);
-            }
-
-            var children = Regions
-                .Where(r => r.Level == 2 && r.ParentId == root.Id)
-                .OrderBy(r => r.Code)
-                .Select(child => new RegionTreeView(
-                    child.Id,
-                    child.Level,
-                    child.CountryCode,
-                    child.Admin1Code,
-                    child.Code,
-                    child.Name,
-                    child.Population,
-                    Regions
-                        .Where(r => r.Level == 3 && r.ParentId == child.Id)
-                        .OrderBy(r => r.Code)
-                        .Select(grand => new RegionTreeView(
-                            grand.Id, grand.Level, grand.CountryCode, grand.Admin1Code,
-                            grand.Code, grand.Name, grand.Population, []))
-                        .ToList()))
-                .ToList();
-
-            return new RegionTreeView(
-                root.Id, root.Level, root.CountryCode, root.Admin1Code,
-                root.Code, root.Name, root.Population, children);
+            return root is null
+                ? new GeoDivisionTreeView(Guid.Empty, 1, "standard", countryCode, null, countryCode, countryCode, null, [])
+                : BuildTreeNode(root);
         }
     }
 
-    private static List<RegionView> LoadRegions()
+    private static GeoDivisionTreeView BuildTreeNode(GeoDivisionView node) => new(
+        node.Id,
+        node.Level,
+        node.Kind,
+        node.CountryCode,
+        node.SubdivisionCode,
+        node.Code,
+        node.Name,
+        node.Population,
+        GeoDivisions
+            .Where(child => child.ParentId == node.Id)
+            .OrderBy(child => child.Code)
+            .Select(BuildTreeNode)
+            .ToList());
+
+    private static List<GeoDivisionView> LoadGeoDivisions()
     {
         Guid G(string tail) => Guid.Parse($"00000000-0000-0000-0000-{tail}");
+        const string standard = "standard";
+        const string municipality = "municipality";
+        const string autonomous = "autonomous_region";
+        const string sar = "special_administrative_region";
 
         return
         [
-            // 中国
-            new(G("a00000000001"), null, 1, "CN", null, "CN", "中国", "China", null, 35.0, 105.0, 1_410_000_000, null),
-            new(G("a00000000011"), G("a00000000001"), 2, "CN", "11", "110000", "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
-            new(G("a00000000012"), G("a00000000011"), 3, "CN", "11", "110100", "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
-            new(G("a00000000021"), G("a00000000001"), 2, "CN", "44", "440000", "广东省", "Guangdong", null, 23.4, 113.3, 126_000_000, null),
-            new(G("a00000000022"), G("a00000000021"), 3, "CN", "44", "440100", "广州市", "Guangzhou", null, 23.1, 113.3, 18_700_000, null),
-            new(G("a00000000023"), G("a00000000021"), 3, "CN", "44", "440300", "深圳市", "Shenzhen", null, 22.5, 114.1, 17_600_000, null),
-            new(G("a00000000031"), G("a00000000001"), 2, "CN", "31", "310000", "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
-            new(G("a00000000032"), G("a00000000031"), 3, "CN", "31", "310100", "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
+            // 中国（直辖市不再挂同名市级重复节点）
+            new(G("a00000000001"), null, 1, standard, "CN", null, "CN", "中国", "China", null, 35.0, 105.0, 1_410_000_000, null),
+            new(G("a00000000011"), G("a00000000001"), 2, municipality, "CN", "11", "110000", "北京市", "Beijing", null, 39.9, 116.4, 21_890_000, null),
+            new(G("a00000000021"), G("a00000000001"), 2, standard, "CN", "44", "440000", "广东省", "Guangdong", null, 23.4, 113.3, 126_000_000, null),
+            new(G("a00000000022"), G("a00000000021"), 3, standard, "CN", "44", "440100", "广州市", "Guangzhou", null, 23.1, 113.3, 18_700_000, null),
+            new(G("a00000000024"), G("a00000000022"), 4, standard, "CN", "44", "440103", "荔湾区", "Liwan", null, 23.1, 113.2, 900_000, null),
+            new(G("a00000000025"), G("a00000000022"), 4, standard, "CN", "44", "440106", "天河区", "Tianhe", null, 23.1, 113.3, 2_200_000, null),
+            new(G("a00000000023"), G("a00000000021"), 3, standard, "CN", "44", "440300", "深圳市", "Shenzhen", null, 22.5, 114.1, 17_600_000, null),
+            new(G("a00000000031"), G("a00000000001"), 2, municipality, "CN", "31", "310000", "上海市", "Shanghai", null, 31.2, 121.5, 24_800_000, null),
+            new(G("a00000000041"), G("a00000000001"), 2, autonomous, "CN", "15", "150000", "内蒙古自治区", "Inner Mongolia", null, 40.8, 111.7, 24_000_000, null),
+            new(G("a00000000051"), G("a00000000001"), 2, sar, "CN", "81", "810000", "香港特别行政区", "Hong Kong", null, 22.3, 114.2, 7_500_000, null),
             // 美国
-            new(G("b00000000001"), null, 1, "US", null, "US", "美国", "United States", null, 39.8, -98.6, 331_000_000, null),
-            new(G("b00000000011"), G("b00000000001"), 2, "US", "06", "060000", "加利福尼亚州", "California", null, 36.8, -119.4, 39_000_000, null),
-            new(G("b00000000012"), G("b00000000011"), 3, "US", "06", "060400", "洛杉矶县", "Los Angeles", null, 34.1, -118.2, 9_900_000, null),
+            new(G("b00000000001"), null, 1, standard, "US", null, "US", "美国", "United States", null, 39.8, -98.6, 331_000_000, null),
+            new(G("b00000000011"), G("b00000000001"), 2, standard, "US", "06", "060000", "加利福尼亚州", "California", null, 36.8, -119.4, 39_000_000, null),
+            new(G("b00000000012"), G("b00000000011"), 3, standard, "US", "06", "060400", "洛杉矶县", "Los Angeles", null, 34.1, -118.2, 9_900_000, null),
             // 英国
-            new(G("c00000000001"), null, 1, "GB", null, "GB", "英国", "United Kingdom", null, 54.0, -2.0, 67_000_000, null),
-            new(G("c00000000011"), G("c00000000001"), 2, "GB", "ENG", "ENG", "英格兰", "England", null, 52.4, -1.5, 56_000_000, null),
-            new(G("c00000000012"), G("c00000000011"), 3, "GB", "ENG", "LND", "伦敦市", "London", null, 51.5, -0.1, 8_900_000, null),
+            new(G("c00000000001"), null, 1, standard, "GB", null, "GB", "英国", "United Kingdom", null, 54.0, -2.0, 67_000_000, null),
+            new(G("c00000000011"), G("c00000000001"), 2, standard, "GB", "ENG", "ENG", "英格兰", "England", null, 52.4, -1.5, 56_000_000, null),
+            new(G("c00000000012"), G("c00000000011"), 3, standard, "GB", "ENG", "LND", "伦敦市", "London", null, 51.5, -0.1, 8_900_000, null),
             // 日本
-            new(G("d00000000001"), null, 1, "JP", null, "JP", "日本", "Japan", null, 36.2, 138.3, 125_000_000, null),
-            new(G("d00000000011"), G("d00000000001"), 2, "JP", "13", "130000", "东京都", "Tokyo", null, 35.7, 139.7, 14_000_000, null),
-            new(G("d00000000012"), G("d00000000011"), 3, "JP", "13", "130010", "东京特别区", "Tokyo Special Wards", null, 35.7, 139.7, 9_700_000, null)
+            new(G("d00000000001"), null, 1, standard, "JP", null, "JP", "日本", "Japan", null, 36.2, 138.3, 125_000_000, null),
+            new(G("d00000000011"), G("d00000000001"), 2, standard, "JP", "13", "130000", "东京都", "Tokyo", null, 35.7, 139.7, 14_000_000, null),
+            new(G("d00000000012"), G("d00000000011"), 3, standard, "JP", "13", "130010", "东京特别区", "Tokyo Special Wards", null, 35.7, 139.7, 9_700_000, null)
         ];
     }
 
@@ -694,6 +951,79 @@ public sealed class MockGatewayHandler : DelegatingHandler
     }
 
     // ---------- 工具 ----------
+
+    // ---------- 多语言 ----------
+
+    // 与真实网关一致：按 Accept-Language 协商语言，候选链首项即当前语言。
+    private string ResolveCulture(HttpRequestMessage request)
+    {
+        var requested = request.Headers.AcceptLanguage
+            .Select(language => language.Value)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        return localization.CultureChain(requested)[0];
+    }
+
+    // 按语言链合并译文，先命中的语言优先；未命中的字段由调用方回退主表值。
+    private Dictionary<string, string> FindTranslations(string kind, Guid id, string culture)
+    {
+        var merged = new Dictionary<string, string>(StringComparer.Ordinal);
+        lock (Gate)
+        {
+            foreach (var candidate in localization.CultureChain(culture))
+            {
+                if (Translations.TryGetValue($"{kind}/{id}/{candidate}", out var values))
+                {
+                    foreach (var (field, value) in values)
+                    {
+                        merged.TryAdd(field, value);
+                    }
+                }
+            }
+        }
+
+        return merged;
+    }
+
+    // 空译文视为未翻译，保持与真实网关"回退主表"一致的行为。
+    private static string? Pick(Dictionary<string, string> values, string field) =>
+        values.TryGetValue(field, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+
+    private AirportResponse Localize(AirportResponse airport, string culture)
+    {
+        var values = FindTranslations("airport", airport.Id, culture);
+        return airport with
+        {
+            Name = Pick(values, "Name") ?? airport.Name,
+            City = Pick(values, "City") ?? airport.City
+        };
+    }
+
+    private NewsArticleView Localize(NewsArticleView article, string culture)
+    {
+        var values = FindTranslations("news", article.Id, culture);
+        return article with
+        {
+            Title = Pick(values, "Title") ?? article.Title,
+            Summary = Pick(values, "Summary") ?? article.Summary,
+            Content = Pick(values, "Content") ?? article.Content
+        };
+    }
+
+    private GeoDivisionView Localize(GeoDivisionView region, string culture)
+    {
+        var values = FindTranslations("region", region.Id, culture);
+        return region with { Name = Pick(values, "Name") ?? region.Name };
+    }
+
+    private GeoDivisionTreeView Localize(GeoDivisionTreeView node, string culture)
+    {
+        var values = FindTranslations("region", node.Id, culture);
+        return node with
+        {
+            Name = Pick(values, "Name") ?? node.Name,
+            Children = node.Children.Select(child => Localize(child, culture)).ToList()
+        };
+    }
 
     private static bool TryParseSubResource(string rest, out Guid id, out string? culture)
     {

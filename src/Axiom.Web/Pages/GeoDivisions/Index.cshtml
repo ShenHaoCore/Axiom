@@ -1,0 +1,164 @@
+@page
+@model Axiom.Web.Pages.GeoDivisions.IndexModel
+@{
+    ViewData["Title"] = Localizer["GeoDivisions.Title"];
+}
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["GeoDivisions.Title"]</h1>
+        <p class="page-description">@Localizer["GeoDivisions.Description"]</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-page="/GeoDivisions/Create"
+           asp-route-countryCode="@Model.SelectedCountryCode">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" />
+            </svg>
+            @Localizer["GeoDivisions.Create.Title"]
+        </a>
+    </div>
+</div>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<!-- 筛选：国家 + 名称搜索 -->
+<form method="get" class="filter-bar">
+    <div class="filter-field">
+        <label class="form-label" for="countryCode">@Localizer["GeoDivisions.Country"]</label>
+        <select class="form-select" id="countryCode" name="countryCode" data-auto-submit>
+            <option value="all" selected="@(Model.SelectedCountryCode == null)">@Localizer["GeoDivisions.AllCountries"]</option>
+            @foreach (var c in Model.Countries)
+            {
+                <option value="@c.CountryCode" selected="@(Model.SelectedCountryCode == c.CountryCode)">
+                    @c.Name (@c.CountryCode)
+                </option>
+            }
+        </select>
+    </div>
+    <div class="filter-field filter-field-grow">
+        <label class="form-label" for="q">@Localizer["GeoDivisions.SearchLabel"]</label>
+        <div class="search-field">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="m10.5 10.5 3 3" />
+            </svg>
+            <input type="search" class="form-control" id="q" name="q"
+                   placeholder="@Localizer["GeoDivisions.SearchPlaceholder"]" value="@Model.SearchQuery" />
+        </div>
+    </div>
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">@Localizer["Common.Search"]</button>
+        @if (!string.IsNullOrEmpty(Model.SearchQuery))
+        {
+            <a asp-page="/GeoDivisions/Index" asp-route-countryCode="@Model.SelectedCountryCode"
+               class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
+        }
+    </div>
+</form>
+
+<!-- 搜索结果 -->
+@if (Model.SearchResults.Count > 0)
+{
+    <section class="card data-card mb-4" aria-labelledby="search-title">
+        <div class="card-toolbar">
+            <div class="card-toolbar-title">
+                <h2 id="search-title">@Localizer["GeoDivisions.SearchResults"]</h2>
+                <span class="count-pill">@Model.SearchResults.Count</span>
+            </div>
+            <div class="card-toolbar-meta">
+                @Localizer["GeoDivisions.SearchTotal", Model.SearchTotalCount]
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@Localizer["GeoDivisions.Column.Level"]</th>
+                        <th scope="col">@Localizer["GeoDivisions.Column.Name"]</th>
+                        <th scope="col">@Localizer["GeoDivisions.Column.Code"]</th>
+                        <th scope="col">@Localizer["GeoDivisions.Column.Country"]</th>
+                        <th scope="col">@Localizer["GeoDivisions.Column.Subdivision"]</th>
+                        <th scope="col" class="text-end">@Localizer["GeoDivisions.Column.Population"]</th>
+                        <th scope="col" class="text-end">@Localizer["Common.Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.SearchResults)
+                    {
+                        var label = r.Level is >= 1 and <= 4
+                            ? Localizer[$"GeoDivisions.Level.{r.Level}"].Value
+                            : $"L{r.Level}";
+                        var levelClass = r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default";
+                        <tr>
+                            <td><span class="badge-soft @levelClass">@label</span></td>
+                            <td>@r.Name</td>
+                            <td class="cell-muted"><code>@r.Code</code></td>
+                            <td>@r.CountryCode</td>
+                            <td class="cell-muted">@r.SubdivisionCode</td>
+                            <td class="cell-num text-end">@(r.Population?.ToString("N0") ?? "-")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn-ghost" asp-page="/GeoDivisions/Detail" asp-route-id="@r.Id">@Localizer["Common.View"]</a>
+                                    <a class="btn btn-ghost" asp-page="/GeoDivisions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+else if (!string.IsNullOrEmpty(Model.SearchQuery))
+{
+    <div class="card mb-4">
+        <div class="empty-state">
+            <span class="empty-state-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <circle cx="7" cy="7" r="4.5" />
+                    <path d="m10.5 10.5 3 3" />
+                </svg>
+            </span>
+            <p class="empty-state-title">@Localizer["GeoDivisions.NoMatch", Model.SearchQuery]</p>
+            <p class="empty-state-text">@Localizer["GeoDivisions.NoMatchHint"]</p>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/GeoDivisions/Index"
+               asp-route-countryCode="@Model.SelectedCountryCode">@Localizer["Common.Clear"]</a>
+        </div>
+    </div>
+}
+
+<!-- 层级树：所有国家同属一棵树，国家为根节点，子级在展开时惰性加载 -->
+<section class="card data-card" aria-labelledby="tree-title">
+    <div class="card-toolbar">
+        <div class="card-toolbar-title">
+            <h2 id="tree-title">@Localizer["GeoDivisions.TreeTitle"]</h2>
+        </div>
+        <div class="card-toolbar-meta">
+            <span class="count-pill">@Model.Countries.Count</span>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Countries.Count == 0)
+        {
+            <p class="text-muted mb-0">@Localizer["GeoDivisions.TreeEmpty"]</p>
+        }
+        else
+        {
+            @foreach (var country in Model.Countries)
+            {
+                <partial name="_GeoDivisionTreeNode"
+                         model="new Axiom.Web.Models.GeoDivisionNodeViewModel(
+                             country.Id, country.Level, country.Kind, country.Code, country.Name,
+                             country.Population, HasChildren: true)" />
+            }
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

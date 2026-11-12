@@ -170,17 +170,32 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     [Fact]
     public async Task Region_pages_expose_create_and_edit_entries()
     {
-        using var indexRequest = CreateRequest(HttpMethod.Get, "/Regions?countryCode=CN");
+        using var indexRequest = CreateRequest(HttpMethod.Get, "/GeoDivisions?countryCode=CN");
         using var indexResponse = await _client.SendAsync(indexRequest);
         indexResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var index = await indexResponse.Content.ReadAsStringAsync();
-        index.Should().Contain("/Regions/Create").And.Contain($"/Regions/Edit/{WebFactory.RegionCityId}");
+        // 层级树服务端只渲染国家根节点，子级在展开时惰性加载。
+        index.Should().Contain("/GeoDivisions/Create").And.Contain($"/GeoDivisions/Detail/{WebFactory.GeoDivisionCountryId}");
 
-        var edit = await GetFormAsync($"/Regions/Edit/{WebFactory.RegionCityId}");
+        using var childrenRequest = CreateRequest(
+            HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionCountryId}");
+        using var childrenResponse = await _client.SendAsync(childrenRequest);
+        childrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var children = WebUtility.HtmlDecode(await childrenResponse.Content.ReadAsStringAsync());
+        children.Should().Contain("江苏").And.Contain($"/GeoDivisions/Edit/{WebFactory.GeoDivisionAdmin1Id}");
+
+        using var grandChildrenRequest = CreateRequest(
+            HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionAdmin1Id}");
+        using var grandChildrenResponse = await _client.SendAsync(grandChildrenRequest);
+        grandChildrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var grandChildren = WebUtility.HtmlDecode(await grandChildrenResponse.Content.ReadAsStringAsync());
+        grandChildren.Should().Contain("苏州").And.Contain($"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}");
+
+        var edit = await GetFormAsync($"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}");
         WebUtility.HtmlDecode(edit.Html).Should().Contain("苏州");
         Regex.IsMatch(
             edit.Html,
-            $"<option(?=[^>]*value=\"{WebFactory.RegionAdmin1Id}\")(?=[^>]*selected)[^>]*>",
+            $"<option(?=[^>]*value=\"{WebFactory.GeoDivisionAdmin1Id}\")(?=[^>]*selected)[^>]*>",
             RegexOptions.CultureInvariant,
             TimeSpan.FromSeconds(1)).Should().BeTrue("当前父级应在下拉框中选中");
     }
@@ -191,7 +206,7 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         var countryId = await CreateRegionAsync(1, "XZ", null, "XA", "XZ", "测试国家");
         var admin1Id = await CreateRegionAsync(2, "XZ", countryId, "XA", "XA", "测试省");
         var cityId = await CreateRegionAsync(3, "XZ", admin1Id, "XA", "XC", "测试市");
-        var editUri = $"/Regions/Edit/{cityId}";
+        var editUri = $"/GeoDivisions/Edit/{cityId}";
 
         using var updateResponse = await PostFormAsync(
             editUri,
@@ -199,9 +214,9 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
             Manage,
             editUri);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        updateResponse.Headers.Location?.OriginalString.Should().Be($"/Regions/Detail/{cityId}");
+        updateResponse.Headers.Location?.OriginalString.Should().Be($"/GeoDivisions/Detail/{cityId}");
 
-        using var detailRequest = CreateRequest(HttpMethod.Get, $"/Regions/Detail/{cityId}");
+        using var detailRequest = CreateRequest(HttpMethod.Get, $"/GeoDivisions/Detail/{cityId}");
         using var detailResponse = await _client.SendAsync(detailRequest);
         detailResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         WebUtility.HtmlDecode(await detailResponse.Content.ReadAsStringAsync()).Should().Contain("测试市（更新）");
@@ -210,7 +225,7 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         await DeleteRegionAsync(admin1Id, "XZ");
         await DeleteRegionAsync(countryId, "XZ");
 
-        using var missingRequest = CreateRequest(HttpMethod.Get, $"/Regions/Detail/{countryId}");
+        using var missingRequest = CreateRequest(HttpMethod.Get, $"/GeoDivisions/Detail/{countryId}");
         using var missingResponse = await _client.SendAsync(missingRequest);
         missingResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -219,10 +234,10 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     public async Task Region_duplicate_code_shows_conflict()
     {
         using var response = await PostFormAsync(
-            "/Regions/Create?level=1&countryCode=CN",
+            "/GeoDivisions/Create?level=1&countryCode=CN",
             RegionFields(1, "CN", null, null, "CN", "重复国家"),
             Manage,
-            "/Regions/Create?level=1&countryCode=CN");
+            "/GeoDivisions/Create?level=1&countryCode=CN");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
@@ -232,7 +247,7 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     [Fact]
     public async Task Region_delete_with_children_shows_validation_error()
     {
-        var uri = $"/Regions/Detail/{WebFactory.RegionAdmin1Id}";
+        var uri = $"/GeoDivisions/Detail/{WebFactory.GeoDivisionAdmin1Id}";
 
         using var response = await PostFormAsync(
             $"{uri}?handler=Delete",
@@ -243,7 +258,9 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         content.Should().Contain("仍有子节点");
-        using var treeRequest = CreateRequest(HttpMethod.Get, "/Regions?countryCode=CN");
+        // 删除被拒后子级仍在：通过惰性加载接口确认江苏下还有苏州。
+        using var treeRequest = CreateRequest(
+            HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionAdmin1Id}");
         using var treeResponse = await _client.SendAsync(treeRequest);
         treeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         WebUtility.HtmlDecode(await treeResponse.Content.ReadAsStringAsync()).Should().Contain("苏州");
@@ -253,10 +270,10 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     public async Task Region_write_with_only_read_permission_returns_403()
     {
         using var response = await PostFormAsync(
-            "/Regions/Create?level=1&countryCode=ZY",
+            "/GeoDivisions/Create?level=1&countryCode=ZY",
             RegionFields(1, "ZY", null, null, "ZY", "只读测试国家"),
             Read,
-            "/Regions/Create?level=1&countryCode=ZY");
+            "/GeoDivisions/Create?level=1&countryCode=ZY");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -264,7 +281,7 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     [Fact]
     public async Task Get_unknown_region_returns_404()
     {
-        using var request = CreateRequest(HttpMethod.Get, $"/Regions/Edit/{Guid.NewGuid()}");
+        using var request = CreateRequest(HttpMethod.Get, $"/GeoDivisions/Edit/{Guid.NewGuid()}");
 
         using var response = await _client.SendAsync(request);
 
@@ -283,6 +300,20 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         content.Should().Contain("Airport list").And.Contain("Create airport");
         content.Should().NotContain("机场列表");
+    }
+
+    [Fact]
+    public async Task Region_children_with_english_accept_language_use_ascii_names()
+    {
+        using var request = CreateRequest(
+            HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionCountryId}");
+        request.Headers.Add("Accept-Language", "en");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.Should().Contain("Jiangsu").And.NotContain("江苏");
     }
 
     [Fact]
@@ -363,26 +394,26 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         int level,
         string countryCode,
         Guid? parentId,
-        string? admin1Code,
+        string? subdivisionCode,
         string code,
         string name)
     {
-        var uri = $"/Regions/Create?level={level}&countryCode={countryCode}";
+        var uri = $"/GeoDivisions/Create?level={level}&countryCode={countryCode}";
         using var response = await PostFormAsync(
             uri,
-            RegionFields(level, countryCode, parentId, admin1Code, code, name),
+            RegionFields(level, countryCode, parentId, subdivisionCode, code, name),
             Manage,
             uri);
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         var location = response.Headers.Location?.OriginalString;
-        location.Should().Contain("/Regions/Detail/");
+        location.Should().Contain("/GeoDivisions/Detail/");
         var idSegment = location!.Split('?')[0].TrimEnd('/').Split('/').Last();
         return Guid.Parse(idSegment);
     }
 
     private async Task DeleteRegionAsync(Guid id, string countryCode)
     {
-        var uri = $"/Regions/Detail/{id}";
+        var uri = $"/GeoDivisions/Detail/{id}";
         using var response = await PostFormAsync(
             $"{uri}?handler=Delete",
             [new("CountryCode", countryCode)],
@@ -428,13 +459,14 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         int level,
         string countryCode,
         Guid? parentId,
-        string? admin1Code,
+        string? subdivisionCode,
         string code,
         string name)
     {
         var fields = new List<KeyValuePair<string, string>>
         {
             new("Input.Level", level.ToString()),
+            new("Input.Kind", "standard"),
             new("Input.CountryCode", countryCode),
             new("Input.Code", code),
             new("Input.Name", name),
@@ -449,9 +481,9 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
             fields.Add(new("Input.ParentId", parentId.Value.ToString()));
         }
 
-        if (admin1Code is not null)
+        if (subdivisionCode is not null)
         {
-            fields.Add(new("Input.Admin1Code", admin1Code));
+            fields.Add(new("Input.SubdivisionCode", subdivisionCode));
         }
 
         return fields.ToArray();

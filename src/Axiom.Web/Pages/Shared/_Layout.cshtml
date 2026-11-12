@@ -11,139 +11,138 @@
 </head>
 <body>
 @{
-    // 依据当前路径高亮侧边栏导航项。
+    // 依据当前路径高亮顶部一级分类与侧边栏功能模块。
     var path = ViewContext.HttpContext.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var activeNav = path.StartsWith("/news") ? "news"
-        : path.StartsWith("/regions") ? "regions"
+        : path.StartsWith("/geodivisions") ? "geo-divisions"
+        : path.StartsWith("/enums") ? "enums"
         : "airports";
+    // 顶部菜单为一级分类链接：点击切换左侧菜单，具体功能模块始终展示在左侧。
+    var activeGroup = activeNav == "news" ? "content" : "data";
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var userName = User.Identity?.Name ?? string.Empty;
     var userInitial = userName.Length > 0 ? userName[..1] : "?";
     var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-    var currentFlagId = currentCulture.Equals("zh-CN", StringComparison.OrdinalIgnoreCase) ? "flag-zh-cn" : "flag-en";
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
-<!-- 使用内联 SVG 国旗，避免 Windows 无法渲染国旗 emoji。 -->
-<svg class="culture-flag-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs>
-        <path id="culture-flag-star" d="M0 -1 L0.2245 -0.309 L0.9511 -0.309 L0.3633 0.118 L0.5878 0.809 L0 0.382 L-0.5878 0.809 L-0.3633 0.118 L-0.9511 -0.309 L-0.2245 -0.309 Z" />
-        <symbol id="flag-zh-cn" viewBox="0 0 30 20">
-            <rect width="30" height="20" fill="#de2910" />
-            <g fill="#ffde00">
-                <use href="#culture-flag-star" transform="translate(5 5) scale(3)" />
-                <use href="#culture-flag-star" transform="translate(10 2) rotate(239.04)" />
-                <use href="#culture-flag-star" transform="translate(12 4) rotate(261.87)" />
-                <use href="#culture-flag-star" transform="translate(12 7) rotate(285.95)" />
-                <use href="#culture-flag-star" transform="translate(10 9) rotate(308.66)" />
-            </g>
-        </symbol>
-        <symbol id="flag-en" viewBox="0 0 60 40">
-            <rect width="60" height="40" fill="#012169" />
-            <path d="M0 0 60 40 M60 0 0 40" stroke="#fff" stroke-width="8" />
-            <path d="M0 0 60 40 M60 0 0 40" stroke="#c8102e" stroke-width="4" />
-            <path d="M30 0 V40 M0 20 H60" stroke="#fff" stroke-width="12" />
-            <path d="M30 0 V40 M0 20 H60" stroke="#c8102e" stroke-width="7" />
-        </symbol>
-    </defs>
-</svg>
-<div class="app d-flex">
-    <!-- 桌面端侧边栏 -->
-    <aside class="sidebar d-none d-md-flex flex-column">
-        <a class="sidebar-brand" asp-page="/Index">
+<div class="app-shell">
+    <!-- 全宽顶栏：LOGO 与一级业务导航同一行 -->
+    <header class="app-header">
+        <button class="topbar-toggler" type="button" id="navToggle"
+                aria-label="@Localizer["Layout.ToggleNavigation"]">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M2 4h12M2 8h12M2 12h12" />
+            </svg>
+        </button>
+        <a class="app-header-brand" asp-page="/Index">
             <span class="sidebar-brand-mark" aria-hidden="true">A</span>
-            <span class="sidebar-brand-text">Axiom</span>
+            <span class="app-header-brand-text">Axiom</span>
         </a>
-        <nav class="sidebar-nav flex-grow-1" aria-label="Main">
-            <div class="sidebar-section"><span>@Localizer["Layout.NavSectionData"]</span></div>
-            <a class="sidebar-link @(activeNav == "airports" ? "active" : "")" asp-page="/Index">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
-                    <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
+        <nav class="app-header-nav d-none d-md-flex" aria-label="Main">
+            <!-- 一级分类：数据管理（下辖机场、行政区、枚举字典） -->
+            <a class="app-header-link @(activeGroup == "data" ? "active" : "")" asp-page="/Index" aria-current="@(activeGroup == "data" ? "page" : null)">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                    <ellipse cx="8" cy="3.5" rx="5.5" ry="2" />
+                    <path d="M2.5 3.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
+                    <path d="M2.5 7.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
                 </svg>
-                <span>@Localizer["Nav.Airports"]</span>
+                <span>@Localizer["Layout.NavSectionData"]</span>
             </a>
-            <a class="sidebar-link @(activeNav == "regions" ? "active" : "")" asp-page="/Regions/Index">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-                    <circle cx="8" cy="8" r="6.5" />
-                    <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
-                </svg>
-                <span>@Localizer["Nav.Regions"]</span>
-            </a>
-            <div class="sidebar-section"><span>@Localizer["Layout.NavSectionContent"]</span></div>
-            <a class="sidebar-link @(activeNav == "news" ? "active" : "")" asp-page="/News/Index">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+            <!-- 一级分类：内容管理（下辖新闻管理） -->
+            <a class="app-header-link @(activeGroup == "content" ? "active" : "")" asp-page="/News/Index" aria-current="@(activeGroup == "content" ? "page" : null)">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
                     <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
                     <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
                 </svg>
-                <span>@Localizer["Nav.News"]</span>
+                <span>@Localizer["Layout.NavSectionContent"]</span>
             </a>
         </nav>
-    </aside>
-    <div class="app-main">
-        <header class="topbar d-flex align-items-center">
-            <button class="topbar-toggler" type="button" id="navToggle"
-                    aria-label="@Localizer["Layout.ToggleNavigation"]">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-                    <path d="M2 4h12M2 8h12M2 12h12" />
-                </svg>
-            </button>
-            <span class="topbar-brand d-md-none">Axiom</span>
-            <div class="ms-auto d-flex align-items-center gap-3">
-                <!-- 语言菜单：保留原 /culture 切换逻辑，并展示当前语言国旗。 -->
+        <div class="app-header-actions">
+            <!-- 界面语言切换：只展示语言名；切换前由 site.js 检查未保存表单。 -->
+            <form method="get" action="/culture" class="topbar-language">
+                <label class="topbar-language-label" for="cultureSelect">@Localizer["Culture.UiLabel"]</label>
+                <select id="cultureSelect" name="culture" class="topbar-language-select"
+                        aria-label="@Localizer["Culture.Select"]"
+                        data-language-select
+                        data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">
+                    @foreach (var culture in LocalizationOptions.SupportedCultures)
+                    {
+                        var cultureResource = Localizer[$"Culture.{culture}"];
+                        var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+                        <option value="@culture" selected="@(culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@cultureName</option>
+                    }
+                </select>
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+            </form>
+            @if (isAuthenticated)
+            {
                 <div class="dropdown">
-                    <button class="topbar-language-btn dropdown-toggle" type="button"
-                            data-bs-toggle="dropdown" aria-expanded="false"
-                            aria-label="@Localizer["Culture.Select"]">
-                        <svg class="culture-flag" viewBox="0 0 60 40" aria-hidden="true">
-                            <use href="@($"#{currentFlagId}")" />
-                        </svg>
-                        <span>@Localizer[$"Culture.{currentCulture}"]</span>
+                    <button class="topbar-user-btn dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="user-avatar" aria-hidden="true">@userInitial</span>
+                        <span class="topbar-user">@userName</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end culture-menu">
-                        @foreach (var culture in LocalizationOptions.SupportedCultures)
-                        {
-                            var flagId = culture.Equals("zh-CN", StringComparison.OrdinalIgnoreCase) ? "flag-zh-cn" : "flag-en";
-                            var cultureUrl = $"/culture?culture={Uri.EscapeDataString(culture)}&returnUrl={Uri.EscapeDataString(returnUrl)}";
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 @(culture == currentCulture ? "active" : "")"
-                                   href="@cultureUrl"
-                                   aria-current="@(culture == currentCulture ? "true" : null)">
-                                    <svg class="culture-flag" viewBox="0 0 60 40" aria-hidden="true">
-                                        <use href="@($"#{flagId}")" />
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">@userName</h6></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form method="post" asp-page="/Account/Logout" class="m-0">
+                                <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M6 2H3.5A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14H6" />
+                                        <path d="M10.5 5 13.5 8l-3 3M13 8H6.5" />
                                     </svg>
-                                    <span>@Localizer[$"Culture.{culture}"]</span>
-                                </a>
-                            </li>
-                        }
+                                    <span>@Localizer["Common.SignOut"]</span>
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
-                @if (isAuthenticated)
+            }
+        </div>
+    </header>
+
+    <div class="app-body d-flex">
+        <!-- 桌面端侧边栏：当前一级分类下的功能模块 -->
+        <aside class="sidebar d-none d-md-flex flex-column">
+            <nav class="sidebar-nav flex-grow-1" aria-label="Section">
+                @if (activeGroup == "data")
                 {
-                    <!-- 用户菜单：展示当前用户并提供退出登录 -->
-                    <div class="dropdown">
-                        <button class="topbar-user-btn dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="user-avatar" aria-hidden="true">@userInitial</span>
-                            <span class="topbar-user">@userName</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><h6 class="dropdown-header">@userName</h6></li>
-                            <li><hr class="dropdown-divider" /></li>
-                            <li>
-                                <form method="post" asp-page="/Account/Logout" class="m-0">
-                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M6 2H3.5A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14H6" />
-                                            <path d="M10.5 5 13.5 8l-3 3M13 8H6.5" />
-                                        </svg>
-                                        <span>@Localizer["Common.SignOut"]</span>
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
+                    <div class="sidebar-section"><span>@Localizer["Layout.NavSectionData"]</span></div>
+                    <a class="sidebar-link @(activeNav == "airports" ? "active" : "")" asp-page="/Index" aria-current="@(activeNav == "airports" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                            <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
+                        </svg>
+                        <span>@Localizer["Nav.Airports"]</span>
+                    </a>
+                    <a class="sidebar-link @(activeNav == "geo-divisions" ? "active" : "")" asp-page="/GeoDivisions/Index" aria-current="@(activeNav == "geo-divisions" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6.5" />
+                            <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
+                        </svg>
+                        <span>@Localizer["Nav.GeoDivisions"]</span>
+                    </a>
+                    <a class="sidebar-link @(activeNav == "enums" ? "active" : "")" asp-page="/Enums/Index" aria-current="@(activeNav == "enums" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                            <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
+                        </svg>
+                        <span>@Localizer["Nav.Enums"]</span>
+                    </a>
                 }
-            </div>
-        </header>
+                else
+                {
+                    <div class="sidebar-section"><span>@Localizer["Layout.NavSectionContent"]</span></div>
+                    <a class="sidebar-link active" asp-page="/News/Index" aria-current="page">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                            <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                        </svg>
+                        <span>@Localizer["Nav.News"]</span>
+                    </a>
+                }
+            </nav>
+        </aside>
+        <div class="app-main">
         <main role="main" class="content">
             <div class="content-inner">
                 @RenderBody()
@@ -152,6 +151,7 @@
         <footer class="footer">
             @Localizer["Layout.Footer"]
         </footer>
+        </div>
     </div>
 </div>
 
@@ -172,12 +172,18 @@
                 </svg>
                 <span>@Localizer["Nav.Airports"]</span>
             </a>
-            <a class="sidebar-link @(activeNav == "regions" ? "active" : "")" asp-page="/Regions/Index" data-bs-dismiss="offcanvas">
+            <a class="sidebar-link @(activeNav == "geo-divisions" ? "active" : "")" asp-page="/GeoDivisions/Index" data-bs-dismiss="offcanvas">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
                     <circle cx="8" cy="8" r="6.5" />
                     <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
                 </svg>
-                <span>@Localizer["Nav.Regions"]</span>
+                <span>@Localizer["Nav.GeoDivisions"]</span>
+            </a>
+            <a class="sidebar-link @(activeNav == "enums" ? "active" : "")" asp-page="/Enums/Index" data-bs-dismiss="offcanvas">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                    <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
+                </svg>
+                <span>@Localizer["Nav.Enums"]</span>
             </a>
             <div class="sidebar-section"><span>@Localizer["Layout.NavSectionContent"]</span></div>
             <a class="sidebar-link @(activeNav == "news" ? "active" : "")" asp-page="/News/Index" data-bs-dismiss="offcanvas">

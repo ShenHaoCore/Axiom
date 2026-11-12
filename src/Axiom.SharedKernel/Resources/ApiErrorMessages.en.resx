@@ -21,14 +21,18 @@
   <data name="News.Article.NotFound" xml:space="preserve"><value>News article not found: {0}.</value></data>
   <data name="News.Article.ConcurrencyConflict" xml:space="preserve"><value>The article was modified by another request. Reload and try again.</value></data>
   <data name="News.Validation.InvalidStatus" xml:space="preserve"><value>Status must be Draft, Published or Archived.</value></data>
-  <data name="ReferenceData.Region.NotFound" xml:space="preserve"><value>Region not found: {0}.</value></data>
-  <data name="ReferenceData.Region.UniqueKeyConflict" xml:space="preserve"><value>A region with the same country, level and code already exists: {0}/L{1}/{2}.</value></data>
-  <data name="ReferenceData.Region.HasChildren" xml:space="preserve"><value>Region {0} has children and cannot be deleted.</value></data>
-  <data name="ReferenceData.Region.CountryNotFound" xml:space="preserve"><value>Country {0} was not found.</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidLevel" xml:space="preserve"><value>Level must be Country, Admin1 or City.</value></data>
-  <data name="ReferenceData.Region.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
-  <data name="ReferenceData.Region.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
-  <data name="ReferenceData.Region.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="ReferenceData.GeoDivision.NotFound" xml:space="preserve"><value>GeoDivision not found: {0}.</value></data>
+  <data name="ReferenceData.GeoDivision.UniqueKeyConflict" xml:space="preserve"><value>A region with the same country, level and code already exists: {0}/L{1}/{2}.</value></data>
+  <data name="ReferenceData.GeoDivision.HasChildren" xml:space="preserve"><value>GeoDivision {0} has children and cannot be deleted.</value></data>
+  <data name="ReferenceData.GeoDivision.CountryNotFound" xml:space="preserve"><value>Country {0} was not found.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.InvalidLevel" xml:space="preserve"><value>Level must be an integer greater than or equal to 1.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.InvalidKind" xml:space="preserve"><value>Kind must be a maintained geo_division.kind enum value.</value></data>
+  <data name="ReferenceData.Enum.NotFound" xml:space="preserve"><value>Enum entry not found: {0}.</value></data>
+  <data name="ReferenceData.Enum.CodeConflict" xml:space="preserve"><value>An enum entry with the same category and code already exists: {0}/{1}.</value></data>
+  <data name="ReferenceData.Enum.InUse" xml:space="preserve"><value>Enum entry is still referenced and cannot be deleted: {0}/{1}.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
   <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>Location not found: {0}.</value></data>
   <data name="ReferenceData.Location.CodeConflict" xml:space="preserve"><value>A location of the same type with code {0} already exists.</value></data>
   <data name="ReferenceData.Location.ConcurrencyConflict" xml:space="preserve"><value>The location was modified by another request. Reload and try again.</value></data>

@@ -22,8 +22,9 @@ public static class ReferenceDataInfrastructureExtensions
         services.AddDbContext<ReferenceDataDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("ReferenceData")));
 
-        services.AddScoped<IRegionRepository, RegionRepository>();
+        services.AddScoped<IGeoDivisionRepository, GeoDivisionRepository>();
         services.AddScoped<IReferenceLocationRepository, ReferenceLocationRepository>();
+        services.AddScoped<IReferenceEnumRepository, ReferenceEnumRepository>();
 
         services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
         services.AddScoped<OutboxPublishProcessor>();
@@ -35,7 +36,7 @@ public static class ReferenceDataInfrastructureExtensions
         {
             services.AddHostedService<OutboxPublisherWorker>();
             services.AddHostedService<RabbitMqConsumerWorker>();
-            services.AddHostedService<RegionSeedService>();
+            services.AddHostedService<GeoDivisionSeedService>();
         }
 
         return services;

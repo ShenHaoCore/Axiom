@@ -1,6 +1,7 @@
 // 为 API 集成测试替换数据库和外部 JWT 认证边界。
 using Axiom.ReferenceData.Api;
-using Axiom.ReferenceData.Infrastructure.Messaging;
+using Axiom.ReferenceData.Domain.Constants;
+using Axiom.ReferenceData.Domain.Entities;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 using Axiom.ReferenceData.Infrastructure.EfCore;
 
@@ -28,6 +30,38 @@ public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDat
                     .Options);
             context.Database.EnsureCreatedAsync().GetAwaiter().GetResult();
         }
+    }
+
+    /// <summary>Testing 环境关闭 HostedService 种子，工厂侧补齐 Kind 字典。</summary>
+    internal static void SeedGeoDivisionKinds(ReferenceDataDbContext context)
+    {
+        var category = ReferenceEnumCategories.GeoDivisionKind;
+        var existing = context.ReferenceEnums
+            .Where(e => e.Category == category)
+            .Select(e => e.Code)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var (code, name, sortOrder) in GeoDivisionKinds.SeedItems)
+        {
+            if (existing.Contains(code))
+            {
+                continue;
+            }
+
+            context.ReferenceEnums.Add(ReferenceEnum.Create(category, code, name, sortOrder));
+        }
+
+        context.SaveChanges();
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        using var scope = host.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ReferenceDataDbContext>();
+        db.Database.EnsureCreated();
+        SeedGeoDivisionKinds(db);
+        return host;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

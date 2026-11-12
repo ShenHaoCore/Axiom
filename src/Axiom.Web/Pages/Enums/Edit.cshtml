@@ -1,0 +1,57 @@
+@page "{id:guid}"
+@model Axiom.Web.Pages.Enums.EditModel
+@{
+    ViewData["Title"] = Localizer["Enums.Edit"];
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Enums/Index">@Localizer["Enums.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Localizer["Enums.Edit"]</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["Enums.Edit"]</h1>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (Model.Item is not null)
+{
+    <form method="post" class="card-form">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">@Localizer["Field.Enum.Category"]</label>
+                <input class="form-control" value="@Model.Item.Category" readonly />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">@Localizer["Field.Enum.Code"]</label>
+                <input class="form-control" value="@Model.Item.Code" readonly />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.SortOrder" class="form-label"></label>
+                <input asp-for="Input.SortOrder" class="form-control" />
+                <span asp-validation-for="Input.SortOrder" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.Name" class="form-label"></label>
+                <input asp-for="Input.Name" class="form-control" autocomplete="off" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+            <a class="btn btn-outline-secondary" asp-page="/Enums/Index" asp-route-category="@Model.Item.Category">@Localizer["Common.Cancel"]</a>
+        </div>
+    </form>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

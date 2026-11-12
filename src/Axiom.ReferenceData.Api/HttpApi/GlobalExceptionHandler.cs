@@ -23,7 +23,7 @@ public sealed class GlobalExceptionHandler(
         // 领域不变量被破坏时返回 400，而不是掩盖成 500。
         var validation = exception switch
         {
-            Domain.Exceptions.RegionValidationException region => (region.Field, region.ErrorCode, region.Args),
+            Domain.Exceptions.GeoDivisionValidationException region => (region.Field, region.ErrorCode, region.Args),
             Domain.Exceptions.ReferenceLocationValidationException location => (location.Field, location.ErrorCode, location.Args),
             _ => (null, null, Array.Empty<object>())
         };

@@ -1,0 +1,167 @@
+@page
+@model Axiom.Web.Pages.GeoDivisions.CreateModel
+@{
+    ViewData["Title"] = Localizer["GeoDivisions.Create.Title"];
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/GeoDivisions/Index">@Localizer["GeoDivisions.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Localizer["GeoDivisions.Create.Title"]</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["GeoDivisions.Create.Title"]</h1>
+        <p class="page-description">@Localizer["GeoDivisions.Create.Description"]</p>
+    </div>
+</div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="section-heading">
+            <h2>@Localizer["GeoDivisions.Create.SetupHeading"]</h2>
+            <p>@Localizer["GeoDivisions.Create.SetupHint"]</p>
+        </div>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="region-level">@Localizer["Field.GeoDivision.Level"]</label>
+                <select class="form-select" id="region-level" name="level">
+                    @foreach (var level in Enumerable.Range(1, 4))
+                    {
+                        <option value="@level" selected="@(Model.Input.Level == level)">@Localizer[$"GeoDivisions.Level.{level}"]</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="region-country-code">@Localizer["Field.GeoDivision.CountryCode"]</label>
+                <input class="form-control" id="region-country-code" name="countryCode" value="@Model.Input.CountryCode"
+                       maxlength="2" autocomplete="off" list="region-countries" placeholder="CN" />
+                <datalist id="region-countries">
+                    @foreach (var country in Model.Countries)
+                    {
+                        <option value="@country.CountryCode">@country.Name</option>
+                    }
+                </datalist>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary">@Localizer["GeoDivisions.Create.LoadForm"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="post" class="card form-card" id="region-create-form">
+    <input type="hidden" asp-for="Input.Level" />
+    <input type="hidden" asp-for="Input.CountryCode" />
+
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["GeoDivisions.Section.Identity"]</h2>
+            <p>@Localizer["GeoDivisions.Section.IdentityHint"]</p>
+        </div>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">@Localizer["Field.GeoDivision.Level"]</label>
+                <input class="form-control" value="@Localizer[$"GeoDivisions.Level.{Model.Input.Level}"]" readonly />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.Kind" class="form-label"></label>
+                <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
+                <span asp-validation-for="Input.Kind" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">@Localizer["Field.GeoDivision.CountryCode"]</label>
+                <input class="form-control" value="@Model.Input.CountryCode" readonly />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.Code" class="form-label"></label>
+                <input asp-for="Input.Code" class="form-control" autocomplete="off" />
+                <span asp-validation-for="Input.Code" class="text-danger"></span>
+            </div>
+
+            @if (Model.Input.Level > 1)
+            {
+                <div class="col-md-6">
+                    <label asp-for="Input.ParentId" class="form-label">
+                        @Localizer["Field.GeoDivision.Parent"]<span class="required-mark" aria-hidden="true">*</span>
+                    </label>
+                    <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
+                        <option value="">@Localizer["GeoDivisions.Form.SelectParent"]</option>
+                    </select>
+                    <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.SubdivisionCode" class="form-label"></label>
+                    <input asp-for="Input.SubdivisionCode" class="form-control" autocomplete="off" />
+                    <div class="form-text">@Localizer["GeoDivisions.Hint.SubdivisionCode"]</div>
+                    <span asp-validation-for="Input.SubdivisionCode" class="text-danger"></span>
+                </div>
+            }
+
+            <div class="col-md-6">
+                <label asp-for="Input.Name" class="form-label">
+                    @Localizer["Field.GeoDivision.Name"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Name" class="form-control" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.AsciiName" class="form-label"></label>
+                <input asp-for="Input.AsciiName" class="form-control" />
+                <span asp-validation-for="Input.AsciiName" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.LocalName" class="form-label"></label>
+                <input asp-for="Input.LocalName" class="form-control" />
+                <span asp-validation-for="Input.LocalName" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["GeoDivisions.Section.Geo"]</h2>
+            <p>@Localizer["GeoDivisions.Section.GeoHint"]</p>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Latitude" class="form-label"></label>
+                <input asp-for="Input.Latitude" class="form-control" step="any" />
+                <span asp-validation-for="Input.Latitude" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Longitude" class="form-label"></label>
+                <input asp-for="Input.Longitude" class="form-control" step="any" />
+                <span asp-validation-for="Input.Longitude" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Population" class="form-label"></label>
+                <input asp-for="Input.Population" class="form-control" min="0" />
+                <span asp-validation-for="Input.Population" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+        <a class="btn btn-outline-secondary" asp-page="/GeoDivisions/Index"
+           asp-route-countryCode="@Model.Input.CountryCode">@Localizer["Common.Cancel"]</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

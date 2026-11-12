@@ -27,12 +27,16 @@
         </div>
     </div>
 
+    @if (Model.StatusMessage is not null)
+    {
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    }
     @if (Model.ErrorMessage is not null)
     {
         <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
-    @if (Model.TranslationsLoaded)
+    @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
     {
         <form method="post" class="card form-card">
             <input type="hidden" asp-for="TranslationsLoaded" />
@@ -43,28 +47,7 @@
                     <p>@Localizer["Translations.Hint"]</p>
                 </div>
 
-                @foreach (var culture in Model.EditableCultures)
-                {
-                    Model.Translations.TryGetValue(culture, out var translation);
-                    var cultureResource = Localizer[$"Culture.{culture}"];
-                    var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
-
-                    <fieldset class="translation-panel">
-                        <legend>@cultureName</legend>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label" for="translation-@(culture)-name">@Localizer["Field.Airport.Name"]</label>
-                                <input class="form-control" id="translation-@(culture)-name"
-                                       name="Translations[@culture].Name" value="@translation?.Name" maxlength="200" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="translation-@(culture)-city">@Localizer["Field.Airport.City"]</label>
-                                <input class="form-control" id="translation-@(culture)-city"
-                                       name="Translations[@culture].City" value="@translation?.City" maxlength="100" />
-                            </div>
-                        </div>
-                    </fieldset>
-                }
+                <partial name="_TranslationEditor" model="editor" />
             </div>
 
             <div class="form-actions">

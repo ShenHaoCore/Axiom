@@ -45,11 +45,11 @@ public sealed class AirportTranslationInput
 }
 
 /// <summary>行政区详情页的译文输入。</summary>
-public sealed class RegionTranslationInput
+public sealed class GeoDivisionTranslationInput
 {
     public string? Name { get; set; }
 
-    public static RegionTranslationInput From(TranslationView? view) => new()
+    public static GeoDivisionTranslationInput From(TranslationView? view) => new()
     {
         Name = view?.Get("Name")
     };

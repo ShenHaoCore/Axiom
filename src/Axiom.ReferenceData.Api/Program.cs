@@ -44,8 +44,9 @@ builder.Services.AddRequestLocalization(options =>
 builder.Services.AddReferenceDataInfrastructure(builder.Configuration, builder.Environment);
 
 // Application：AppService
-builder.Services.AddScoped<IRegionAppService, RegionAppService>();
+builder.Services.AddScoped<IGeoDivisionAppService, GeoDivisionAppService>();
 builder.Services.AddScoped<IReferenceLocationAppService, ReferenceLocationAppService>();
+builder.Services.AddScoped<IReferenceEnumAppService, ReferenceEnumAppService>();
 
 builder.Services.AddGrpc();
 builder.Services.AddProblemDetails();
@@ -132,7 +133,8 @@ app.UseAuthorization();
 
 app.MapOpenApi("/openapi/v1.json").AllowAnonymous();
 app.MapReferenceLocationEndpoints();
-app.MapRegionEndpoints();
+app.MapReferenceEnumEndpoints();
+app.MapGeoDivisionEndpoints();
 app.MapGrpcService<ReferenceDataQueryGrpcService>().RequireAuthorization(ReferenceLocationEndpoints.READ_POLICY);
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions

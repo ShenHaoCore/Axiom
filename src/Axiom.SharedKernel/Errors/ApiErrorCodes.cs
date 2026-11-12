@@ -31,14 +31,20 @@ public static class ApiErrorCodes
     public const string NEWS_INVALID_STATUS = "News.Validation.InvalidStatus";
 
     // ---------- 行政区 ----------
-    public const string REGION_NOT_FOUND = "ReferenceData.Region.NotFound";
-    public const string REGION_UNIQUE_KEY_CONFLICT = "ReferenceData.Region.UniqueKeyConflict";
-    public const string REGION_HAS_CHILDREN = "ReferenceData.Region.HasChildren";
-    public const string REGION_COUNTRY_NOT_FOUND = "ReferenceData.Region.CountryNotFound";
-    public const string REGION_INVALID_LEVEL = "ReferenceData.Region.Validation.InvalidLevel";
-    public const string REGION_INVALID_COUNTRY_CODE = "ReferenceData.Region.Validation.InvalidCountryCode";
-    public const string REGION_LATITUDE_OUT_OF_RANGE = "ReferenceData.Region.Validation.LatitudeOutOfRange";
-    public const string REGION_LONGITUDE_OUT_OF_RANGE = "ReferenceData.Region.Validation.LongitudeOutOfRange";
+    public const string GEO_DIVISION_NOT_FOUND = "ReferenceData.GeoDivision.NotFound";
+    public const string GEO_DIVISION_UNIQUE_KEY_CONFLICT = "ReferenceData.GeoDivision.UniqueKeyConflict";
+    public const string GEO_DIVISION_HAS_CHILDREN = "ReferenceData.GeoDivision.HasChildren";
+    public const string GEO_DIVISION_COUNTRY_NOT_FOUND = "ReferenceData.GeoDivision.CountryNotFound";
+    public const string GEO_DIVISION_INVALID_LEVEL = "ReferenceData.GeoDivision.Validation.InvalidLevel";
+    public const string GEO_DIVISION_INVALID_KIND = "ReferenceData.GeoDivision.Validation.InvalidKind";
+    public const string GEO_DIVISION_INVALID_COUNTRY_CODE = "ReferenceData.GeoDivision.Validation.InvalidCountryCode";
+    public const string GEO_DIVISION_LATITUDE_OUT_OF_RANGE = "ReferenceData.GeoDivision.Validation.LatitudeOutOfRange";
+    public const string GEO_DIVISION_LONGITUDE_OUT_OF_RANGE = "ReferenceData.GeoDivision.Validation.LongitudeOutOfRange";
+
+    // ---------- 枚举字典 ----------
+    public const string REFERENCE_ENUM_NOT_FOUND = "ReferenceData.Enum.NotFound";
+    public const string REFERENCE_ENUM_CODE_CONFLICT = "ReferenceData.Enum.CodeConflict";
+    public const string REFERENCE_ENUM_IN_USE = "ReferenceData.Enum.InUse";
 
     // ---------- 地点档案 ----------
     public const string LOCATION_NOT_FOUND = "ReferenceData.Location.NotFound";

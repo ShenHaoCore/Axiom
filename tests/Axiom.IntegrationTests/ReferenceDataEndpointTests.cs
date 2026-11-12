@@ -126,10 +126,10 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     {
         using var request = CreateJsonRequest(
             HttpMethod.Post,
-            "/api/regions",
+            "/api/geo-divisions",
             ReferenceDataPermissions.READ,
-            new CreateRegionInput(
-                "1",
+            new CreateGeoDivisionInput(
+                1,
                 "ZZ",
                 Code: Guid.NewGuid().ToString("N"),
                 Name: "只读权限回归国家"));
@@ -146,33 +146,35 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var testId = Guid.NewGuid();
         var suffix = testId.ToString("N")[..8].ToUpperInvariant();
         var countryCode = $"X{(char)('A' + testId.ToByteArray()[0] % 26)}";
-        var admin1Code = $"A{suffix}";
+        var subdivisionCode = $"A{suffix}";
         var cityCode = $"CITY-{suffix}";
-        var countryInput = new CreateRegionInput(
-            "1",
+        var countryInput = new CreateGeoDivisionInput(
+            1,
             countryCode,
             Code: countryCode,
             Name: $"回归国家 {suffix}");
         var country = await CreateRegion(countryInput);
         country.Level.Should().Be(1);
+        country.Kind.Should().Be("standard");
         country.CountryCode.Should().Be(countryCode);
         country.ParentId.Should().BeNull();
 
-        var admin1Input = new CreateRegionInput(
-            "2",
+        var admin1Input = new CreateGeoDivisionInput(
+            2,
             countryCode,
-            Admin1Code: admin1Code,
-            Code: admin1Code,
+            SubdivisionCode: subdivisionCode,
+            Code: subdivisionCode,
             Name: $"回归省州 {suffix}",
             ParentId: country.Id);
-        var admin1 = await CreateRegion(admin1Input);
+        var admin1 = await CreateRegion(admin1Input with { Kind = "municipality" });
         admin1.Level.Should().Be(2);
+        admin1.Kind.Should().Be("municipality");
         admin1.ParentId.Should().Be(country.Id);
 
-        var cityInput = new CreateRegionInput(
-            "3",
+        var cityInput = new CreateGeoDivisionInput(
+            3,
             countryCode,
-            Admin1Code: admin1Code,
+            SubdivisionCode: subdivisionCode,
             Code: cityCode,
             Name: $"回归城市 {suffix}",
             AsciiName: $"Regression City {suffix}",
@@ -188,7 +190,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         using var duplicateRequest = CreateJsonRequest(
             HttpMethod.Post,
-            "/api/regions",
+            "/api/geo-divisions",
             ManagePermissions,
             cityInput);
         var duplicateResponse = await _client.SendAsync(duplicateRequest);
@@ -201,32 +203,32 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
 
         using var detailRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/{city.Id}",
+            $"/api/geo-divisions/{city.Id}",
             ReferenceDataPermissions.READ);
         var detailResponse = await _client.SendAsync(detailRequest);
         var detailContent = await detailResponse.Content.ReadAsStringAsync();
         detailResponse.StatusCode.Should().Be(HttpStatusCode.OK, detailContent);
-        var detail = await detailResponse.Content.ReadFromJsonAsync<RegionDto>();
+        var detail = await detailResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
         detail.Should().NotBeNull(detailContent);
         detail!.Should().BeEquivalentTo(city);
 
         using var listRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/?countryCode={countryCode}&page=1&pageSize=50",
+            $"/api/geo-divisions/?countryCode={countryCode}&page=1&pageSize=50",
             ReferenceDataPermissions.READ);
         var listResponse = await _client.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK, listContent);
-        var list = await listResponse.Content.ReadFromJsonAsync<PagedResponse<RegionDto>>();
+        var list = await listResponse.Content.ReadFromJsonAsync<PagedResponse<GeoDivisionDto>>();
         list.Should().NotBeNull(listContent);
         list!.TotalCount.Should().Be(3);
         list.Items.Select(item => item.Id).Should().BeEquivalentTo(new[] { country.Id, admin1.Id, city.Id });
 
         using var updateRequest = CreateJsonRequest(
             HttpMethod.Put,
-            $"/api/regions/{city.Id}",
+            $"/api/geo-divisions/{city.Id}",
             ManagePermissions,
-            new UpdateRegionInput(
+            new UpdateGeoDivisionInput(
                 Name: $"回归城市（已更新）{suffix}",
                 Code: $"{cityCode}-UPDATED",
                 Latitude: 30.2,
@@ -235,7 +237,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var updateResponse = await _client.SendAsync(updateRequest);
         var updateContent = await updateResponse.Content.ReadAsStringAsync();
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK, updateContent);
-        var updated = await updateResponse.Content.ReadFromJsonAsync<RegionDto>();
+        var updated = await updateResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
         updated.Should().NotBeNull(updateContent);
         updated!.Name.Should().Be($"回归城市（已更新）{suffix}");
         updated.Code.Should().Be($"{cityCode}-UPDATED");
@@ -244,17 +246,17 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         updated.Population.Should().Be(5678);
         updated.Level.Should().Be(3);
         updated.CountryCode.Should().Be(countryCode);
-        updated.Admin1Code.Should().Be(admin1Code);
+        updated.SubdivisionCode.Should().Be(subdivisionCode);
         updated.ParentId.Should().Be(admin1.Id);
 
         using var treeRequest = CreateRequest(
             HttpMethod.Get,
-            $"/api/regions/tree?countryCode={countryCode}&depth=3",
+            $"/api/geo-divisions/tree?countryCode={countryCode}&depth=3",
             ReferenceDataPermissions.READ);
         var treeResponse = await _client.SendAsync(treeRequest);
         var treeContent = await treeResponse.Content.ReadAsStringAsync();
         treeResponse.StatusCode.Should().Be(HttpStatusCode.OK, treeContent);
-        var tree = await treeResponse.Content.ReadFromJsonAsync<RegionTreeDto>();
+        var tree = await treeResponse.Content.ReadFromJsonAsync<GeoDivisionTreeDto>();
         tree.Should().NotBeNull(treeContent);
         tree!.Id.Should().Be(country.Id);
         var admin1Node = tree.Children.Should().ContainSingle().Which;
@@ -264,9 +266,40 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         cityNode.Name.Should().Be(updated.Name);
         cityNode.Code.Should().Be(updated.Code);
 
+        // 单级子级接口：惰性树数据源，附带下级数量与同名下级数量。
+        using var childrenRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/geo-divisions/{country.Id}/children",
+            ReferenceDataPermissions.READ);
+        var childrenResponse = await _client.SendAsync(childrenRequest);
+        var childrenContent = await childrenResponse.Content.ReadAsStringAsync();
+        childrenResponse.StatusCode.Should().Be(HttpStatusCode.OK, childrenContent);
+        var children = await childrenResponse.Content.ReadFromJsonAsync<List<GeoDivisionChildDto>>();
+        children.Should().NotBeNull(childrenContent);
+        var childAdmin1 = children!.Should().ContainSingle().Which;
+        childAdmin1.Id.Should().Be(admin1.Id);
+        childAdmin1.ChildCount.Should().Be(1);
+        childAdmin1.SameNameChildCount.Should().Be(0);
+
+        using var cityChildrenRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/geo-divisions/{admin1.Id}/children",
+            ReferenceDataPermissions.READ);
+        var cityChildrenResponse = await _client.SendAsync(cityChildrenRequest);
+        var cityChildrenContent = await cityChildrenResponse.Content.ReadAsStringAsync();
+        cityChildrenResponse.StatusCode.Should().Be(HttpStatusCode.OK, cityChildrenContent);
+        var cityChildren = await cityChildrenResponse.Content.ReadFromJsonAsync<List<GeoDivisionChildDto>>();
+        cityChildren!.Should().ContainSingle().Which.Id.Should().Be(city.Id);
+
+        using var missingChildrenRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/geo-divisions/{Guid.NewGuid()}/children",
+            ReferenceDataPermissions.READ);
+        (await _client.SendAsync(missingChildrenRequest)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+
         using var protectedDeleteRequest = CreateRequest(
             HttpMethod.Delete,
-            $"/api/regions/{admin1.Id}",
+            $"/api/geo-divisions/{admin1.Id}",
             ManagePermissions);
         var protectedDeleteResponse = await _client.SendAsync(protectedDeleteRequest);
         var protectedDeleteContent = await protectedDeleteResponse.Content.ReadAsStringAsync();
@@ -284,27 +317,27 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         {
             using var notFoundRequest = CreateRequest(
                 HttpMethod.Get,
-                $"/api/regions/{id}",
+                $"/api/geo-divisions/{id}",
                 ReferenceDataPermissions.READ);
             var notFoundResponse = await _client.SendAsync(notFoundRequest);
             var notFoundContent = await notFoundResponse.Content.ReadAsStringAsync();
             notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound, notFoundContent);
         }
 
-        async Task<RegionDto> CreateRegion(CreateRegionInput input)
+        async Task<GeoDivisionDto> CreateRegion(CreateGeoDivisionInput input)
         {
-            using var request = CreateJsonRequest(HttpMethod.Post, "/api/regions", ManagePermissions, input);
+            using var request = CreateJsonRequest(HttpMethod.Post, "/api/geo-divisions", ManagePermissions, input);
             var response = await _client.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             response.StatusCode.Should().Be(HttpStatusCode.Created, content);
-            var created = await response.Content.ReadFromJsonAsync<RegionDto>();
+            var created = await response.Content.ReadFromJsonAsync<GeoDivisionDto>();
             created.Should().NotBeNull(content);
             return created!;
         }
 
         async Task DeleteRegion(Guid id)
         {
-            using var request = CreateRequest(HttpMethod.Delete, $"/api/regions/{id}", ManagePermissions);
+            using var request = CreateRequest(HttpMethod.Delete, $"/api/geo-divisions/{id}", ManagePermissions);
             var response = await _client.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             response.StatusCode.Should().Be(HttpStatusCode.NoContent, content);
@@ -524,6 +557,94 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var afterDeleteResponse = await _client.SendAsync(afterDeleteRequest);
         var afterDeleteDto = await afterDeleteResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
         afterDeleteDto!.Name.Should().Be("翻译测试机场");
+    }
+
+    [Fact]
+    public async Task Enum_dictionary_supports_crud_kind_validation_and_in_use_delete()
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToLowerInvariant();
+        var category = $"test.category.{suffix}";
+        var code = $"code_{suffix}";
+
+        using var createRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/reference-data/enums",
+            ManagePermissions,
+            new CreateReferenceEnumInput(category, code, "测试枚举", 10));
+        var createResponse = await _client.SendAsync(createRequest);
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created, createContent);
+        var created = await createResponse.Content.ReadFromJsonAsync<ReferenceEnumDto>();
+        created.Should().NotBeNull();
+        created!.Category.Should().Be(category);
+        created.Code.Should().Be(code);
+
+        using var listRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/reference-data/enums?category={Uri.EscapeDataString(category)}",
+            ReferenceDataPermissions.READ);
+        var listResponse = await _client.SendAsync(listRequest);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var listed = await listResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
+        listed!.Items.Should().ContainSingle(item => item.Id == created.Id);
+
+        using var updateRequest = CreateJsonRequest(
+            HttpMethod.Put,
+            $"/api/reference-data/enums/{created.Id}",
+            ManagePermissions,
+            new UpdateReferenceEnumInput("测试枚举改名", 20));
+        var updateResponse = await _client.SendAsync(updateRequest);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceEnumDto>();
+        updated!.Name.Should().Be("测试枚举改名");
+        updated.SortOrder.Should().Be(20);
+
+        var countryCode = $"T{(char)('A' + suffix[0] % 26)}";
+        using var unknownKindRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/geo-divisions",
+            ManagePermissions,
+            new CreateGeoDivisionInput(1, countryCode, Code: countryCode, Name: "未知 Kind 国家", Kind: "not_a_real_kind"));
+        var unknownKindResponse = await _client.SendAsync(unknownKindRequest);
+        unknownKindResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var countryRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/geo-divisions",
+            ManagePermissions,
+            new CreateGeoDivisionInput(1, countryCode, Code: countryCode, Name: "引用 Kind 国家", Kind: "standard"));
+        var countryResponse = await _client.SendAsync(countryRequest);
+        var countryContent = await countryResponse.Content.ReadAsStringAsync();
+        countryResponse.StatusCode.Should().Be(HttpStatusCode.Created, countryContent);
+        var country = await countryResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
+
+        using var listKinds = CreateRequest(
+            HttpMethod.Get,
+            "/api/reference-data/enums?category=geo_division.kind&pageSize=100",
+            ReferenceDataPermissions.READ);
+        var kindsResponse = await _client.SendAsync(listKinds);
+        kindsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var kinds = await kindsResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
+        var standard = kinds!.Items.Single(item => item.Code == "standard");
+
+        using var deleteStandardRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/api/reference-data/enums/{standard.Id}",
+            ManagePermissions);
+        var deleteStandardResponse = await _client.SendAsync(deleteStandardRequest);
+        deleteStandardResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        using var deleteCountry = CreateRequest(
+            HttpMethod.Delete,
+            $"/api/geo-divisions/{country!.Id}",
+            ManagePermissions);
+        (await _client.SendAsync(deleteCountry)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var deleteEnumRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/api/reference-data/enums/{created.Id}",
+            ManagePermissions);
+        (await _client.SendAsync(deleteEnumRequest)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     private static string ManagePermissions =>

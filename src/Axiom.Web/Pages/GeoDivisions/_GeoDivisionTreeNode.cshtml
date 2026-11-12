@@ -1,0 +1,47 @@
+@model Axiom.Web.Models.GeoDivisionNodeViewModel
+
+<div class="region-node">
+    <div class="region-row">
+        @if (Model.HasChildren)
+        {
+            <a class="region-toggle" data-bs-toggle="collapse"
+               href="#node-@Model.Id" role="button" aria-expanded="false" aria-controls="node-@Model.Id" aria-label="@Model.Name">
+                <span class="region-chevron" aria-hidden="true">▶</span>
+            </a>
+        }
+        else
+        {
+            <span class="region-leaf-dot" aria-hidden="true">•</span>
+        }
+        <span class="badge-soft @LevelClass(Model.Level)">@KindOrLevelLabel(Model)</span>
+        <a asp-page="/GeoDivisions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
+        <code class="text-muted small">@Model.Code</code>
+        <a class="btn btn-ghost ms-auto" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+    </div>
+    @if (Model.HasChildren)
+    {
+        @* 子级不在服务端预渲染：首次展开时由 site.js 惰性拉取 _GeoDivisionChildren 片段。 *@
+        <div id="node-@Model.Id" class="collapse">
+            <div class="region-children" data-children-container
+                 data-children-url="@Url.Page("/GeoDivisions/Index", "Children", new { id = Model.Id })"
+                 data-error-text="@Localizer["GeoDivisions.LoadChildrenFailed"]"></div>
+        </div>
+    }
+</div>
+
+@functions {
+    // Kind 优先：直辖市/自治区/特区；否则回退到层级文案。
+    string KindOrLevelLabel(GeoDivisionNodeViewModel node) =>
+        node.IsMunicipality
+            ? Localizer["GeoDivisions.Municipality"].Value
+            : node.IsSpecialAdministrativeRegion
+                ? Localizer["GeoDivisions.SpecialAdministrativeRegion"].Value
+                : node.IsAutonomousRegion
+                    ? Localizer["GeoDivisions.AutonomousRegion"].Value
+                    : node.Level is >= 1 and <= 4
+                        ? Localizer[$"GeoDivisions.Level.{node.Level}"].Value
+                        : $"L{node.Level}";
+
+    static string LevelClass(int level) =>
+        level is >= 1 and <= 4 ? $"level-{level}" : "level-default";
+}

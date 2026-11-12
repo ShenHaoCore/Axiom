@@ -48,12 +48,14 @@ builder.Services.AddTransient<MockGatewayHandler>();
 var gatewayBaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100");
 var referenceDataClient = builder.Services.AddHttpClient<ReferenceDataClient>(client => client.BaseAddress = gatewayBaseAddress);
 var newsClient = builder.Services.AddHttpClient<NewsClient>(client => client.BaseAddress = gatewayBaseAddress);
-var regionClient = builder.Services.AddHttpClient<RegionClient>(client => client.BaseAddress = gatewayBaseAddress);
+var regionClient = builder.Services.AddHttpClient<GeoDivisionClient>(client => client.BaseAddress = gatewayBaseAddress);
+var enumClient = builder.Services.AddHttpClient<ReferenceEnumClient>(client => client.BaseAddress = gatewayBaseAddress);
 if (useMockAuth)
 {
     referenceDataClient.AddHttpMessageHandler<MockGatewayHandler>();
     newsClient.AddHttpMessageHandler<MockGatewayHandler>();
     regionClient.AddHttpMessageHandler<MockGatewayHandler>();
+    enumClient.AddHttpMessageHandler<MockGatewayHandler>();
 }
 builder.AddWebAuthentication(useMockAuth);
 var healthChecks = builder.Services.AddHealthChecks();

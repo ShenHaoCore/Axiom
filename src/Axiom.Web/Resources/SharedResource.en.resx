@@ -8,7 +8,34 @@
   <!-- Layout / navigation -->
   <data name="Nav.Airports" xml:space="preserve"><value>Airports</value></data>
   <data name="Nav.News" xml:space="preserve"><value>News</value></data>
-  <data name="Nav.Regions" xml:space="preserve"><value>Regions</value></data>
+  <data name="Nav.GeoDivisions" xml:space="preserve"><value>GeoDivisions</value></data>
+  <data name="Nav.Enums" xml:space="preserve"><value>Enums</value></data>
+  <data name="Enums.Title" xml:space="preserve"><value>Enum Dictionary</value></data>
+  <data name="Enums.Description" xml:space="preserve"><value>Maintain enum categories and codes referenced by business data.</value></data>
+  <data name="Enums.Create" xml:space="preserve"><value>Add enum</value></data>
+  <data name="Enums.Edit" xml:space="preserve"><value>Edit enum</value></data>
+  <data name="Enums.Empty" xml:space="preserve"><value>No enum entries.</value></data>
+  <data name="Enums.LoadFailed" xml:space="preserve"><value>Failed to load enums.</value></data>
+  <data name="Enums.Created" xml:space="preserve"><value>Enum created.</value></data>
+  <data name="Enums.CreateFailed" xml:space="preserve"><value>Failed to create enum.</value></data>
+  <data name="Enums.Updated" xml:space="preserve"><value>Enum updated.</value></data>
+  <data name="Enums.EditFailed" xml:space="preserve"><value>Failed to update enum.</value></data>
+  <data name="Enums.Deleted" xml:space="preserve"><value>Enum deleted.</value></data>
+  <data name="Enums.DeleteFailed" xml:space="preserve"><value>Failed to delete enum.</value></data>
+  <data name="Enums.DeleteInUse" xml:space="preserve"><value>Enum is still referenced and cannot be deleted.</value></data>
+  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>Delete this enum entry?</value></data>
+  <data name="Enums.NotFound" xml:space="preserve"><value>Enum entry not found.</value></data>
+  <data name="Enums.CodeConflict" xml:space="preserve"><value>Code already exists in this category.</value></data>
+  <data name="Field.Enum.Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Field.Enum.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Field.Enum.Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Field.Enum.SortOrder" xml:space="preserve"><value>Sort order</value></data>
+  <data name="Validation.Enum.CategoryRequired" xml:space="preserve"><value>Category is required.</value></data>
+  <data name="Validation.Enum.CategoryTooLong" xml:space="preserve"><value>Category must be at most 64 characters.</value></data>
+  <data name="Validation.Enum.CodeRequired" xml:space="preserve"><value>Code is required.</value></data>
+  <data name="Validation.Enum.CodeTooLong" xml:space="preserve"><value>Code must be at most 64 characters.</value></data>
+  <data name="Validation.Enum.NameRequired" xml:space="preserve"><value>Name is required.</value></data>
+  <data name="Validation.Enum.NameTooLong" xml:space="preserve"><value>Name must be at most 100 characters.</value></data>
   <data name="Layout.NavSectionData" xml:space="preserve"><value>Data</value></data>
   <data name="Layout.NavSectionContent" xml:space="preserve"><value>Content</value></data>
   <data name="Layout.ToggleNavigation" xml:space="preserve"><value>Toggle navigation</value></data>
@@ -16,6 +43,8 @@
   <data name="Culture.Select" xml:space="preserve"><value>Select language</value></data>
   <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
   <data name="Culture.en" xml:space="preserve"><value>English</value></data>
+  <data name="Culture.UiLabel" xml:space="preserve"><value>UI language</value></data>
+  <data name="Layout.UnsavedChanges" xml:space="preserve"><value>Switching UI language reloads the page and discards unsaved changes. Continue?</value></data>
 
   <!-- Common -->
   <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
@@ -45,6 +74,15 @@
   <data name="Translations.SaveFailed" xml:space="preserve"><value>Failed to save translations. Please try again later.</value></data>
   <data name="Translations.LoadFailed" xml:space="preserve"><value>Failed to load translations. Please try again later.</value></data>
   <data name="Translations.Description" xml:space="preserve"><value>Maintain localized names and descriptions for this record. Leave a field empty to skip that language.</value></data>
+  <data name="Translations.SourceFormat" xml:space="preserve"><value>Source ({0})</value></data>
+  <data name="Translations.SourceLabel" xml:space="preserve"><value>Source</value></data>
+  <data name="Translations.SourceEmpty" xml:space="preserve"><value>Default-language content is empty.</value></data>
+  <data name="Translations.Status.Translated" xml:space="preserve"><value>Translated</value></data>
+  <data name="Translations.Status.Missing" xml:space="preserve"><value>Missing</value></data>
+  <data name="Translations.SourceTab" xml:space="preserve"><value>Source</value></data>
+  <data name="Translations.Progress" xml:space="preserve"><value>{0}/{1} languages completed</value></data>
+  <data name="Translations.CopySource" xml:space="preserve"><value>Copy source</value></data>
+  <data name="Translations.CopiedSource" xml:space="preserve"><value>Copied</value></data>
 
   <!-- Airports -->
   <data name="Airports.Title" xml:space="preserve"><value>Airports</value></data>
@@ -119,96 +157,108 @@
   <data name="News.Detail.Article" xml:space="preserve"><value>Article</value></data>
   <data name="News.Detail.Meta" xml:space="preserve"><value>Article info</value></data>
 
-  <!-- Regions -->
-  <data name="Regions.Title" xml:space="preserve"><value>Browse regions</value></data>
-  <data name="Regions.Country" xml:space="preserve"><value>Country</value></data>
-  <data name="Regions.SelectCountry" xml:space="preserve"><value>-- Select a country --</value></data>
-  <data name="Regions.SearchLabel" xml:space="preserve"><value>Search regions</value></data>
-  <data name="Regions.SearchPlaceholder" xml:space="preserve"><value>Search by name…</value></data>
-  <data name="Regions.SearchResults" xml:space="preserve"><value>Search results</value></data>
-  <data name="Regions.SearchTotal" xml:space="preserve"><value>{0} in total</value></data>
-  <data name="Regions.NoMatch" xml:space="preserve"><value>No regions match "{0}".</value></data>
-  <data name="Regions.TreeTitle" xml:space="preserve"><value>Region hierarchy</value></data>
-  <data name="Regions.Column.Level" xml:space="preserve"><value>Level</value></data>
-  <data name="Regions.Column.Name" xml:space="preserve"><value>Name</value></data>
-  <data name="Regions.Column.Code" xml:space="preserve"><value>Code</value></data>
-  <data name="Regions.Column.Country" xml:space="preserve"><value>Country</value></data>
-  <data name="Regions.Column.Admin1" xml:space="preserve"><value>Admin1</value></data>
-  <data name="Regions.Column.Population" xml:space="preserve"><value>Population</value></data>
-  <data name="Regions.Level.1" xml:space="preserve"><value>Country</value></data>
-  <data name="Regions.Level.2" xml:space="preserve"><value>Province/State</value></data>
-  <data name="Regions.Level.3" xml:space="preserve"><value>City</value></data>
-  <data name="Regions.LoadCountriesFailed" xml:space="preserve"><value>Failed to load the country list.</value></data>
-  <data name="Regions.SearchFailed" xml:space="preserve"><value>Failed to search regions.</value></data>
-  <data name="Regions.LoadTreeFailed" xml:space="preserve"><value>Failed to load the region hierarchy for {0}.</value></data>
-  <data name="Regions.Description" xml:space="preserve"><value>Browse the region hierarchy by country or search by name.</value></data>
-  <data name="Regions.NoMatchHint" xml:space="preserve"><value>Try a shorter keyword, or switch to another country and search again.</value></data>
-  <data name="Regions.TreeEmpty" xml:space="preserve"><value>No region data for this country yet.</value></data>
+  <!-- GeoDivisions -->
+  <data name="GeoDivisions.Title" xml:space="preserve"><value>Browse regions</value></data>
+  <data name="GeoDivisions.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="GeoDivisions.SelectCountry" xml:space="preserve"><value>-- Select a country --</value></data>
+  <data name="GeoDivisions.AllCountries" xml:space="preserve"><value>All countries</value></data>
+  <data name="GeoDivisions.LoadChildrenFailed" xml:space="preserve"><value>Failed to load child regions. Click to retry.</value></data>
+  <data name="GeoDivisions.SearchLabel" xml:space="preserve"><value>Search regions</value></data>
+  <data name="GeoDivisions.SearchPlaceholder" xml:space="preserve"><value>Search by name…</value></data>
+  <data name="GeoDivisions.SearchResults" xml:space="preserve"><value>Search results</value></data>
+  <data name="GeoDivisions.SearchTotal" xml:space="preserve"><value>{0} in total</value></data>
+  <data name="GeoDivisions.NoMatch" xml:space="preserve"><value>No regions match "{0}".</value></data>
+  <data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>GeoDivision hierarchy</value></data>
+  <data name="GeoDivisions.Column.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="GeoDivisions.Column.Name" xml:space="preserve"><value>Name</value></data>
+  <data name="GeoDivisions.Column.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="GeoDivisions.Column.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="GeoDivisions.Column.Subdivision" xml:space="preserve"><value>Subdivision</value></data>
+  <data name="GeoDivisions.Column.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>Country</value></data>
+  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>Province/State</value></data>
+  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>City</value></data>
+  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>District/County</value></data>
+  <data name="GeoDivisions.Municipality" xml:space="preserve"><value>Municipality</value></data>
+  <data name="GeoDivisions.AutonomousRegion" xml:space="preserve"><value>Autonomous GeoDivision</value></data>
+  <data name="GeoDivisions.SpecialAdministrativeRegion" xml:space="preserve"><value>Special Administrative GeoDivision</value></data>
+  <data name="GeoDivisions.Kind.standard" xml:space="preserve"><value>Standard</value></data>
+  <data name="GeoDivisions.Kind.municipality" xml:space="preserve"><value>Municipality</value></data>
+  <data name="GeoDivisions.Kind.autonomous_region" xml:space="preserve"><value>Autonomous Region</value></data>
+  <data name="GeoDivisions.Kind.special_administrative_region" xml:space="preserve"><value>Special Administrative Region</value></data>
+  <data name="GeoDivisions.LoadCountriesFailed" xml:space="preserve"><value>Failed to load the country list.</value></data>
+  <data name="GeoDivisions.SearchFailed" xml:space="preserve"><value>Failed to search regions.</value></data>
+  <data name="GeoDivisions.LoadTreeFailed" xml:space="preserve"><value>Failed to load the region hierarchy for {0}.</value></data>
+  <data name="GeoDivisions.Description" xml:space="preserve"><value>Browse the region hierarchy by country or search by name.</value></data>
+  <data name="GeoDivisions.NoMatchHint" xml:space="preserve"><value>Try a shorter keyword, or switch to another country and search again.</value></data>
+  <data name="GeoDivisions.TreeEmpty" xml:space="preserve"><value>No region data for this country yet.</value></data>
 
-  <!-- Region detail -->
-  <data name="Regions.Detail.Title" xml:space="preserve"><value>Region detail</value></data>
-  <data name="Regions.Detail.BackToTree" xml:space="preserve"><value>Back to hierarchy</value></data>
-  <data name="Regions.Detail.BasicInfo" xml:space="preserve"><value>Basic information</value></data>
-  <data name="Regions.Detail.GeoData" xml:space="preserve"><value>Geographical data</value></data>
-  <data name="Regions.Detail.Level" xml:space="preserve"><value>Level</value></data>
-  <data name="Regions.Detail.Code" xml:space="preserve"><value>Code</value></data>
-  <data name="Regions.Detail.Country" xml:space="preserve"><value>Country</value></data>
-  <data name="Regions.Detail.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
-  <data name="Regions.Detail.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
-  <data name="Regions.Detail.GeoNameId" xml:space="preserve"><value>GeoNames ID</value></data>
-  <data name="Regions.Detail.Population" xml:space="preserve"><value>Population</value></data>
-  <data name="Regions.Detail.Coordinates" xml:space="preserve"><value>Coordinates</value></data>
-  <data name="Regions.Detail.ParentId" xml:space="preserve"><value>Parent node ID</value></data>
-  <data name="Regions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
-  <data name="Regions.Detail.Meta" xml:space="preserve"><value>Record info</value></data>
-  <data name="Regions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the region detail.</value></data>
-  <data name="Regions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this region?</value></data>
-  <data name="Regions.Detail.Deleted" xml:space="preserve"><value>The region has been deleted.</value></data>
-  <data name="Regions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the region. Please try again later.</value></data>
-  <data name="Regions.Detail.DeleteHasChildren" xml:space="preserve"><value>This region still has child nodes. Delete or move them first.</value></data>
-  <data name="Regions.Create.Title" xml:space="preserve"><value>Create region</value></data>
-  <data name="Regions.Create.Description" xml:space="preserve"><value>Choose a level and country to load the form, then fill in the region details.</value></data>
-  <data name="Regions.Create.SetupHeading" xml:space="preserve"><value>Choose level and country</value></data>
-  <data name="Regions.Create.SetupHint" xml:space="preserve"><value>The level and country determine the available parent regions. Change them and load the form again.</value></data>
-  <data name="Regions.Create.LoadForm" xml:space="preserve"><value>Load create form</value></data>
-  <data name="Regions.Create.SaveFailed" xml:space="preserve"><value>Failed to create the region. Please try again later.</value></data>
-  <data name="Regions.Create.Created" xml:space="preserve"><value>The region has been created.</value></data>
-  <data name="Regions.Edit.Title" xml:space="preserve"><value>Edit region</value></data>
-  <data name="Regions.Edit.Description" xml:space="preserve"><value>Update the region name, code, and geographical data.</value></data>
-  <data name="Regions.Section.Identity" xml:space="preserve"><value>Identity and hierarchy</value></data>
-  <data name="Regions.Section.IdentityHint" xml:space="preserve"><value>The region's position and code within the country hierarchy.</value></data>
-  <data name="Regions.Section.Geo" xml:space="preserve"><value>Geography and population</value></data>
-  <data name="Regions.Section.GeoHint" xml:space="preserve"><value>Optional data used for maps and statistics.</value></data>
-  <data name="Regions.Hint.Admin1Code" xml:space="preserve"><value>Admin1 code, up to 20 characters.</value></data>
-  <data name="Regions.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the region.</value></data>
-  <data name="Regions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the region. Please try again later.</value></data>
-  <data name="Regions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>
-  <data name="Regions.Form.UniqueConflict" xml:space="preserve"><value>The region code already exists for this country and level.</value></data>
-  <data name="Regions.Form.SelectParent" xml:space="preserve"><value>-- Select a parent --</value></data>
-  <data name="Field.Region.Level" xml:space="preserve"><value>Level</value></data>
-  <data name="Field.Region.CountryCode" xml:space="preserve"><value>Country code</value></data>
-  <data name="Field.Region.Admin1Code" xml:space="preserve"><value>Admin1 Code</value></data>
-  <data name="Field.Region.Code" xml:space="preserve"><value>Region code</value></data>
-  <data name="Field.Region.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
-  <data name="Field.Region.LocalName" xml:space="preserve"><value>Local name</value></data>
-  <data name="Field.Region.Latitude" xml:space="preserve"><value>Latitude</value></data>
-  <data name="Field.Region.Longitude" xml:space="preserve"><value>Longitude</value></data>
-  <data name="Field.Region.Population" xml:space="preserve"><value>Population</value></data>
-  <data name="Field.Region.Parent" xml:space="preserve"><value>Parent region</value></data>
-  <data name="Validation.Region.LevelRange" xml:space="preserve"><value>Level must be Country, Province/State, or City.</value></data>
-  <data name="Validation.Region.CountryCodeRequired" xml:space="preserve"><value>The country code is required.</value></data>
-  <data name="Validation.Region.CountryCodeFormat" xml:space="preserve"><value>The country code must be 2 letters.</value></data>
-  <data name="Validation.Region.Admin1CodeTooLong" xml:space="preserve"><value>Admin1 Code cannot exceed 20 characters.</value></data>
-  <data name="Validation.Region.CodeTooLong" xml:space="preserve"><value>The region code cannot exceed 50 characters.</value></data>
-  <data name="Validation.Region.NameRequired" xml:space="preserve"><value>The name is required.</value></data>
-  <data name="Validation.Region.NameTooLong" xml:space="preserve"><value>The name cannot exceed 200 characters.</value></data>
-  <data name="Validation.Region.AsciiNameTooLong" xml:space="preserve"><value>The ascii name cannot exceed 200 characters.</value></data>
-  <data name="Validation.Region.LocalNameTooLong" xml:space="preserve"><value>The local name cannot exceed 200 characters.</value></data>
-  <data name="Validation.Region.LatitudeRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
-  <data name="Validation.Region.LongitudeRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
-  <data name="Validation.Region.PopulationRange" xml:space="preserve"><value>Population cannot be negative.</value></data>
-  <data name="Validation.Region.ParentRequired" xml:space="preserve"><value>Select a parent region for this level.</value></data>
-  <data name="Validation.Region.ParentInvalid" xml:space="preserve"><value>The parent does not match the selected country or level. Select another parent.</value></data>
+  <!-- GeoDivision detail -->
+  <data name="GeoDivisions.Detail.Title" xml:space="preserve"><value>GeoDivision detail</value></data>
+  <data name="GeoDivisions.Detail.BackToTree" xml:space="preserve"><value>Back to hierarchy</value></data>
+  <data name="GeoDivisions.Detail.BasicInfo" xml:space="preserve"><value>Basic information</value></data>
+  <data name="GeoDivisions.Detail.GeoData" xml:space="preserve"><value>Geographical data</value></data>
+  <data name="GeoDivisions.Detail.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="GeoDivisions.Detail.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="GeoDivisions.Detail.Country" xml:space="preserve"><value>Country</value></data>
+  <data name="GeoDivisions.Detail.SubdivisionCode" xml:space="preserve"><value>Subdivision code</value></data>
+  <data name="GeoDivisions.Detail.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
+  <data name="GeoDivisions.Detail.GeoNameId" xml:space="preserve"><value>GeoNames ID</value></data>
+  <data name="GeoDivisions.Detail.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="GeoDivisions.Detail.Coordinates" xml:space="preserve"><value>Coordinates</value></data>
+  <data name="GeoDivisions.Detail.ParentId" xml:space="preserve"><value>Parent node ID</value></data>
+  <data name="GeoDivisions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
+  <data name="GeoDivisions.Detail.Meta" xml:space="preserve"><value>Record info</value></data>
+  <data name="GeoDivisions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the region detail.</value></data>
+  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this region?</value></data>
+  <data name="GeoDivisions.Detail.Deleted" xml:space="preserve"><value>The region has been deleted.</value></data>
+  <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the region. Please try again later.</value></data>
+  <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>This region still has child nodes. Delete or move them first.</value></data>
+  <data name="GeoDivisions.Create.Title" xml:space="preserve"><value>Create region</value></data>
+  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>Choose a level and country to load the form, then fill in the region details.</value></data>
+  <data name="GeoDivisions.Create.SetupHeading" xml:space="preserve"><value>Choose level and country</value></data>
+  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>The level and country determine the available parent regions. Change them and load the form again.</value></data>
+  <data name="GeoDivisions.Create.LoadForm" xml:space="preserve"><value>Load create form</value></data>
+  <data name="GeoDivisions.Create.SaveFailed" xml:space="preserve"><value>Failed to create the region. Please try again later.</value></data>
+  <data name="GeoDivisions.Create.Created" xml:space="preserve"><value>The region has been created.</value></data>
+  <data name="GeoDivisions.Edit.Title" xml:space="preserve"><value>Edit region</value></data>
+  <data name="GeoDivisions.Edit.Description" xml:space="preserve"><value>Update the region name, code, and geographical data.</value></data>
+  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>Identity and hierarchy</value></data>
+  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>The region's position and code within the country hierarchy.</value></data>
+  <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>Geography and population</value></data>
+  <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>Optional data used for maps and statistics.</value></data>
+  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>Subdivision code, up to 20 characters.</value></data>
+  <data name="GeoDivisions.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the region.</value></data>
+  <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the region. Please try again later.</value></data>
+  <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>
+  <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>The region code already exists for this country and level.</value></data>
+  <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- Select a parent --</value></data>
+  <data name="Field.GeoDivision.Level" xml:space="preserve"><value>Level</value></data>
+  <data name="Field.GeoDivision.Kind" xml:space="preserve"><value>Kind</value></data>
+  <data name="Field.GeoDivision.CountryCode" xml:space="preserve"><value>Country code</value></data>
+  <data name="Field.GeoDivision.SubdivisionCode" xml:space="preserve"><value>Subdivision code</value></data>
+  <data name="Field.GeoDivision.Code" xml:space="preserve"><value>GeoDivision code</value></data>
+  <data name="Field.GeoDivision.AsciiName" xml:space="preserve"><value>Ascii name</value></data>
+  <data name="Field.GeoDivision.LocalName" xml:space="preserve"><value>Local name</value></data>
+  <data name="Field.GeoDivision.Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Field.GeoDivision.Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Field.GeoDivision.Population" xml:space="preserve"><value>Population</value></data>
+  <data name="Field.GeoDivision.Parent" xml:space="preserve"><value>Parent region</value></data>
+  <data name="Validation.GeoDivision.LevelRange" xml:space="preserve"><value>Level must be an integer greater than or equal to 1.</value></data>
+  <data name="Validation.GeoDivision.KindTooLong" xml:space="preserve"><value>Kind must be at most 64 characters.</value></data>
+  <data name="Validation.GeoDivision.CountryCodeRequired" xml:space="preserve"><value>The country code is required.</value></data>
+  <data name="Validation.GeoDivision.CountryCodeFormat" xml:space="preserve"><value>The country code must be 2 letters.</value></data>
+  <data name="Validation.GeoDivision.SubdivisionCodeTooLong" xml:space="preserve"><value>Subdivision code cannot exceed 20 characters.</value></data>
+  <data name="Validation.GeoDivision.CodeTooLong" xml:space="preserve"><value>The region code cannot exceed 50 characters.</value></data>
+  <data name="Validation.GeoDivision.NameRequired" xml:space="preserve"><value>The name is required.</value></data>
+  <data name="Validation.GeoDivision.NameTooLong" xml:space="preserve"><value>The name cannot exceed 200 characters.</value></data>
+  <data name="Validation.GeoDivision.AsciiNameTooLong" xml:space="preserve"><value>The ascii name cannot exceed 200 characters.</value></data>
+  <data name="Validation.GeoDivision.LocalNameTooLong" xml:space="preserve"><value>The local name cannot exceed 200 characters.</value></data>
+  <data name="Validation.GeoDivision.LatitudeRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
+  <data name="Validation.GeoDivision.LongitudeRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="Validation.GeoDivision.PopulationRange" xml:space="preserve"><value>Population cannot be negative.</value></data>
+  <data name="Validation.GeoDivision.ParentRequired" xml:space="preserve"><value>Select a parent region for this level.</value></data>
+  <data name="Validation.GeoDivision.ParentInvalid" xml:space="preserve"><value>The parent does not match the selected country or level. Select another parent.</value></data>
 
   <!-- Field labels -->
   <data name="Field.Airport.Code" xml:space="preserve"><value>Airport code</value></data>
@@ -223,7 +273,7 @@
   <data name="Field.News.Category" xml:space="preserve"><value>Category</value></data>
   <data name="Field.News.Author" xml:space="preserve"><value>Author</value></data>
   <data name="Field.News.Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Field.Region.Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Field.GeoDivision.Name" xml:space="preserve"><value>Name</value></data>
 
   <!-- Validation -->
   <data name="Validation.Airport.CodeRequired" xml:space="preserve"><value>The airport code is required.</value></data>
