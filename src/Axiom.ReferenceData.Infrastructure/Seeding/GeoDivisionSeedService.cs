@@ -209,7 +209,7 @@ public sealed class GeoDivisionSeedService(
         return keyToId;
     }
 
-    /// <summary>幂等写入 geo_division.kind 预设，供行政区 Kind 强校验。</summary>
+    /// <summary>幂等写入 geo_division.kind 预设，供行政区 Kind 强校验；并补英文译文。</summary>
     private static async Task EnsureGeoDivisionKindEnumsAsync(
         ReferenceDataDbContext dbContext,
         CancellationToken cancellationToken)
@@ -234,12 +234,55 @@ public sealed class GeoDivisionSeedService(
             toAdd.Add(ReferenceEnum.Create(category, code, name, sortOrder));
         }
 
+        if (toAdd.Count > 0)
+        {
+            await dbContext.ReferenceEnums.AddRangeAsync(toAdd, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        await EnsureGeoDivisionKindEnglishTranslationsAsync(dbContext, cancellationToken);
+    }
+
+    /// <summary>幂等为 Kind 枚举写入 en 显示名（缺则补，不覆盖已有译文）。</summary>
+    private static async Task EnsureGeoDivisionKindEnglishTranslationsAsync(
+        ReferenceDataDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        const string culture = "en";
+        var enums = await dbContext.ReferenceEnums
+            .Where(e => e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
+            .Select(e => new { e.Id, e.Code })
+            .ToListAsync(cancellationToken);
+        if (enums.Count == 0)
+        {
+            return;
+        }
+
+        var enumIds = enums.Select(e => e.Id).ToArray();
+        var existingIds = await dbContext.ReferenceEnumTranslations
+            .Where(t => enumIds.Contains(t.ReferenceEnumId) && t.Culture == culture)
+            .Select(t => t.ReferenceEnumId)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingIds.ToHashSet();
+
+        var toAdd = new List<ReferenceEnumTranslation>();
+        foreach (var item in enums)
+        {
+            if (existingSet.Contains(item.Id)
+                || !GeoDivisionKinds.EnglishNames.TryGetValue(item.Code, out var englishName))
+            {
+                continue;
+            }
+
+            toAdd.Add(new ReferenceEnumTranslation(item.Id, culture, englishName));
+        }
+
         if (toAdd.Count == 0)
         {
             return;
         }
 
-        await dbContext.ReferenceEnums.AddRangeAsync(toAdd, cancellationToken);
+        await dbContext.ReferenceEnumTranslations.AddRangeAsync(toAdd, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 

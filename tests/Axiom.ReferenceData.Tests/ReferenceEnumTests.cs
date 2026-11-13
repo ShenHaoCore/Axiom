@@ -46,6 +46,20 @@ public sealed class ReferenceEnumTests
     }
 
     [Fact]
+    public void GeoDivisionKinds_english_names_cover_all_seed_codes()
+    {
+        var codes = GeoDivisionKinds.SeedItems.Select(item => item.Code).Distinct().ToArray();
+        codes.Should().NotBeEmpty();
+        foreach (var code in codes)
+        {
+            GeoDivisionKinds.EnglishNames.Should().ContainKey(code);
+        }
+
+        GeoDivisionKinds.EnglishNames[GeoDivisionKinds.Municipality].Should().Be("Municipality");
+        GeoDivisionKinds.EnglishNames[GeoDivisionKinds.Country].Should().Be("Country");
+    }
+
+    [Fact]
     public void GeoDivisionKinds_derive_default_by_country_and_level()
     {
         GeoDivisionKinds.DeriveDefault("CN", 1, null).Should().Be(GeoDivisionKinds.Country);

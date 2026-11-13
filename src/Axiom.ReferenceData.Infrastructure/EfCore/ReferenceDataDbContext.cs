@@ -14,6 +14,7 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
     public DbSet<ReferenceEnum> ReferenceEnums => Set<ReferenceEnum>();
     public DbSet<ReferenceLocationTranslation> ReferenceLocationTranslations => Set<ReferenceLocationTranslation>();
     public DbSet<GeoDivisionTranslation> GeoDivisionTranslations => Set<GeoDivisionTranslation>();
+    public DbSet<ReferenceEnumTranslation> ReferenceEnumTranslations => Set<ReferenceEnumTranslation>();
 
     // Messaging：Outbox 消息，由 Messaging 基础设施层定义，这里注册 DbSet。
     // OutboxMessage/InboxMessage 类型在 Messaging 基础设施层，但我们需要 Set<> 来访问。
@@ -80,6 +81,20 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
             entity.HasOne<GeoDivision>()
                 .WithMany()
                 .HasForeignKey(translation => translation.GeoDivisionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReferenceEnumTranslation>(entity =>
+        {
+            entity.ToTable("reference_enum_translations");
+            entity.HasKey(translation => translation.Id);
+            entity.Property(translation => translation.Culture).HasMaxLength(16).IsRequired();
+            entity.Property(translation => translation.Name).HasMaxLength(ReferenceEnum.MaxNameLength).IsRequired();
+            // 一行一语言：同一枚举项同一 Culture 仅一条。
+            entity.HasIndex(translation => new { translation.ReferenceEnumId, translation.Culture }).IsUnique();
+            entity.HasOne<ReferenceEnum>()
+                .WithMany()
+                .HasForeignKey(translation => translation.ReferenceEnumId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

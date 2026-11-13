@@ -1,8 +1,10 @@
 // 通用枚举字典 REST 端点（HttpApi 层——瘦绑定）。
+using System.Globalization;
 using Axiom.ReferenceData.Application.Dtos;
 using Axiom.ReferenceData.Application.Services;
 using Axiom.ReferenceData.Domain.Exceptions;
 using Axiom.SharedKernel.Errors;
+using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Models;
 using Axiom.SharedKernel.Resources;
 using Microsoft.AspNetCore.Mvc;
@@ -58,6 +60,33 @@ public static class ReferenceEnumEndpoints
                 HandleDelete(id, appService, localizer, ct))
             .RequireAuthorization(MANAGE_POLICY)
             .Produces(StatusCodes.Status204NoContent);
+
+        group.MapGet("/{id:guid}/translations/{culture}", (Guid id, string culture,
+                IReferenceEnumAppService appService,
+                IStringLocalizer<ApiErrorMessages> localizer,
+                CancellationToken ct) =>
+                HandleGetTranslations(id, culture, appService, localizer, ct))
+            .RequireAuthorization(READ_POLICY)
+            .Produces<TranslationDto>();
+
+        group.MapPut("/{id:guid}/translations/{culture}", (Guid id, string culture,
+                SaveTranslationsInput? input,
+                IReferenceEnumAppService appService,
+                AxiomLocalizationOptions localization,
+                IStringLocalizer<ApiErrorMessages> localizer,
+                CancellationToken ct) =>
+                HandleSaveTranslations(id, culture, input, appService, localization, localizer, ct))
+            .RequireAuthorization(MANAGE_POLICY)
+            .Produces<TranslationDto>();
+
+        group.MapDelete("/{id:guid}/translations/{culture}", (Guid id, string culture,
+                IReferenceEnumAppService appService,
+                AxiomLocalizationOptions localization,
+                IStringLocalizer<ApiErrorMessages> localizer,
+                CancellationToken ct) =>
+                HandleDeleteTranslations(id, culture, appService, localization, localizer, ct))
+            .RequireAuthorization(MANAGE_POLICY)
+            .Produces(StatusCodes.Status204NoContent);
     }
 
     private static async Task<IResult> HandleList(
@@ -68,7 +97,7 @@ public static class ReferenceEnumEndpoints
     {
         try
         {
-            return Results.Ok(await appService.ListAsync(query, ct));
+            return Results.Ok(await appService.ListAsync(query, CultureInfo.CurrentUICulture.Name, ct));
         }
         catch (ReferenceEnumValidationException ex)
         {
@@ -82,7 +111,7 @@ public static class ReferenceEnumEndpoints
         IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken ct)
     {
-        var dto = await appService.GetAsync(id, ct);
+        var dto = await appService.GetAsync(id, CultureInfo.CurrentUICulture.Name, ct);
         return dto is null ? NotFound(localizer, id) : Results.Ok(dto);
     }
 
@@ -163,6 +192,89 @@ public static class ReferenceEnumEndpoints
         }
     }
 
+    private static async Task<IResult> HandleGetTranslations(
+        Guid id,
+        string culture,
+        IReferenceEnumAppService appService,
+        IStringLocalizer<ApiErrorMessages> localizer,
+        CancellationToken ct)
+    {
+        var normalized = AxiomCultureResolver.TryNormalize(culture);
+        if (normalized is null)
+        {
+            return InvalidCulture(localizer, culture);
+        }
+
+        var translations = await appService.GetTranslationsAsync(id, normalized, ct);
+        return translations is null ? NotFound(localizer, id) : Results.Ok(translations);
+    }
+
+    private static async Task<IResult> HandleSaveTranslations(
+        Guid id,
+        string culture,
+        SaveTranslationsInput? input,
+        IReferenceEnumAppService appService,
+        AxiomLocalizationOptions localization,
+        IStringLocalizer<ApiErrorMessages> localizer,
+        CancellationToken ct)
+    {
+        if (input?.Values is null)
+        {
+            return BodyRequired(localizer);
+        }
+
+        var normalized = AxiomCultureResolver.TryNormalize(culture);
+        if (normalized is null)
+        {
+            return InvalidCulture(localizer, culture);
+        }
+
+        if (!localization.IsSupported(normalized))
+        {
+            return UnsupportedCulture(localizer, culture);
+        }
+
+        try
+        {
+            var translations = await appService.SaveTranslationsAsync(id, normalized, input, ct);
+            return translations is null ? NotFound(localizer, id) : Results.Ok(translations);
+        }
+        catch (ReferenceEnumValidationException ex)
+        {
+            return ValidationFailure(localizer, ex);
+        }
+    }
+
+    private static async Task<IResult> HandleDeleteTranslations(
+        Guid id,
+        string culture,
+        IReferenceEnumAppService appService,
+        AxiomLocalizationOptions localization,
+        IStringLocalizer<ApiErrorMessages> localizer,
+        CancellationToken ct)
+    {
+        var normalized = AxiomCultureResolver.TryNormalize(culture);
+        if (normalized is null)
+        {
+            return InvalidCulture(localizer, culture);
+        }
+
+        if (!localization.IsSupported(normalized))
+        {
+            return UnsupportedCulture(localizer, culture);
+        }
+
+        try
+        {
+            await appService.DeleteTranslationsAsync(id, normalized, ct);
+            return Results.NoContent();
+        }
+        catch (ReferenceEnumNotFoundException)
+        {
+            return NotFound(localizer, id);
+        }
+    }
+
     private static IResult BodyRequired(IStringLocalizer<ApiErrorMessages> localizer) =>
         Results.Problem(
             statusCode: StatusCodes.Status400BadRequest,
@@ -172,6 +284,16 @@ public static class ReferenceEnumEndpoints
         Results.Problem(
             statusCode: StatusCodes.Status404NotFound,
             title: localizer[ApiErrorCodes.REFERENCE_ENUM_NOT_FOUND, id].Value);
+
+    private static IResult InvalidCulture(IStringLocalizer<ApiErrorMessages> localizer, string culture) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: localizer[ApiErrorCodes.LOCALIZATION_INVALID_CULTURE, culture].Value);
+
+    private static IResult UnsupportedCulture(IStringLocalizer<ApiErrorMessages> localizer, string culture) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: localizer[ApiErrorCodes.LOCALIZATION_UNSUPPORTED_CULTURE, culture].Value);
 
     private static IResult ValidationFailure(
         IStringLocalizer<ApiErrorMessages> localizer,

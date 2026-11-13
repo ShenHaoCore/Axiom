@@ -16,7 +16,16 @@
         <span class="badge-soft @LevelClass(Model.Level)">@Model.KindName</span>
         <a asp-page="/GeoDivisions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
         <code class="text-muted small">@Model.Code</code>
-        <a class="btn btn-ghost ms-auto" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+        <div class="row-actions ms-auto">
+            @if (Model.Level is >= 1 and < 4)
+            {
+                <a class="btn btn-ghost"
+                   asp-page="/GeoDivisions/Create"
+                   asp-route-countryCode="@Model.CountryCode"
+                   asp-route-parentId="@Model.Id">@Localizer["GeoDivisions.AddChild"]</a>
+            }
+            <a class="btn btn-ghost" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+        </div>
     </div>
     @if (Model.HasChildren)
     {

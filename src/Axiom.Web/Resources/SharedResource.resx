@@ -175,10 +175,10 @@
   <data name="GeoDivisions.Column.Country" xml:space="preserve"><value>国家</value></data>
   <data name="GeoDivisions.Column.Subdivision" xml:space="preserve"><value>一级区划代码</value></data>
   <data name="GeoDivisions.Column.Population" xml:space="preserve"><value>人口</value></data>
-  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>国家</value></data>
-  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>省/州</value></data>
-  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>市</value></data>
-  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>区/县</value></data>
+  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>第1层</value></data>
+  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>第2层</value></data>
+  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>第3层</value></data>
+  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>第4层</value></data>
   <data name="GeoDivisions.Municipality" xml:space="preserve"><value>直辖市</value></data>
   <data name="GeoDivisions.AutonomousRegion" xml:space="preserve"><value>自治区</value></data>
   <data name="GeoDivisions.SpecialAdministrativeRegion" xml:space="preserve"><value>特别行政区</value></data>
@@ -215,16 +215,18 @@
   <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>删除行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>该行政区仍有子节点，请先删除或移动子节点。</value></data>
   <data name="GeoDivisions.Create.Title" xml:space="preserve"><value>新增行政区</value></data>
-  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>先选择层级与国家加载表单，再填写行政区信息。</value></data>
+  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>在同一页填写行政区信息；变更国家或父级会刷新类型等选项。</value></data>
   <data name="GeoDivisions.Create.SetupHeading" xml:space="preserve"><value>选择层级与国家</value></data>
-  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>层级与国家决定可选的父级行政区；修改后点击加载表单。</value></data>
+  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>不选父级即为新建国家：填写 2 位国家代码即可；选择父级则挂到已有行政区下。</value></data>
+  <data name="GeoDivisions.Hint.CountryCode" xml:space="preserve"><value>2 位 ISO 国家代码；可输入新国家，或从列表选已有代码。</value></data>
   <data name="GeoDivisions.Create.LoadForm" xml:space="preserve"><value>加载新增表单</value></data>
+  <data name="GeoDivisions.AddChild" xml:space="preserve"><value>新增子级</value></data>
   <data name="GeoDivisions.Create.SaveFailed" xml:space="preserve"><value>新增行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Create.Created" xml:space="preserve"><value>行政区已新增。</value></data>
   <data name="GeoDivisions.Edit.Title" xml:space="preserve"><value>编辑行政区</value></data>
   <data name="GeoDivisions.Edit.Description" xml:space="preserve"><value>修改行政区名称、代码与地理信息。</value></data>
-  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>标识与层级</value></data>
-  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>行政区在当前国家层级中的位置与代码。</value></data>
+  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>标识与归属</value></data>
+  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>类型、所属国家/父级与代码。</value></data>
   <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>地理与人口</value></data>
   <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>可选信息，用于地图展示与统计。</value></data>
   <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>一级区划代码，最多 20 个字符。</value></data>
@@ -233,6 +235,7 @@
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
   <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
   <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
+  <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>搜索父级…</value></data>
   <data name="Field.GeoDivision.Level" xml:space="preserve"><value>层级</value></data>
   <data name="Field.GeoDivision.Kind" xml:space="preserve"><value>类型</value></data>
   <data name="Field.GeoDivision.CountryCode" xml:space="preserve"><value>国家代码</value></data>

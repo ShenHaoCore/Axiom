@@ -45,6 +45,103 @@
         });
     });
 
+    // 新建国家：国家代码改完两位后带 query 刷新 Kind / 父级树（保留 parentId）。
+    document.querySelectorAll('input[data-reload-country]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var code = (input.value || '').trim().toUpperCase();
+            if (code.length !== 2) {
+                return;
+            }
+
+            input.value = code;
+            var url = new URL(window.location.href);
+            url.searchParams.set('countryCode', code);
+            window.location.href = url.pathname + '?' + url.searchParams.toString();
+        });
+    });
+
+    // ---------- 父级树形下拉 ----------
+    document.querySelectorAll('[data-tree-select]').forEach(function (root) {
+        var toggle = root.querySelector('.tree-select-toggle');
+        var panel = root.querySelector('.tree-select-panel');
+        var label = root.querySelector('.tree-select-label');
+        var input = root.querySelector('input[type="hidden"]');
+        var filter = root.querySelector('[data-tree-select-filter]');
+        if (!toggle || !panel || !label || !input) {
+            return;
+        }
+
+        function setOpen(open) {
+            panel.hidden = !open;
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open && filter) {
+                filter.focus();
+            }
+        }
+
+        toggle.addEventListener('click', function () {
+            setOpen(panel.hidden);
+        });
+
+        panel.querySelectorAll('.tree-select-option').forEach(function (option) {
+            option.addEventListener('click', function () {
+                var value = option.getAttribute('data-value') || '';
+                var text = option.getAttribute('data-label') || option.textContent || '';
+                input.value = value;
+                label.textContent = text;
+                panel.querySelectorAll('.tree-select-option.is-selected').forEach(function (selected) {
+                    selected.classList.remove('is-selected');
+                    selected.setAttribute('aria-selected', 'false');
+                });
+                option.classList.add('is-selected');
+                option.setAttribute('aria-selected', 'true');
+                setOpen(false);
+
+                if (root.classList.contains('tree-select-autosubmit') && input.form) {
+                    input.form.requestSubmit();
+                }
+            });
+        });
+
+        if (filter) {
+            filter.addEventListener('input', function () {
+                var query = filter.value.trim().toLowerCase();
+                root.querySelectorAll('.tree-select-item[data-tree-label]').forEach(function (item) {
+                    var text = (item.getAttribute('data-tree-label') || '').toLowerCase();
+                    var selfMatch = !query || text.indexOf(query) !== -1;
+                    var childMatch = false;
+                    item.querySelectorAll('.tree-select-item[data-tree-label]').forEach(function (child) {
+                        var childText = (child.getAttribute('data-tree-label') || '').toLowerCase();
+                        if (!query || childText.indexOf(query) !== -1) {
+                            childMatch = true;
+                            child.classList.remove('is-filtered-out');
+                        } else {
+                            child.classList.add('is-filtered-out');
+                        }
+                    });
+                    if (selfMatch || childMatch) {
+                        item.classList.remove('is-filtered-out');
+                    } else {
+                        item.classList.add('is-filtered-out');
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            if (!root.contains(event.target)) {
+                setOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !panel.hidden) {
+                setOpen(false);
+                toggle.focus();
+            }
+        });
+    });
+
     // ---------- 界面语言切换 ----------
 
     // 记录用户已修改过的表单：切换语言会整页刷新，先确认避免丢失未保存内容。

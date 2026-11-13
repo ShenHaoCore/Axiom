@@ -183,6 +183,20 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         childrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var children = WebUtility.HtmlDecode(await childrenResponse.Content.ReadAsStringAsync());
         children.Should().Contain("江苏").And.Contain($"/GeoDivisions/Edit/{WebFactory.GeoDivisionAdmin1Id}");
+        children.Should().Contain(
+            $"/GeoDivisions/Create?countryCode=CN&parentId={WebFactory.GeoDivisionAdmin1Id}");
+
+        using var createChildRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/GeoDivisions/Create?countryCode=CN&parentId={WebFactory.GeoDivisionAdmin1Id}");
+        using var createChildResponse = await _client.SendAsync(createChildRequest);
+        createChildResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var createChild = WebUtility.HtmlDecode(await createChildResponse.Content.ReadAsStringAsync());
+        createChild.Should().Contain($"value=\"{WebFactory.GeoDivisionAdmin1Id}\"")
+            .And.Contain("name=\"Input.Level\"")
+            .And.Contain("value=\"3\"")
+            .And.Contain("data-tree-select")
+            .And.Contain("tree-select-autosubmit");
 
         using var grandChildrenRequest = CreateRequest(
             HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionAdmin1Id}");
@@ -192,12 +206,16 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         grandChildren.Should().Contain("苏州").And.Contain($"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}");
 
         var edit = await GetFormAsync($"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}");
-        WebUtility.HtmlDecode(edit.Html).Should().Contain("苏州");
+        var editHtml = WebUtility.HtmlDecode(edit.Html);
+        editHtml.Should().Contain("苏州");
+        editHtml.Should().Contain("data-tree-select");
         Regex.IsMatch(
-            edit.Html,
-            $"<option(?=[^>]*value=\"{WebFactory.GeoDivisionAdmin1Id}\")(?=[^>]*selected)[^>]*>",
+            editHtml,
+            $"<input[^>]*name=\"Input.ParentId\"[^>]*value=\"{WebFactory.GeoDivisionAdmin1Id}\"",
             RegexOptions.CultureInvariant,
-            TimeSpan.FromSeconds(1)).Should().BeTrue("当前父级应在下拉框中选中");
+            TimeSpan.FromSeconds(1)).Should().BeTrue("当前父级应写入树形下拉的隐藏域");
+        editHtml.Should().Contain($"data-value=\"{WebFactory.GeoDivisionAdmin1Id}\"")
+            .And.Contain("is-selected");
     }
 
     [Fact]
@@ -314,6 +332,19 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         html.Should().Contain("Jiangsu").And.NotContain("江苏");
+    }
+
+    [Fact]
+    public async Task Region_index_with_english_accept_language_shows_english_kind_badge()
+    {
+        using var request = CreateRequest(HttpMethod.Get, "/GeoDivisions?countryCode=CN");
+        request.Headers.Add("Accept-Language", "en");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.Should().Contain("Country").And.NotContain(">国家<");
     }
 
     [Fact]

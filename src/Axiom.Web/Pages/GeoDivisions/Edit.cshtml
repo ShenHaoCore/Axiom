@@ -59,10 +59,6 @@
 
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">@Localizer["GeoDivisions.Detail.Level"]</label>
-                    <input class="form-control" value="@Localizer[$"GeoDivisions.Level.{Model.GeoDivision.Level}"]" readonly />
-                </div>
-                <div class="col-md-3">
                     <label asp-for="Input.Kind" class="form-label"></label>
                     <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
                     <span asp-validation-for="Input.Kind" class="text-danger"></span>
@@ -79,12 +75,25 @@
                 @if (Model.GeoDivision.Level > 1)
                 {
                     <div class="col-md-6">
-                        <label asp-for="Input.ParentId" class="form-label">
+                        <label class="form-label" for="region-parent-toggle">
                             @Localizer["Field.GeoDivision.Parent"]<span class="required-mark" aria-hidden="true">*</span>
                         </label>
-                        <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
-                            <option value="">@Localizer["GeoDivisions.Form.SelectParent"]</option>
-                        </select>
+                        @{
+                            var parentSelect = new Axiom.Web.Models.ParentTreeSelectViewModel
+                            {
+                                InputId = "region-parent",
+                                InputName = "Input.ParentId",
+                                AutoSubmit = false,
+                                EmptyLabel = Localizer["GeoDivisions.Form.SelectParent"].Value,
+                                SearchPlaceholder = Localizer["GeoDivisions.Form.SearchParent"].Value,
+                                SelectedId = Model.Input.ParentId,
+                                SelectedLabel = Model.Input.ParentId is Guid editParentId
+                                    ? (Axiom.Web.Models.ParentTreeSelectViewModel.FindLabel(Model.ParentTree, editParentId) ?? string.Empty)
+                                    : string.Empty,
+                                Nodes = Model.ParentTree
+                            };
+                        }
+                        <partial name="_ParentTreeSelect" model="parentSelect" />
                         <span asp-validation-for="Input.ParentId" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">

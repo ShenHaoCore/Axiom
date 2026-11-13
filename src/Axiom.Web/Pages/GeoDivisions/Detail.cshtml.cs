@@ -24,13 +24,18 @@ public sealed class DetailModel(
     public IReadOnlyDictionary<string, string> KindNames { get; private set; } =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
-    /// <summary>Kind 显示名；字典缺失或未知类型回退到深度通用文案。</summary>
+    /// <summary>Kind 显示名；字典缺失时回退 code，再回退深度标签（非省市区文案）。</summary>
     public string KindNameFor(string? kind, int level)
     {
-        if (!string.IsNullOrWhiteSpace(kind)
-            && KindNames.TryGetValue(kind.Trim().ToLowerInvariant(), out var name))
+        if (!string.IsNullOrWhiteSpace(kind))
         {
-            return name;
+            var code = kind.Trim().ToLowerInvariant();
+            if (KindNames.TryGetValue(code, out var name))
+            {
+                return name;
+            }
+
+            return code;
         }
 
         return level is >= 1 and <= 4 ? localizer[$"GeoDivisions.Level.{level}"].Value : $"L{level}";
@@ -201,10 +206,14 @@ public sealed class DetailModel(
         }
 
         KindNames = page.Items
-            .Where(item => item.Category.StartsWith(ReferenceEnumClient.GeoDivisionKindCategoryPrefix, StringComparison.Ordinal))
+            .Where(IsGeoDivisionKindCategory)
             .GroupBy(item => item.Code, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
     }
+
+    private static bool IsGeoDivisionKindCategory(ReferenceEnumView item) =>
+        item.Category.Equals(ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal)
+        || item.Category.StartsWith(ReferenceEnumClient.GeoDivisionKindCategoryPrefix, StringComparison.Ordinal);
 
     private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
     {

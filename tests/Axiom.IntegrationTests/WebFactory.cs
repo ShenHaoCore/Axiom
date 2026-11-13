@@ -98,7 +98,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (path.StartsWith("/api/reference-data/enums/", StringComparison.Ordinal))
             {
-                return EnumItem(path);
+                return EnumItem(request, path);
             }
 
             if (path == "/api/geo-divisions")
@@ -171,28 +171,82 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             }
 
             var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
+            var culture = ResolveCulture(request);
             var category = query.TryGetValue("category", out var categoryValue)
                 ? categoryValue.ToString()
                 : null;
             var items = string.IsNullOrWhiteSpace(category)
                 ? KindEnums
                 : KindEnums.Where(item => item.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
-            return Json(HttpStatusCode.OK, new PagedResponse<ReferenceEnumView>(items, items.Count, 1, Math.Max(items.Count, 1)));
+            var localized = items.Select(item => LocalizeEnum(item, culture)).ToList();
+            return Json(HttpStatusCode.OK, new PagedResponse<ReferenceEnumView>(localized, localized.Count, 1, Math.Max(localized.Count, 1)));
         }
 
-        private static HttpResponseMessage EnumItem(string path)
+        private static HttpResponseMessage EnumItem(HttpRequestMessage request, string path)
         {
-            var idText = path["/api/reference-data/enums/".Length..].Trim('/');
-            if (!Guid.TryParse(idText, out var id))
+            var rest = path["/api/reference-data/enums/".Length..].Trim('/');
+            var parts = rest.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0 || !Guid.TryParse(parts[0], out var id))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
 
             var item = KindEnums.FirstOrDefault(entry => entry.Id == id);
-            return item is null
-                ? new HttpResponseMessage(HttpStatusCode.NotFound)
-                : Json(HttpStatusCode.OK, item);
+            if (item is null)
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+
+            // 译文子资源：测试桩按 Code 提供英文 Name。
+            if (parts.Length >= 3 && parts[1].Equals("translations", StringComparison.OrdinalIgnoreCase))
+            {
+                var culture = parts[2];
+                var values = string.Equals(culture, "en", StringComparison.OrdinalIgnoreCase)
+                    && EnumEnglishNames.TryGetValue(item.Code, out var english)
+                    ? new Dictionary<string, string> { ["Name"] = english }
+                    : new Dictionary<string, string>();
+                return Json(HttpStatusCode.OK, new TranslationView(culture, values));
+            }
+
+            return Json(HttpStatusCode.OK, LocalizeEnum(item, ResolveCulture(request)));
         }
+
+        private static readonly Dictionary<string, string> EnumEnglishNames = new(StringComparer.Ordinal)
+        {
+            ["country"] = "Country",
+            ["province"] = "Province",
+            ["municipality"] = "Municipality",
+            ["autonomous_region"] = "Autonomous Region",
+            ["special_administrative_region"] = "Special Administrative Region",
+            ["autonomous_prefecture"] = "Autonomous Prefecture",
+            ["prefecture_city"] = "Prefecture-level City",
+            ["prefecture"] = "Prefecture",
+            ["league"] = "League",
+            ["county_level"] = "Province-administered County-level Division",
+            ["county"] = "County",
+            ["county_city"] = "County-level City",
+            ["district"] = "District",
+            ["autonomous_county"] = "Autonomous County",
+            ["banner"] = "Banner",
+            ["autonomous_banner"] = "Autonomous Banner",
+            ["forestry_area"] = "Forestry Area",
+            ["special_zone"] = "Special Zone",
+            ["state"] = "State",
+            ["borough"] = "Borough",
+            ["parish"] = "Parish",
+            ["census_area"] = "Census Area",
+            ["city"] = "City",
+            ["constituent_country"] = "Constituent Country",
+            ["metropolis"] = "Metropolis",
+            ["special_ward"] = "Special Ward",
+            ["other"] = "Other"
+        };
+
+        private static ReferenceEnumView LocalizeEnum(ReferenceEnumView item, string culture) =>
+            string.Equals(culture, "en", StringComparison.OrdinalIgnoreCase)
+            && EnumEnglishNames.TryGetValue(item.Code, out var english)
+                ? item with { Name = english }
+                : item;
 
         private async Task<HttpResponseMessage> AirportCollectionAsync(
             HttpRequestMessage request,

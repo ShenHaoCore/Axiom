@@ -647,6 +647,51 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         (await _client.SendAsync(deleteEnumRequest)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact]
+    public async Task Enum_kind_list_localizes_name_by_accept_language()
+    {
+        using var zhRequest = CreateRequest(
+            HttpMethod.Get,
+            "/api/reference-data/enums?category=geo_division.kind&pageSize=100",
+            ReferenceDataPermissions.READ);
+        zhRequest.Headers.Add("Accept-Language", "zh-CN");
+        var zhResponse = await _client.SendAsync(zhRequest);
+        zhResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var zhPage = await zhResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
+        var zhCountry = zhPage!.Items.Should().ContainSingle(item => item.Code == "country").Subject;
+        zhCountry.Name.Should().Be("国家");
+
+        using var enRequest = CreateRequest(
+            HttpMethod.Get,
+            "/api/reference-data/enums?category=geo_division.kind&pageSize=100",
+            ReferenceDataPermissions.READ);
+        enRequest.Headers.Add("Accept-Language", "en");
+        var enResponse = await _client.SendAsync(enRequest);
+        enResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var enPage = await enResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
+        var enCountry = enPage!.Items.Should().ContainSingle(item => item.Code == "country").Subject;
+        enCountry.Name.Should().Be("Country");
+
+        using var getEn = CreateRequest(
+            HttpMethod.Get,
+            $"/api/reference-data/enums/{enCountry.Id}",
+            ReferenceDataPermissions.READ);
+        getEn.Headers.Add("Accept-Language", "en");
+        var getEnResponse = await _client.SendAsync(getEn);
+        getEnResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await getEnResponse.Content.ReadFromJsonAsync<ReferenceEnumDto>();
+        detail!.Name.Should().Be("Country");
+
+        using var translationRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/reference-data/enums/{enCountry.Id}/translations/en",
+            ReferenceDataPermissions.READ);
+        var translationResponse = await _client.SendAsync(translationRequest);
+        translationResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var translation = await translationResponse.Content.ReadFromJsonAsync<TranslationDto>();
+        translation!.Values["Name"].Should().Be("Country");
+    }
+
     private static string ManagePermissions =>
         $"{ReferenceDataPermissions.READ},{ReferenceDataPermissions.MANAGE}";
 

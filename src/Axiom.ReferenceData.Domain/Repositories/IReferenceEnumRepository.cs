@@ -21,4 +21,22 @@ public interface IReferenceEnumRepository
     Task AddAsync(ReferenceEnum entity, CancellationToken ct = default);
     Task UpdateAsync(ReferenceEnum entity, CancellationToken ct = default);
     Task RemoveAsync(ReferenceEnum entity, CancellationToken ct = default);
+
+    Task<List<ReferenceEnumTranslation>> ListTranslationsAsync(
+        IReadOnlyCollection<Guid> enumIds,
+        IReadOnlyCollection<string> cultures,
+        CancellationToken ct = default);
+
+    Task<List<ReferenceEnumTranslation>> GetTranslationsAsync(
+        Guid enumId,
+        string culture,
+        CancellationToken ct = default);
+
+    Task ReplaceTranslationsAsync(
+        Guid enumId,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken ct = default);
+
+    Task<bool> DeleteTranslationsAsync(Guid enumId, string culture, CancellationToken ct = default);
 }

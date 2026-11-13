@@ -58,6 +58,20 @@ public sealed class GeoDivisionTranslationInput
         TranslationValues.Create(("Name", Name));
 }
 
+/// <summary>枚举字典编辑页的译文输入（仅 Name）。</summary>
+public sealed class ReferenceEnumTranslationInput
+{
+    public string? Name { get; set; }
+
+    public static ReferenceEnumTranslationInput From(TranslationView? view) => new()
+    {
+        Name = view?.Get("Name")
+    };
+
+    public Dictionary<string, string> ToValues() =>
+        TranslationValues.Create(("Name", Name));
+}
+
 /// <summary>收集非空译文；未出现的字段由服务端视为删除。</summary>
 public static class TranslationValues
 {

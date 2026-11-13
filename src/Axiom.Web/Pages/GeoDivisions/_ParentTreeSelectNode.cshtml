@@ -1,0 +1,28 @@
+@model Axiom.Web.Models.ParentTreeSelectNode
+
+<li class="tree-select-item" data-tree-label="@Model.Label">
+    @if (Model.Selectable)
+    {
+        <button type="button"
+                class="tree-select-option@(Model.Selected ? " is-selected" : "")"
+                data-value="@Model.Id"
+                data-label="@Model.Label"
+                role="option"
+                aria-selected="@(Model.Selected ? "true" : "false")">
+            @Model.Label
+        </button>
+    }
+    else
+    {
+        <div class="tree-select-branch" aria-hidden="true">@Model.Label</div>
+    }
+    @if (Model.Children.Count > 0)
+    {
+        <ul class="tree-select-children">
+            @foreach (var child in Model.Children)
+            {
+                <partial name="_ParentTreeSelectNode" model="child" />
+            }
+        </ul>
+    }
+</li>

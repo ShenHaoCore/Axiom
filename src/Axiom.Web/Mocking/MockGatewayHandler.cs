@@ -128,7 +128,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
 
     private static readonly List<GeoDivisionView> GeoDivisions = LoadGeoDivisions();
 
-    // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region。
+    // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region | enum。
     private static readonly Dictionary<string, Dictionary<string, string>> Translations = new();
 
     // 本地 Mock 没有数据库，预置英文译文，保证切换语言后能直接看到业务数据切换。
@@ -185,7 +185,47 @@ public sealed class MockGatewayHandler : DelegatingHandler
             ("Title", "Global Region Dataset Upgraded to v2"),
             ("Summary", "The region dataset now includes population and geographic coordinates."),
             ("Content", "Region dataset v2 adds population estimates and coordinates for province and city nodes, and fixes several administrative code mappings."));
+
+        // 枚举字典：按 Code 套英文显示名（与 GeoDivisionKinds.EnglishNames 对齐）。
+        foreach (var item in Enums)
+        {
+            if (EnumEnglishNames.TryGetValue(item.Code, out var englishName))
+            {
+                Set("enum", item.Id, ("Name", englishName));
+            }
+        }
     }
+
+    private static readonly Dictionary<string, string> EnumEnglishNames = new(StringComparer.Ordinal)
+    {
+        ["country"] = "Country",
+        ["province"] = "Province",
+        ["municipality"] = "Municipality",
+        ["autonomous_region"] = "Autonomous Region",
+        ["special_administrative_region"] = "Special Administrative Region",
+        ["autonomous_prefecture"] = "Autonomous Prefecture",
+        ["prefecture_city"] = "Prefecture-level City",
+        ["prefecture"] = "Prefecture",
+        ["league"] = "League",
+        ["county_level"] = "Province-administered County-level Division",
+        ["county"] = "County",
+        ["county_city"] = "County-level City",
+        ["district"] = "District",
+        ["autonomous_county"] = "Autonomous County",
+        ["banner"] = "Banner",
+        ["autonomous_banner"] = "Autonomous Banner",
+        ["forestry_area"] = "Forestry Area",
+        ["special_zone"] = "Special Zone",
+        ["state"] = "State",
+        ["borough"] = "Borough",
+        ["parish"] = "Parish",
+        ["census_area"] = "Census Area",
+        ["city"] = "City",
+        ["constituent_country"] = "Constituent Country",
+        ["metropolis"] = "Metropolis",
+        ["special_ward"] = "Special Ward",
+        ["other"] = "Other"
+    };
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -230,6 +270,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
             if (request.Method == HttpMethod.Get)
             {
                 var query = ParseQuery(request.RequestUri?.Query);
+                var requestCulture = ResolveCulture(request);
                 query.TryGetValue("category", out var category);
                 List<ReferenceEnumView> snapshot;
                 lock (Gate)
@@ -243,7 +284,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                             .ToList();
                 }
 
-                return Json(Paged(snapshot), HttpStatusCode.OK);
+                return Json(Paged(snapshot.Select(item => Localize(item, requestCulture)).ToList()), HttpStatusCode.OK);
             }
 
             if (request.Method == HttpMethod.Post)
@@ -272,16 +313,22 @@ public sealed class MockGatewayHandler : DelegatingHandler
             }
         }
 
-        if (Guid.TryParse(rest, out var id))
+        if (TryParseSubResource(rest, out var id, out var culture))
         {
+            if (culture is not null)
+            {
+                return await HandleTranslationAsync(request, $"enum/{id}/{culture}", culture, cancellationToken);
+            }
+
             if (request.Method == HttpMethod.Get)
             {
+                var requestCulture = ResolveCulture(request);
                 lock (Gate)
                 {
                     var item = Enums.FirstOrDefault(e => e.Id == id);
                     return item is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定枚举项。")
-                        : Json(item, HttpStatusCode.OK);
+                        : Json(Localize(item, requestCulture), HttpStatusCode.OK);
                 }
             }
 
@@ -318,13 +365,14 @@ public sealed class MockGatewayHandler : DelegatingHandler
                     }
 
                     var item = Enums[index];
-                    if (item.Category == "geo_division.kind"
+                    if (item.Category.StartsWith("geo_division.kind", StringComparison.Ordinal)
                         && GeoDivisions.Any(r => r.Kind == item.Code))
                     {
                         return Problem(HttpStatusCode.Conflict, "枚举项仍被引用，无法删除。");
                     }
 
                     Enums.RemoveAt(index);
+                    RemoveTranslations("enum", id);
                     return Empty(HttpStatusCode.NoContent);
                 }
             }
@@ -1126,6 +1174,12 @@ public sealed class MockGatewayHandler : DelegatingHandler
     {
         var values = FindTranslations("region", region.Id, culture);
         return region with { Name = Pick(values, "Name") ?? region.Name };
+    }
+
+    private ReferenceEnumView Localize(ReferenceEnumView item, string culture)
+    {
+        var values = FindTranslations("enum", item.Id, culture);
+        return item with { Name = Pick(values, "Name") ?? item.Name };
     }
 
     private GeoDivisionTreeView Localize(GeoDivisionTreeView node, string culture)

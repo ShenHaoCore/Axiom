@@ -63,6 +63,38 @@ public static class GeoDivisionKinds
     public static IReadOnlyList<(string Category, string Code, string Name, int SortOrder)> SeedItems { get; } =
         BuildSeedItems();
 
+    /// <summary>Kind Code → 英文显示名，供 reference_enum_translations(en) 种子使用。</summary>
+    public static IReadOnlyDictionary<string, string> EnglishNames { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [Country] = "Country",
+        [Province] = "Province",
+        [Municipality] = "Municipality",
+        [AutonomousRegion] = "Autonomous Region",
+        [SpecialAdministrativeRegion] = "Special Administrative Region",
+        [AutonomousPrefecture] = "Autonomous Prefecture",
+        [PrefectureCity] = "Prefecture-level City",
+        [Prefecture] = "Prefecture",
+        [League] = "League",
+        [CountyLevel] = "Province-administered County-level Division",
+        [County] = "County",
+        [CountyCity] = "County-level City",
+        [District] = "District",
+        [AutonomousCounty] = "Autonomous County",
+        [Banner] = "Banner",
+        [AutonomousBanner] = "Autonomous Banner",
+        [ForestryArea] = "Forestry Area",
+        [SpecialZone] = "Special Zone",
+        [State] = "State",
+        [Borough] = "Borough",
+        [Parish] = "Parish",
+        [CensusArea] = "Census Area",
+        [City] = "City",
+        [ConstituentCountry] = "Constituent Country",
+        [Metropolis] = "Metropolis",
+        [SpecialWard] = "Special Ward",
+        [Other] = "Other"
+    };
+
     private static List<(string Category, string Code, string Name, int SortOrder)> BuildSeedItems()
     {
         // 通用兜底：未维护国别类型的国家使用

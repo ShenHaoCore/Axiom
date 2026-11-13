@@ -1,0 +1,57 @@
+@model Axiom.Web.Models.ParentTreeSelectViewModel
+@{
+    var selectedText = string.IsNullOrEmpty(Model.SelectedLabel) ? Model.EmptyLabel : Model.SelectedLabel;
+}
+
+<div class="tree-select@(Model.AutoSubmit ? " tree-select-autosubmit" : "")"
+     data-tree-select
+     data-empty-label="@Model.EmptyLabel">
+    @if (string.IsNullOrEmpty(Model.FormId))
+    {
+        <input type="hidden"
+               id="@Model.InputId"
+               name="@Model.InputName"
+               value="@(Model.SelectedId?.ToString() ?? "")" />
+    }
+    else
+    {
+        <input type="hidden"
+               id="@Model.InputId"
+               name="@Model.InputName"
+               value="@(Model.SelectedId?.ToString() ?? "")"
+               form="@Model.FormId" />
+    }
+    <button type="button"
+            class="form-select tree-select-toggle"
+            id="@Model.InputId-toggle"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="@Model.InputId-panel">
+        <span class="tree-select-label">@selectedText</span>
+    </button>
+    <div class="tree-select-panel" id="@Model.InputId-panel" hidden>
+        <div class="tree-select-search">
+            <input type="search"
+                   class="form-control"
+                   placeholder="@Model.SearchPlaceholder"
+                   autocomplete="off"
+                   data-tree-select-filter />
+        </div>
+        <ul class="tree-select-list" role="listbox" aria-labelledby="@Model.InputId-toggle">
+            <li class="tree-select-item">
+                <button type="button"
+                        class="tree-select-option@(Model.SelectedId is null ? " is-selected" : "")"
+                        data-value=""
+                        data-label="@Model.EmptyLabel"
+                        role="option"
+                        aria-selected="@(Model.SelectedId is null ? "true" : "false")">
+                    @Model.EmptyLabel
+                </button>
+            </li>
+            @foreach (var node in Model.Nodes)
+            {
+                <partial name="_ParentTreeSelectNode" model="node" />
+            }
+        </ul>
+    </div>
+</div>

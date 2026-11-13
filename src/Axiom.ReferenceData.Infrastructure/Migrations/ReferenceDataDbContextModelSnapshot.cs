@@ -154,6 +154,33 @@ namespace Axiom.ReferenceData.Infrastructure.Migrations
                     b.ToTable("reference_enums", (string)null);
                 });
 
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.ReferenceEnumTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Culture")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ReferenceEnumId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceEnumId", "Culture")
+                        .IsUnique();
+
+                    b.ToTable("reference_enum_translations", (string)null);
+                });
+
             modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.ReferenceLocation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -302,6 +329,15 @@ namespace Axiom.ReferenceData.Infrastructure.Migrations
                     b.HasOne("Axiom.ReferenceData.Domain.Entities.GeoDivision", null)
                         .WithMany()
                         .HasForeignKey("GeoDivisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Axiom.ReferenceData.Domain.Entities.ReferenceEnumTranslation", b =>
+                {
+                    b.HasOne("Axiom.ReferenceData.Domain.Entities.ReferenceEnum", null)
+                        .WithMany()
+                        .HasForeignKey("ReferenceEnumId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

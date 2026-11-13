@@ -38,7 +38,11 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
     }
 
     public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{ENUMS_PATH}/{id}", null, cancellationToken);
+        GetAsync(id, culture: null, cancellationToken);
+
+    /// <summary>读取枚举项；culture 非空时覆盖 Accept-Language，用于取默认语言原文。</summary>
+    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, $"{ENUMS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
 
     public Task<HttpResponseMessage> CreateAsync(ReferenceEnumInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -70,11 +74,38 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
     public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{ENUMS_PATH}/{id}", null, cancellationToken);
 
+    public Task<HttpResponseMessage> GetTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
+
+    public Task<HttpResponseMessage> SaveTranslationsAsync(
+        Guid id,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Put,
+            TranslationPath(id, culture),
+            JsonContent.Create(new { values }),
+            cancellationToken);
+
+    public Task<HttpResponseMessage> DeleteTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
+
+    private static string TranslationPath(Guid id, string culture) =>
+        $"{ENUMS_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
+
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,
         string path,
         HttpContent? content,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? acceptLanguage = null)
     {
         var httpContext = httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
@@ -83,7 +114,9 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
 
         using var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
-        request.Headers.TryAddWithoutValidation(ApiClientHeaders.AcceptLanguage, CultureInfo.CurrentUICulture.Name);
+        request.Headers.TryAddWithoutValidation(
+            ApiClientHeaders.AcceptLanguage,
+            acceptLanguage ?? CultureInfo.CurrentUICulture.Name);
         request.Content = content;
         return await httpClient.SendAsync(request, cancellationToken);
     }

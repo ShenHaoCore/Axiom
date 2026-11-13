@@ -1593,6 +1593,119 @@ textarea.form-control {
 }
 
 /* =========================================================
+   父级树形下拉
+   ========================================================= */
+
+.tree-select {
+  position: relative;
+}
+
+.tree-select-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b7c93' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 28px;
+}
+
+.tree-select-toggle .tree-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-select-toggle[aria-expanded="true"] {
+  border-color: var(--axiom-accent);
+  box-shadow: 0 0 0 3px var(--axiom-accent-ring);
+}
+
+.tree-select-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--axiom-border-strong);
+  border-radius: var(--axiom-radius-sm);
+  background: var(--axiom-surface);
+  box-shadow: var(--axiom-shadow-2);
+}
+
+.tree-select-panel[hidden] {
+  display: none;
+}
+
+.tree-select-search {
+  padding: 8px;
+  border-bottom: 1px solid var(--axiom-divider);
+}
+
+.tree-select-list {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  overflow: auto;
+  max-height: 260px;
+}
+
+.tree-select-children {
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: none;
+  border-left: 1px solid var(--axiom-border);
+  margin-left: 12px;
+}
+
+.tree-select-item {
+  margin: 0;
+}
+
+.tree-select-branch {
+  padding: 4px 10px;
+  color: var(--axiom-ink-mute);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tree-select-option {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--axiom-radius-xs);
+  background: transparent;
+  color: var(--axiom-ink);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-select-option:hover,
+.tree-select-option:focus-visible {
+  background: var(--axiom-surface-hover);
+  color: var(--axiom-accent);
+  outline: none;
+}
+
+.tree-select-option.is-selected {
+  background: var(--axiom-accent-soft);
+  color: var(--axiom-accent);
+  font-weight: 600;
+}
+
+.tree-select-item.is-filtered-out {
+  display: none;
+}
+
+/* =========================================================
    行政区树
    ========================================================= */
 

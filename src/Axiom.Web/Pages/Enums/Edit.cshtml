@@ -17,6 +17,11 @@
     </div>
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+}
+
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
@@ -24,7 +29,7 @@
 
 @if (Model.Item is not null)
 {
-    <form method="post" class="card-form">
+    <form method="post" class="card-form mb-4">
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">@Localizer["Field.Enum.Category"]</label>
@@ -50,6 +55,27 @@
             <a class="btn btn-outline-secondary" asp-page="/Enums/Index" asp-route-category="@Model.Item.Category">@Localizer["Common.Cancel"]</a>
         </div>
     </form>
+
+    @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
+    {
+        <div class="card">
+            <div class="card-header">@Localizer["Translations.Title"]</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Translations" asp-route-id="@Model.Item.Id">
+                    <input type="hidden" asp-for="TranslationsLoaded" />
+                    <p class="text-muted">@Localizer["Translations.Hint"]</p>
+                    <partial name="_TranslationEditor" model="editor" />
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning" role="alert">@Localizer["Translations.LoadFailed"]</div>
+    }
 }
 
 @section Scripts {

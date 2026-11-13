@@ -33,4 +33,7 @@ public sealed class ReferenceEnumValidationException : AxiomException
 
     public static ReferenceEnumValidationException TooLong(string field, int maxLength) =>
         new(field, ApiErrorCodes.VALIDATION_FIELD_TOO_LONG, $"长度不能超过 {maxLength} 个字符。", field, maxLength);
+
+    public static ReferenceEnumValidationException UnknownTranslatableField(string field) =>
+        new(field, ApiErrorCodes.LOCALIZATION_UNSUPPORTED_FIELD, $"不支持翻译字段：{field}。", field);
 }

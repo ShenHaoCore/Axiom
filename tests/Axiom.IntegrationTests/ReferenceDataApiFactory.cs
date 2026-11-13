@@ -32,14 +32,13 @@ public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDat
         }
     }
 
-    /// <summary>Testing 环境关闭 HostedService 种子，工厂侧补齐 Kind 字典。</summary>
+    /// <summary>Testing 环境关闭 HostedService 种子，工厂侧补齐 Kind 字典与英文译文。</summary>
     internal static void SeedGeoDivisionKinds(ReferenceDataDbContext context)
     {
         var existing = context.ReferenceEnums
             .Where(e => e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
             .Select(e => e.Category + "." + e.Code)
             .ToHashSet(StringComparer.Ordinal);
-
 
         foreach (var (category, code, name, sortOrder) in GeoDivisionKinds.SeedItems)
         {
@@ -49,6 +48,30 @@ public sealed class ReferenceDataApiFactory : WebApplicationFactory<ReferenceDat
             }
 
             context.ReferenceEnums.Add(ReferenceEnum.Create(category, code, name, sortOrder));
+        }
+
+        context.SaveChanges();
+
+        const string culture = "en";
+        var enums = context.ReferenceEnums
+            .Where(e => e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
+            .Select(e => new { e.Id, e.Code })
+            .ToList();
+        var enumIds = enums.Select(e => e.Id).ToArray();
+        var translated = context.ReferenceEnumTranslations
+            .Where(t => enumIds.Contains(t.ReferenceEnumId) && t.Culture == culture)
+            .Select(t => t.ReferenceEnumId)
+            .ToHashSet();
+
+        foreach (var item in enums)
+        {
+            if (translated.Contains(item.Id)
+                || !GeoDivisionKinds.EnglishNames.TryGetValue(item.Code, out var englishName))
+            {
+                continue;
+            }
+
+            context.ReferenceEnumTranslations.Add(new ReferenceEnumTranslation(item.Id, culture, englishName));
         }
 
         context.SaveChanges();

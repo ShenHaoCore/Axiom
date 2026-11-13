@@ -77,7 +77,7 @@
             <table class="table data-table">
                 <thead>
                     <tr>
-                        <th scope="col">@Localizer["GeoDivisions.Column.Level"]</th>
+                        <th scope="col">@Localizer["Field.GeoDivision.Kind"]</th>
                         <th scope="col">@Localizer["GeoDivisions.Column.Name"]</th>
                         <th scope="col">@Localizer["GeoDivisions.Column.Code"]</th>
                         <th scope="col">@Localizer["GeoDivisions.Column.Country"]</th>
@@ -89,12 +89,9 @@
                 <tbody>
                     @foreach (var r in Model.SearchResults)
                     {
-                        var label = r.Level is >= 1 and <= 4
-                            ? Localizer[$"GeoDivisions.Level.{r.Level}"].Value
-                            : $"L{r.Level}";
                         var levelClass = r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default";
                         <tr>
-                            <td><span class="badge-soft @levelClass">@label</span></td>
+                            <td><span class="badge-soft @levelClass">@Model.KindNameFor(r.Kind, r.Level)</span></td>
                             <td>@r.Name</td>
                             <td class="cell-muted"><code>@r.Code</code></td>
                             <td>@r.CountryCode</td>
@@ -153,8 +150,8 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
                 <partial name="_GeoDivisionTreeNode"
                          model="new Axiom.Web.Models.GeoDivisionNodeViewModel(
                              country.Id, country.Level, country.Kind,
-                             Model.KindNameFor(country.Kind, country.Level), country.Code, country.Name,
-                             country.Population, HasChildren: true)" />
+                             Model.KindNameFor(country.Kind, country.Level), country.CountryCode,
+                             country.Code, country.Name, country.Population, HasChildren: true)" />
             }
         }
     </div>

@@ -175,10 +175,10 @@
   <data name="GeoDivisions.Column.Country" xml:space="preserve"><value>Country</value></data>
   <data name="GeoDivisions.Column.Subdivision" xml:space="preserve"><value>Subdivision</value></data>
   <data name="GeoDivisions.Column.Population" xml:space="preserve"><value>Population</value></data>
-  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>Country</value></data>
-  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>Province/State</value></data>
-  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>City</value></data>
-  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>District/County</value></data>
+  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>Level 1</value></data>
+  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>Level 2</value></data>
+  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>Level 3</value></data>
+  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>Level 4</value></data>
   <data name="GeoDivisions.Municipality" xml:space="preserve"><value>Municipality</value></data>
   <data name="GeoDivisions.AutonomousRegion" xml:space="preserve"><value>Autonomous GeoDivision</value></data>
   <data name="GeoDivisions.SpecialAdministrativeRegion" xml:space="preserve"><value>Special Administrative GeoDivision</value></data>
@@ -215,16 +215,18 @@
   <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the region. Please try again later.</value></data>
   <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>This region still has child nodes. Delete or move them first.</value></data>
   <data name="GeoDivisions.Create.Title" xml:space="preserve"><value>Create region</value></data>
-  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>Choose a level and country to load the form, then fill in the region details.</value></data>
+  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>Fill in the region on one page. Changing country or parent refreshes Kind and related options.</value></data>
   <data name="GeoDivisions.Create.SetupHeading" xml:space="preserve"><value>Choose level and country</value></data>
-  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>The level and country determine the available parent regions. Change them and load the form again.</value></data>
+  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>No parent creates a country: enter a 2-letter country code. Choosing a parent attaches under an existing region.</value></data>
+  <data name="GeoDivisions.Hint.CountryCode" xml:space="preserve"><value>2-letter ISO country code. Type a new one, or pick an existing code from the list.</value></data>
   <data name="GeoDivisions.Create.LoadForm" xml:space="preserve"><value>Load create form</value></data>
+  <data name="GeoDivisions.AddChild" xml:space="preserve"><value>Add child</value></data>
   <data name="GeoDivisions.Create.SaveFailed" xml:space="preserve"><value>Failed to create the region. Please try again later.</value></data>
   <data name="GeoDivisions.Create.Created" xml:space="preserve"><value>The region has been created.</value></data>
   <data name="GeoDivisions.Edit.Title" xml:space="preserve"><value>Edit region</value></data>
   <data name="GeoDivisions.Edit.Description" xml:space="preserve"><value>Update the region name, code, and geographical data.</value></data>
-  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>Identity and hierarchy</value></data>
-  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>The region's position and code within the country hierarchy.</value></data>
+  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>Identity and placement</value></data>
+  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>Kind, country/parent, and codes.</value></data>
   <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>Geography and population</value></data>
   <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>Optional data used for maps and statistics.</value></data>
   <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>Subdivision code, up to 20 characters.</value></data>
@@ -233,6 +235,7 @@
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>
   <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>The region code already exists for this country and level.</value></data>
   <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- Select a parent --</value></data>
+  <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>Search parent…</value></data>
   <data name="Field.GeoDivision.Level" xml:space="preserve"><value>Level</value></data>
   <data name="Field.GeoDivision.Kind" xml:space="preserve"><value>Kind</value></data>
   <data name="Field.GeoDivision.CountryCode" xml:space="preserve"><value>Country code</value></data>

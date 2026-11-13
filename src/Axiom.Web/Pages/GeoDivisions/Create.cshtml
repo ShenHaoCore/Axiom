@@ -27,64 +27,60 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="section-heading">
-            <h2>@Localizer["GeoDivisions.Create.SetupHeading"]</h2>
-            <p>@Localizer["GeoDivisions.Create.SetupHint"]</p>
-        </div>
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label" for="region-level">@Localizer["Field.GeoDivision.Level"]</label>
-                <select class="form-select" id="region-level" name="level">
-                    @foreach (var level in Enumerable.Range(1, 4))
-                    {
-                        <option value="@level" selected="@(Model.Input.Level == level)">@Localizer[$"GeoDivisions.Level.{level}"]</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="region-country-code">@Localizer["Field.GeoDivision.CountryCode"]</label>
-                <input class="form-control" id="region-country-code" name="countryCode" value="@Model.Input.CountryCode"
-                       maxlength="2" autocomplete="off" list="region-countries" placeholder="CN" />
-                <datalist id="region-countries">
-                    @foreach (var country in Model.Countries)
-                    {
-                        <option value="@country.CountryCode">@country.Name</option>
-                    }
-                </datalist>
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-outline-primary">@Localizer["GeoDivisions.Create.LoadForm"]</button>
-            </div>
-        </form>
-    </div>
-</div>
+@* 国家/父级变更走 GET 刷新层级与 Kind；用 form 属性挂到本表单，避免触发下方 POST。 *@
+<form id="region-create-reload" method="get" data-no-loading>
+    <noscript>
+        <button type="submit" class="btn btn-outline-primary mb-3">@Localizer["GeoDivisions.Create.LoadForm"]</button>
+    </noscript>
+</form>
 
 <form method="post" class="card form-card" id="region-create-form">
     <input type="hidden" asp-for="Input.Level" />
-    <input type="hidden" asp-for="Input.CountryCode" />
+    <input type="hidden" asp-for="Input.ParentId" />
+    @if (Model.Input.Level > 1)
+    {
+        <input type="hidden" asp-for="Input.CountryCode" />
+    }
 
     <div class="form-section">
         <div class="section-heading">
             <h2>@Localizer["GeoDivisions.Section.Identity"]</h2>
-            <p>@Localizer["GeoDivisions.Section.IdentityHint"]</p>
+            <p>@Localizer["GeoDivisions.Create.SetupHint"]</p>
         </div>
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
         <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">@Localizer["Field.GeoDivision.Level"]</label>
-                <input class="form-control" value="@Localizer[$"GeoDivisions.Level.{Model.Input.Level}"]" readonly />
-            </div>
             <div class="col-md-3">
                 <label asp-for="Input.Kind" class="form-label"></label>
                 <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
                 <span asp-validation-for="Input.Kind" class="text-danger"></span>
             </div>
             <div class="col-md-3">
-                <label class="form-label">@Localizer["Field.GeoDivision.CountryCode"]</label>
-                <input class="form-control" value="@Model.Input.CountryCode" readonly />
+                <label class="form-label" for="region-country-code">@Localizer["Field.GeoDivision.CountryCode"]</label>
+                @if (Model.Input.Level == 1)
+                {
+                    @* 新建国家：自由输入 ISO 代码；datalist 仅提示已有国家。改完 2 位后 GET 刷新 Kind/父级树。 *@
+                    <input asp-for="Input.CountryCode"
+                           class="form-control text-uppercase"
+                           id="region-country-code"
+                           maxlength="2"
+                           autocomplete="off"
+                           list="region-country-code-list"
+                           placeholder="CN"
+                           data-reload-country />
+                    <datalist id="region-country-code-list">
+                        @foreach (var country in Model.Countries)
+                        {
+                            <option value="@country.CountryCode">@country.Name</option>
+                        }
+                    </datalist>
+                    <div class="form-text">@Localizer["GeoDivisions.Hint.CountryCode"]</div>
+                    <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+                }
+                else
+                {
+                    <input class="form-control" id="region-country-code" value="@Model.Input.CountryCode" readonly />
+                }
             </div>
             <div class="col-md-3">
                 <label asp-for="Input.Code" class="form-label"></label>
@@ -92,17 +88,38 @@
                 <span asp-validation-for="Input.Code" class="text-danger"></span>
             </div>
 
+            <div class="col-md-6">
+                <label class="form-label" for="region-parent-toggle">
+                    @Localizer["Field.GeoDivision.Parent"]
+                    @if (Model.Input.Level > 1)
+                    {
+                        <span class="required-mark" aria-hidden="true">*</span>
+                    }
+                </label>
+                @{
+                    var parentSelect = new Axiom.Web.Models.ParentTreeSelectViewModel
+                    {
+                        InputId = "region-parent",
+                        InputName = "parentId",
+                        FormId = "region-create-reload",
+                        AutoSubmit = true,
+                        EmptyLabel = Localizer["GeoDivisions.Form.SelectParent"].Value,
+                        SearchPlaceholder = Localizer["GeoDivisions.Form.SearchParent"].Value,
+                        SelectedId = Model.Input.ParentId,
+                        SelectedLabel = Model.Input.ParentId is Guid createParentId
+                            ? (Axiom.Web.Models.ParentTreeSelectViewModel.FindLabel(Model.ParentTree, createParentId) ?? string.Empty)
+                            : string.Empty,
+                        Nodes = Model.ParentTree
+                    };
+                }
+                <partial name="_ParentTreeSelect" model="parentSelect" />
+                @if (Model.Input.Level > 1)
+                {
+                    <span asp-validation-for="Input.ParentId" class="text-danger"></span>
+                }
+            </div>
             @if (Model.Input.Level > 1)
             {
-                <div class="col-md-6">
-                    <label asp-for="Input.ParentId" class="form-label">
-                        @Localizer["Field.GeoDivision.Parent"]<span class="required-mark" aria-hidden="true">*</span>
-                    </label>
-                    <select asp-for="Input.ParentId" asp-items="Model.ParentOptions" class="form-select">
-                        <option value="">@Localizer["GeoDivisions.Form.SelectParent"]</option>
-                    </select>
-                    <span asp-validation-for="Input.ParentId" class="text-danger"></span>
-                </div>
                 <div class="col-md-6">
                     <label asp-for="Input.SubdivisionCode" class="form-label"></label>
                     <input asp-for="Input.SubdivisionCode" class="form-control" autocomplete="off" />

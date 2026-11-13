@@ -22,7 +22,7 @@ public sealed class EditModel(
 
     public GeoDivisionView? GeoDivision { get; private set; }
 
-    public IReadOnlyList<SelectListItem> ParentOptions { get; private set; } = [];
+    public IReadOnlyList<ParentTreeSelectNode> ParentTree { get; private set; } = [];
 
     public IReadOnlyList<SelectListItem> KindOptions { get; private set; } = [];
 
@@ -163,8 +163,11 @@ public sealed class EditModel(
 
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
+        // 与新建页一致：按国家分域字典；该国家未维护时回退通用域。
+        var countryCode = Input.CountryCode ?? GeoDivision?.CountryCode;
+        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
         using var response = await enumClient.ListAsync(
-            ReferenceEnumClient.GeoDivisionKindCategory,
+            category,
             pageSize: 200,
             cancellationToken: cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -190,6 +193,24 @@ public sealed class EditModel(
             .ThenBy(item => item.Code)
             .ToList();
 
+        // 国别域为空时回退通用域，避免编辑页 Kind 下拉空白。
+        if (items.Count == 0
+            && !string.Equals(category, ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal))
+        {
+            using var fallback = await enumClient.ListAsync(
+                ReferenceEnumClient.GeoDivisionKindCategory,
+                pageSize: 200,
+                cancellationToken: cancellationToken);
+            if (fallback.IsSuccessStatusCode)
+            {
+                var fallbackPage = await fallback.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
+                items = (fallbackPage?.Items ?? [])
+                    .OrderBy(item => item.SortOrder)
+                    .ThenBy(item => item.Code)
+                    .ToList();
+            }
+        }
+
         KindOptions = items
             .Select(item => new SelectListItem(item.Name, item.Code))
             .ToList();
@@ -207,7 +228,7 @@ public sealed class EditModel(
 
     private async Task<IActionResult?> LoadParentOptionsAsync(CancellationToken cancellationToken)
     {
-        ParentOptions = [];
+        ParentTree = [];
         if (GeoDivision is null || GeoDivision.Level == 1)
         {
             return null;
@@ -233,7 +254,12 @@ public sealed class EditModel(
         var tree = await response.Content.ReadFromJsonAsync<GeoDivisionTreeView>(cancellationToken);
         if (tree is not null)
         {
-            ParentOptions = BuildParentOptions(tree, GeoDivision.Level - 1, GeoDivision.Id);
+            var parentLevel = GeoDivision.Level - 1;
+            ParentTree = ParentTreeSelectViewModel.Build(
+                tree,
+                Input.ParentId,
+                node => node.Level == parentLevel,
+                excludeBranchId: GeoDivision.Id);
         }
 
         return null;
@@ -252,36 +278,9 @@ public sealed class EditModel(
             return;
         }
 
-        if (ParentOptions.All(option => option.Value != Input.ParentId.Value.ToString()))
+        if (!ParentTreeSelectViewModel.ContainsSelectable(ParentTree, Input.ParentId.Value))
         {
             ModelState.AddModelError("Input.ParentId", localizer["Validation.GeoDivision.ParentInvalid"].Value);
         }
-    }
-
-    private static IReadOnlyList<SelectListItem> BuildParentOptions(
-        GeoDivisionTreeView tree,
-        int parentLevel,
-        Guid editedId)
-    {
-        var options = new List<SelectListItem>();
-
-        void Visit(GeoDivisionTreeView node, int depth, bool inEditedBranch)
-        {
-            var excluded = inEditedBranch || node.Id == editedId;
-            if (!excluded && node.Level == parentLevel)
-            {
-                options.Add(new SelectListItem(
-                    $"{new string('—', depth)} {node.Name} ({node.Code})",
-                    node.Id.ToString()));
-            }
-
-            foreach (var child in node.Children)
-            {
-                Visit(child, depth + 1, excluded);
-            }
-        }
-
-        Visit(tree, 0, false);
-        return options;
     }
 }
