@@ -145,7 +145,9 @@ public sealed class GeoDivisionAppService(
         CreateGeoDivisionInput input,
         CancellationToken ct = default)
     {
-        var countryCode = NormalizeCountryCode(input.CountryCode);
+        // Level 1（国家行）未单独给国家代码时，以区划代码兼任国家代码。
+        var countryCode = NormalizeCountryCode(input.CountryCode)
+            ?? (input.Level == 1 ? NormalizeCountryCode(input.Code) : null);
 
         // Kind 留空时按国家与深度推导默认类型；非空则按字典强校验。
         var kind = string.IsNullOrWhiteSpace(input.Kind)

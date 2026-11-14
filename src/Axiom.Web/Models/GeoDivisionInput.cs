@@ -14,7 +14,7 @@ public sealed class GeoDivisionInput
     [Display(Name = "Field.GeoDivision.Kind")]
     public string? Kind { get; set; }
 
-    [Required(ErrorMessage = "Validation.GeoDivision.CountryCodeRequired")]
+    // 国家随所选父级带出（Level 1 新建国家时以区划代码兼任），故不再必填。
     [RegularExpression("^[A-Za-z]{2}$", ErrorMessage = "Validation.GeoDivision.CountryCodeFormat")]
     [Display(Name = "Field.GeoDivision.CountryCode")]
     public string? CountryCode { get; set; }

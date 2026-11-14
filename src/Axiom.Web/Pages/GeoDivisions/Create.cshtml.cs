@@ -335,7 +335,6 @@ public sealed class CreateModel(
         var parent = await response.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken);
         if (parent is null
             || parent.Level > MaxParentLevel
-            || !string.Equals(parent.CountryCode, Input.CountryCode, StringComparison.OrdinalIgnoreCase)
             || parent.Level + 1 != Input.Level)
         {
             ModelState.AddModelError("Input.ParentId", localizer["Validation.GeoDivision.ParentInvalid"].Value);
