@@ -656,7 +656,10 @@ public sealed class MockGatewayHandler : DelegatingHandler
                         .Where(r => string.IsNullOrWhiteSpace(country)
                             || string.Equals(r.CountryCode, country, StringComparison.OrdinalIgnoreCase))
                         .Where(r => string.IsNullOrWhiteSpace(keyword)
-                            || r.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                            || r.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                            || r.Code.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                            || (r.LocalName?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false)
+                            || (r.AsciiName?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false))
                         .OrderBy(r => r.CountryCode).ThenBy(r => r.Code)
                         .ToList();
                 }

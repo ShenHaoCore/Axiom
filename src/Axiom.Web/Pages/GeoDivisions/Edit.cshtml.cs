@@ -22,7 +22,7 @@ public sealed class EditModel(
 
     public GeoDivisionView? GeoDivision { get; private set; }
 
-    public IReadOnlyList<ParentTreeSelectNode> ParentTree { get; private set; } = [];
+    public string SelectedParentLabel { get; private set; } = string.Empty;
 
     public IReadOnlyList<SelectListItem> KindOptions { get; private set; } = [];
 
@@ -46,8 +46,8 @@ public sealed class EditModel(
             return kindFailure;
         }
 
-        var optionFailure = await LoadParentOptionsAsync(cancellationToken);
-        return optionFailure ?? Page();
+        await LoadSelectedParentLabelAsync(cancellationToken);
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken = default)
@@ -78,13 +78,8 @@ public sealed class EditModel(
             return kindFailure;
         }
 
-        var optionFailure = await LoadParentOptionsAsync(cancellationToken);
-        if (optionFailure is not null)
-        {
-            return optionFailure;
-        }
-
-        ValidateParent();
+        await LoadSelectedParentLabelAsync(cancellationToken);
+        await ValidateParentAsync(cancellationToken);
         if (!ModelState.IsValid)
         {
             return Page();
@@ -226,48 +221,30 @@ public sealed class EditModel(
         return null;
     }
 
-    private async Task<IActionResult?> LoadParentOptionsAsync(CancellationToken cancellationToken)
+    private async Task LoadSelectedParentLabelAsync(CancellationToken cancellationToken)
     {
-        ParentTree = [];
-        if (GeoDivision is null || GeoDivision.Level == 1)
+        SelectedParentLabel = string.Empty;
+        if (Input.ParentId is not Guid parentId)
         {
-            return null;
+            return;
         }
 
-        using var response = await regionClient.GetTreeAsync(GeoDivision.CountryCode, depth: 4, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
-
+        using var response = await regionClient.GetAsync(parentId, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = localizer["GeoDivisions.LoadTreeFailed", GeoDivision.CountryCode].Value;
-            return null;
+            return;
         }
 
-        var tree = await response.Content.ReadFromJsonAsync<GeoDivisionTreeView>(cancellationToken);
-        if (tree is not null)
+        var parent = await response.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken);
+        if (parent is not null)
         {
-            var parentLevel = GeoDivision.Level - 1;
-            ParentTree = ParentTreeSelectViewModel.Build(
-                tree,
-                Input.ParentId,
-                node => node.Level == parentLevel,
-                excludeBranchId: GeoDivision.Id);
+            SelectedParentLabel = $"{parent.Name} ({parent.Code})";
         }
-
-        return null;
     }
 
-    private void ValidateParent()
+    private async Task ValidateParentAsync(CancellationToken cancellationToken)
     {
-        if (Input.Level == 1)
+        if (Input.Level == 1 || GeoDivision is null)
         {
             return;
         }
@@ -278,7 +255,23 @@ public sealed class EditModel(
             return;
         }
 
-        if (!ParentTreeSelectViewModel.ContainsSelectable(ParentTree, Input.ParentId.Value))
+        if (Input.ParentId == GeoDivision.Id)
+        {
+            ModelState.AddModelError("Input.ParentId", localizer["Validation.GeoDivision.ParentInvalid"].Value);
+            return;
+        }
+
+        using var response = await regionClient.GetAsync(Input.ParentId.Value, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            ModelState.AddModelError("Input.ParentId", localizer["Validation.GeoDivision.ParentInvalid"].Value);
+            return;
+        }
+
+        var parent = await response.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken);
+        if (parent is null
+            || parent.Level != GeoDivision.Level - 1
+            || !string.Equals(parent.CountryCode, GeoDivision.CountryCode, StringComparison.OrdinalIgnoreCase))
         {
             ModelState.AddModelError("Input.ParentId", localizer["Validation.GeoDivision.ParentInvalid"].Value);
         }

@@ -86,11 +86,14 @@
                                 AutoSubmit = false,
                                 EmptyLabel = Localizer["GeoDivisions.Form.SelectParent"].Value,
                                 SearchPlaceholder = Localizer["GeoDivisions.Form.SearchParent"].Value,
+                                LoadErrorText = Localizer["GeoDivisions.LoadChildrenFailed"].Value,
                                 SelectedId = Model.Input.ParentId,
-                                SelectedLabel = Model.Input.ParentId is Guid editParentId
-                                    ? (Axiom.Web.Models.ParentTreeSelectViewModel.FindLabel(Model.ParentTree, editParentId) ?? string.Empty)
-                                    : string.Empty,
-                                Nodes = Model.ParentTree
+                                SelectedLabel = Model.SelectedParentLabel,
+                                NodesUrl = Url.Page("/GeoDivisions/Create", "ParentNodes") ?? string.Empty,
+                                CountryCode = Model.GeoDivision.CountryCode,
+                                MaxParentLevel = Model.GeoDivision.Level - 1,
+                                SelectableLevel = Model.GeoDivision.Level - 1,
+                                ExcludeId = Model.GeoDivision.Id
                             };
                         }
                         <partial name="_ParentTreeSelect" model="parentSelect" />

@@ -1285,6 +1285,11 @@ textarea.form-control {
   overflow: hidden;
 }
 
+/* 树形下拉绝对定位面板会被 overflow 裁切，含树选时放开。 */
+.form-card:has([data-tree-select]) {
+  overflow: visible;
+}
+
 .form-section {
   padding: 22px 24px;
 }
@@ -1626,7 +1631,7 @@ textarea.form-control {
 
 .tree-select-panel {
   position: absolute;
-  z-index: 30;
+  z-index: 1050;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
@@ -1668,17 +1673,64 @@ textarea.form-control {
   margin: 0;
 }
 
+.tree-select-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tree-select-expand,
+.tree-select-expand-spacer {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.tree-select-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--axiom-radius-xs);
+  background: transparent;
+  color: var(--axiom-ink-faint);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.tree-select-expand:hover,
+.tree-select-expand:focus-visible {
+  background: var(--axiom-surface-sunken);
+  color: var(--axiom-accent);
+  outline: none;
+}
+
+.tree-select-expand.is-expanded {
+  transform: rotate(90deg);
+}
+
+.tree-select-loading {
+  padding: 6px 10px;
+  color: var(--axiom-ink-faint);
+  font-size: 12px;
+}
+
 .tree-select-branch {
-  padding: 4px 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
   color: var(--axiom-ink-mute);
   font-size: 12px;
   font-weight: 600;
 }
 
 .tree-select-option {
+  flex: 1;
+  min-width: 0;
   display: block;
   width: 100%;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 0;
   border-radius: var(--axiom-radius-xs);
   background: transparent;

@@ -60,71 +60,333 @@
         });
     });
 
-    // ---------- 父级树形下拉 ----------
+    // ---------- 父级树形下拉（根/子级惰性 JSON 加载） ----------
     document.querySelectorAll('[data-tree-select]').forEach(function (root) {
         var toggle = root.querySelector('.tree-select-toggle');
         var panel = root.querySelector('.tree-select-panel');
         var label = root.querySelector('.tree-select-label');
         var input = root.querySelector('input[type="hidden"]');
         var filter = root.querySelector('[data-tree-select-filter]');
-        if (!toggle || !panel || !label || !input) {
+        var list = root.querySelector('[data-tree-select-list]');
+        var nodesUrl = root.getAttribute('data-nodes-url') || '';
+        if (!toggle || !panel || !label || !input || !list || !nodesUrl) {
             return;
+        }
+
+        var rootsLoaded = false;
+
+        function currentCountryCode() {
+            var fromData = (root.getAttribute('data-country-code') || '').trim().toUpperCase();
+            if (fromData.length === 2) {
+                return fromData;
+            }
+
+            var countryField = document.getElementById('region-country-code');
+            var typed = countryField && countryField.value ? countryField.value.trim().toUpperCase() : '';
+            return typed.length === 2 ? typed : '';
+        }
+
+        function buildNodesUrl(parentId, query) {
+            var params = new URLSearchParams();
+            var countryCode = currentCountryCode();
+            if (countryCode) {
+                params.set('countryCode', countryCode);
+            }
+
+            if (parentId) {
+                params.set('parentId', parentId);
+            }
+
+            if (query) {
+                params.set('q', query);
+            }
+
+            var selectedId = root.getAttribute('data-selected-id') || input.value || '';
+            if (selectedId) {
+                params.set('selectedId', selectedId);
+            }
+
+            var excludeId = root.getAttribute('data-exclude-id') || '';
+            if (excludeId) {
+                params.set('excludeId', excludeId);
+            }
+
+            var maxParentLevel = root.getAttribute('data-max-parent-level') || '';
+            if (maxParentLevel) {
+                params.set('maxParentLevel', maxParentLevel);
+            }
+
+            var selectableLevel = root.getAttribute('data-selectable-level') || '';
+            if (selectableLevel) {
+                params.set('selectableLevel', selectableLevel);
+            }
+
+            var join = nodesUrl.indexOf('?') >= 0 ? '&' : '?';
+            return nodesUrl + join + params.toString();
+        }
+
+        function selectOption(option) {
+            var value = option.getAttribute('data-value') || '';
+            var text = option.getAttribute('data-label') || option.textContent || '';
+            input.value = value;
+            label.textContent = text;
+            root.setAttribute('data-selected-id', value);
+            panel.querySelectorAll('.tree-select-option.is-selected').forEach(function (selected) {
+                selected.classList.remove('is-selected');
+                selected.setAttribute('aria-selected', 'false');
+            });
+            option.classList.add('is-selected');
+            option.setAttribute('aria-selected', 'true');
+            setOpen(false);
+
+            if (!root.classList.contains('tree-select-autosubmit')) {
+                return;
+            }
+
+            var params = new URLSearchParams();
+            if (value) {
+                params.set('parentId', value);
+            }
+
+            var countryCode = currentCountryCode();
+            if (countryCode) {
+                params.set('countryCode', countryCode);
+            }
+
+            var query = params.toString();
+            window.location.assign(window.location.pathname + (query ? '?' + query : ''));
+        }
+
+        function bindOption(option) {
+            option.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                selectOption(option);
+            });
+        }
+
+        function nodeField(node, camel, pascal) {
+            return node[camel] !== undefined ? node[camel] : node[pascal];
+        }
+
+        function createNodeItem(node) {
+            var nodeId = nodeField(node, 'id', 'Id');
+            var nodeLabel = nodeField(node, 'label', 'Label') || '';
+            var hasChildren = !!nodeField(node, 'hasChildren', 'HasChildren');
+            var selectable = !!nodeField(node, 'selectable', 'Selectable');
+            var selected = !!nodeField(node, 'selected', 'Selected');
+
+            var item = document.createElement('li');
+            item.className = 'tree-select-item';
+            item.setAttribute('data-tree-label', nodeLabel);
+
+            var row = document.createElement('div');
+            row.className = 'tree-select-row';
+
+            if (hasChildren) {
+                var expand = document.createElement('button');
+                expand.type = 'button';
+                expand.className = 'tree-select-expand';
+                expand.setAttribute('aria-expanded', 'false');
+                expand.setAttribute('aria-label', 'expand');
+                expand.textContent = '▶';
+                expand.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleExpand(item, expand, nodeId);
+                });
+                row.appendChild(expand);
+            } else {
+                var spacer = document.createElement('span');
+                spacer.className = 'tree-select-expand-spacer';
+                spacer.setAttribute('aria-hidden', 'true');
+                row.appendChild(spacer);
+            }
+
+            if (selectable) {
+                var option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'tree-select-option' + (selected ? ' is-selected' : '');
+                option.setAttribute('data-value', nodeId);
+                option.setAttribute('data-label', nodeLabel);
+                option.setAttribute('role', 'option');
+                option.setAttribute('aria-selected', selected ? 'true' : 'false');
+                option.textContent = nodeLabel;
+                bindOption(option);
+                row.appendChild(option);
+            } else {
+                var branch = document.createElement('div');
+                branch.className = 'tree-select-branch';
+                branch.textContent = nodeLabel;
+                row.appendChild(branch);
+            }
+
+            item.appendChild(row);
+            return item;
+        }
+
+        function appendNodes(container, nodes) {
+            (nodes || []).forEach(function (node) {
+                container.appendChild(createNodeItem(node));
+            });
+        }
+
+        function loadNodes(parentId, targetList, onDone, query) {
+            targetList.setAttribute('data-loading', '1');
+            var loading = document.createElement('li');
+            loading.className = 'tree-select-item tree-select-loading';
+            loading.textContent = '…';
+            targetList.appendChild(loading);
+
+            fetch(buildNodesUrl(parentId, query), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+
+                    return response.json();
+                })
+                .then(function (nodes) {
+                    targetList.querySelectorAll('.tree-select-loading').forEach(function (el) {
+                        el.remove();
+                    });
+                    appendNodes(targetList, nodes);
+                    if (typeof onDone === 'function') {
+                        onDone(true);
+                    }
+                })
+                .catch(function () {
+                    targetList.querySelectorAll('.tree-select-loading').forEach(function (el) {
+                        el.remove();
+                    });
+                    var retry = document.createElement('li');
+                    retry.className = 'tree-select-item';
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'tree-select-option';
+                    button.textContent = root.getAttribute('data-error-text') || 'Load failed';
+                    button.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        retry.remove();
+                        loadNodes(parentId, targetList, onDone, query);
+                    });
+                    retry.appendChild(button);
+                    targetList.appendChild(retry);
+                    if (typeof onDone === 'function') {
+                        onDone(false);
+                    }
+                })
+                .finally(function () {
+                    targetList.removeAttribute('data-loading');
+                });
+        }
+
+        function resetDynamicNodes() {
+            list.querySelectorAll('.tree-select-item[data-tree-label]').forEach(function (item) {
+                item.remove();
+            });
+            list.querySelectorAll('.tree-select-loading').forEach(function (item) {
+                item.remove();
+            });
+            rootsLoaded = false;
+            list.removeAttribute('data-loaded');
+            list.removeAttribute('data-loaded-country');
+        }
+
+        function ensureRoots() {
+            if (list.getAttribute('data-loading') === '1') {
+                return;
+            }
+
+            var countryCode = currentCountryCode();
+            if (!countryCode) {
+                return;
+            }
+
+            if (list.getAttribute('data-loaded-country') !== countryCode) {
+                resetDynamicNodes();
+            }
+
+            if (rootsLoaded) {
+                return;
+            }
+
+            root.setAttribute('data-country-code', countryCode);
+            loadNodes(null, list, function (ok) {
+                if (ok) {
+                    rootsLoaded = true;
+                    list.setAttribute('data-loaded', '1');
+                    list.setAttribute('data-loaded-country', countryCode);
+                }
+            });
+        }
+
+        function toggleExpand(item, expandButton, nodeId) {
+            var existing = item.querySelector(':scope > .tree-select-children');
+            if (existing) {
+                var open = existing.hidden;
+                existing.hidden = !open;
+                expandButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+                expandButton.classList.toggle('is-expanded', open);
+                return;
+            }
+
+            var children = document.createElement('ul');
+            children.className = 'tree-select-children';
+            item.appendChild(children);
+            expandButton.setAttribute('aria-expanded', 'true');
+            expandButton.classList.add('is-expanded');
+            loadNodes(nodeId, children);
         }
 
         function setOpen(open) {
             panel.hidden = !open;
             toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            if (open && filter) {
-                filter.focus();
+            if (open) {
+                ensureRoots();
+                if (filter) {
+                    filter.focus();
+                }
             }
         }
 
-        toggle.addEventListener('click', function () {
+        list.querySelectorAll('.tree-select-option').forEach(bindOption);
+
+        toggle.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
             setOpen(panel.hidden);
         });
 
-        panel.querySelectorAll('.tree-select-option').forEach(function (option) {
-            option.addEventListener('click', function () {
-                var value = option.getAttribute('data-value') || '';
-                var text = option.getAttribute('data-label') || option.textContent || '';
-                input.value = value;
-                label.textContent = text;
-                panel.querySelectorAll('.tree-select-option.is-selected').forEach(function (selected) {
-                    selected.classList.remove('is-selected');
-                    selected.setAttribute('aria-selected', 'false');
-                });
-                option.classList.add('is-selected');
-                option.setAttribute('aria-selected', 'true');
-                setOpen(false);
-
-                if (root.classList.contains('tree-select-autosubmit') && input.form) {
-                    input.form.requestSubmit();
-                }
-            });
+        panel.addEventListener('click', function (event) {
+            event.stopPropagation();
         });
 
+        // 搜索走服务端：惰性树未展开时本地过滤找不到「北京」这类子节点。
+        var searchTimer = null;
         if (filter) {
             filter.addEventListener('input', function () {
-                var query = filter.value.trim().toLowerCase();
-                root.querySelectorAll('.tree-select-item[data-tree-label]').forEach(function (item) {
-                    var text = (item.getAttribute('data-tree-label') || '').toLowerCase();
-                    var selfMatch = !query || text.indexOf(query) !== -1;
-                    var childMatch = false;
-                    item.querySelectorAll('.tree-select-item[data-tree-label]').forEach(function (child) {
-                        var childText = (child.getAttribute('data-tree-label') || '').toLowerCase();
-                        if (!query || childText.indexOf(query) !== -1) {
-                            childMatch = true;
-                            child.classList.remove('is-filtered-out');
-                        } else {
-                            child.classList.add('is-filtered-out');
-                        }
-                    });
-                    if (selfMatch || childMatch) {
-                        item.classList.remove('is-filtered-out');
-                    } else {
-                        item.classList.add('is-filtered-out');
+                window.clearTimeout(searchTimer);
+                searchTimer = window.setTimeout(function () {
+                    var query = filter.value.trim();
+                    resetDynamicNodes();
+                    if (!query) {
+                        ensureRoots();
+                        return;
                     }
-                });
+
+                    if (!currentCountryCode()) {
+                        return;
+                    }
+
+                    loadNodes(null, list, function (ok) {
+                        if (ok) {
+                            list.setAttribute('data-loaded', '1');
+                            list.setAttribute('data-loaded-country', currentCountryCode());
+                        }
+                    }, query);
+                }, 250);
             });
         }
 

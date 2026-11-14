@@ -196,7 +196,25 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
             .And.Contain("name=\"Input.Level\"")
             .And.Contain("value=\"3\"")
             .And.Contain("data-tree-select")
-            .And.Contain("tree-select-autosubmit");
+            .And.Contain("tree-select-autosubmit")
+            .And.Contain("handler=ParentNodes");
+
+        using var parentNodesRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/GeoDivisions/Create?handler=ParentNodes&countryCode=CN&selectedId={WebFactory.GeoDivisionCountryId}");
+        using var parentNodesResponse = await _client.SendAsync(parentNodesRequest);
+        parentNodesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var parentNodesJson = await parentNodesResponse.Content.ReadAsStringAsync();
+        parentNodesJson.Should().Contain(WebFactory.GeoDivisionCountryId.ToString())
+            .And.Contain("hasChildren");
+
+        using var parentChildrenRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/GeoDivisions/Create?handler=ParentNodes&parentId={WebFactory.GeoDivisionCountryId}");
+        using var parentChildrenResponse = await _client.SendAsync(parentChildrenRequest);
+        parentChildrenResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var parentChildrenJson = await parentChildrenResponse.Content.ReadAsStringAsync();
+        parentChildrenJson.Should().Contain(WebFactory.GeoDivisionAdmin1Id.ToString());
 
         using var grandChildrenRequest = CreateRequest(
             HttpMethod.Get, $"/GeoDivisions?handler=Children&id={WebFactory.GeoDivisionAdmin1Id}");
@@ -208,14 +226,12 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         var edit = await GetFormAsync($"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}");
         var editHtml = WebUtility.HtmlDecode(edit.Html);
         editHtml.Should().Contain("苏州");
-        editHtml.Should().Contain("data-tree-select");
+        editHtml.Should().Contain("data-tree-select").And.Contain("handler=ParentNodes");
         Regex.IsMatch(
             editHtml,
             $"<input[^>]*name=\"Input.ParentId\"[^>]*value=\"{WebFactory.GeoDivisionAdmin1Id}\"",
             RegexOptions.CultureInvariant,
             TimeSpan.FromSeconds(1)).Should().BeTrue("当前父级应写入树形下拉的隐藏域");
-        editHtml.Should().Contain($"data-value=\"{WebFactory.GeoDivisionAdmin1Id}\"")
-            .And.Contain("is-selected");
     }
 
     [Fact]

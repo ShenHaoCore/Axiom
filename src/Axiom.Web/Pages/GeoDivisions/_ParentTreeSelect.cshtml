@@ -5,7 +5,14 @@
 
 <div class="tree-select@(Model.AutoSubmit ? " tree-select-autosubmit" : "")"
      data-tree-select
-     data-empty-label="@Model.EmptyLabel">
+     data-empty-label="@Model.EmptyLabel"
+     data-nodes-url="@Model.NodesUrl"
+     data-country-code="@Model.CountryCode"
+     data-max-parent-level="@Model.MaxParentLevel"
+     data-selectable-level="@(Model.SelectableLevel?.ToString() ?? "")"
+     data-exclude-id="@(Model.ExcludeId?.ToString() ?? "")"
+     data-selected-id="@(Model.SelectedId?.ToString() ?? "")"
+     data-error-text="@Model.LoadErrorText">
     @if (string.IsNullOrEmpty(Model.FormId))
     {
         <input type="hidden"
@@ -37,7 +44,7 @@
                    autocomplete="off"
                    data-tree-select-filter />
         </div>
-        <ul class="tree-select-list" role="listbox" aria-labelledby="@Model.InputId-toggle">
+        <ul class="tree-select-list" role="listbox" aria-labelledby="@Model.InputId-toggle" data-tree-select-list>
             <li class="tree-select-item">
                 <button type="button"
                         class="tree-select-option@(Model.SelectedId is null ? " is-selected" : "")"
@@ -48,10 +55,6 @@
                     @Model.EmptyLabel
                 </button>
             </li>
-            @foreach (var node in Model.Nodes)
-            {
-                <partial name="_ParentTreeSelectNode" model="node" />
-            }
         </ul>
     </div>
 </div>
