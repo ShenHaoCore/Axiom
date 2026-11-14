@@ -8,7 +8,9 @@ public sealed record ParentTreeSelectItemDto(
     int Level,
     bool Selectable,
     bool HasChildren,
-    bool Selected);
+    bool Selected,
+    string CountryCode,
+    string? SubdivisionCode);
 
 public sealed class ParentTreeSelectViewModel
 {

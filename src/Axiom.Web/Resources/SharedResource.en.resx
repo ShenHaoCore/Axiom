@@ -168,7 +168,13 @@
   <data name="GeoDivisions.SearchResults" xml:space="preserve"><value>Search results</value></data>
   <data name="GeoDivisions.SearchTotal" xml:space="preserve"><value>{0} in total</value></data>
   <data name="GeoDivisions.NoMatch" xml:space="preserve"><value>No regions match "{0}".</value></data>
-  <data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>GeoDivision hierarchy</value></data>
+    <data name="GeoDivisions.Section.Names" xml:space="preserve"><value>Alternative names</value></data>
+  <data name="GeoDivisions.Section.NamesHint" xml:space="preserve"><value>Optional name forms in other languages or scripts.</value></data>
+  <data name="GeoDivisions.Hint.Parent" xml:space="preserve"><value>Pick the parent from the tree; country and depth are derived automatically.</value></data>
+  <data name="GeoDivisions.Hint.Code" xml:space="preserve"><value>Country-unique division code (e.g. 440100).</value></data>
+  <data name="GeoDivisions.Hint.Kind" xml:space="preserve"><value>Leave empty to derive from country and level, or pick manually.</value></data>
+  <data name="Field.GeoDivision.Depth" xml:space="preserve"><value>Level</value></data>
+<data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>GeoDivision hierarchy</value></data>
   <data name="GeoDivisions.Column.Level" xml:space="preserve"><value>Level</value></data>
   <data name="GeoDivisions.Column.Name" xml:space="preserve"><value>Name</value></data>
   <data name="GeoDivisions.Column.Code" xml:space="preserve"><value>Code</value></data>

@@ -119,7 +119,9 @@ public sealed class CreateModel(
                     selectedId,
                     maxParentLevel,
                     selectableLevel,
-                    hasChildren: false))
+                    hasChildren: false,
+                    item.CountryCode,
+                    item.SubdivisionCode))
                 .ToList();
 
             return new JsonResult(hits);
@@ -175,7 +177,9 @@ public sealed class CreateModel(
                 maxParentLevel,
                 selectableLevel,
                 // 根节点默认可展开；真实子级在展开时再拉。
-                hasChildren: item.Level < (selectableLevel ?? maxParentLevel)))
+                hasChildren: item.Level < (selectableLevel ?? maxParentLevel),
+                item.CountryCode,
+                item.SubdivisionCode))
             .ToList();
 
         return new JsonResult(roots);
@@ -457,7 +461,9 @@ public sealed class CreateModel(
                 maxParentLevel,
                 selectableLevel,
                 hasChildren: child.Level < expandUntil
-                    && child.ChildCount > child.SameNameChildCount))
+                    && child.ChildCount > child.SameNameChildCount,
+                child.CountryCode,
+                child.SubdivisionCode))
             .ToList();
     }
 
@@ -469,7 +475,9 @@ public sealed class CreateModel(
         Guid? selectedId,
         int maxParentLevel,
         int? selectableLevel,
-        bool hasChildren)
+        bool hasChildren,
+        string countryCode,
+        string? subdivisionCode)
     {
         var selectable = selectableLevel is int required
             ? level == required
@@ -481,7 +489,9 @@ public sealed class CreateModel(
             level,
             selectable,
             hasChildren,
-            selectedId == id);
+            selectedId == id,
+            countryCode,
+            subdivisionCode);
     }
 
     private IActionResult? HandleStatus(HttpStatusCode statusCode) => statusCode switch

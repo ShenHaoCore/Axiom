@@ -165,7 +165,7 @@ public sealed class GeoDivisionAppService(
             longitude: input.Longitude,
             population: input.Population,
             parentId: input.ParentId,
-            kind: input.Kind);
+            kind: kind);
 
         if (await repository.AnyByUniqueKeyAsync(entity.Level, entity.CountryCode, entity.Code, ct))
         {

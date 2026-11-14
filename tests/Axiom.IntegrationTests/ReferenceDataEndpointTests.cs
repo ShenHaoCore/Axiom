@@ -155,7 +155,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             Name: $"回归国家 {suffix}");
         var country = await CreateRegion(countryInput);
         country.Level.Should().Be(1);
-        country.Kind.Should().Be("other", "未提供 Kind 时按深度兜底为 other");
+        country.Kind.Should().Be("country", "未提供 Kind 时按国家与层级推导");
         country.CountryCode.Should().Be(countryCode);
         country.ParentId.Should().BeNull();
 

@@ -9,9 +9,10 @@ public sealed class GeoDivisionInput
     [Display(Name = "Field.GeoDivision.Level")]
     public int Level { get; set; } = 1;
 
+    // 留空时由 API 按国家与深度推导默认 Kind（默认下拉的“自动推导”选项）。
     [StringLength(64, ErrorMessage = "Validation.GeoDivision.KindTooLong")]
     [Display(Name = "Field.GeoDivision.Kind")]
-    public string Kind { get; set; } = "standard";
+    public string? Kind { get; set; }
 
     [Required(ErrorMessage = "Validation.GeoDivision.CountryCodeRequired")]
     [RegularExpression("^[A-Za-z]{2}$", ErrorMessage = "Validation.GeoDivision.CountryCodeFormat")]

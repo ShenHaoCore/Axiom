@@ -168,7 +168,13 @@
   <data name="GeoDivisions.SearchResults" xml:space="preserve"><value>搜索结果</value></data>
   <data name="GeoDivisions.SearchTotal" xml:space="preserve"><value>共 {0} 条</value></data>
   <data name="GeoDivisions.NoMatch" xml:space="preserve"><value>未找到匹配 "{0}" 的行政区。</value></data>
-  <data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
+    <data name="GeoDivisions.Section.Names" xml:space="preserve"><value>别名与本地名</value></data>
+  <data name="GeoDivisions.Section.NamesHint" xml:space="preserve"><value>可选：其他语言或书写形式的名称。</value></data>
+  <data name="GeoDivisions.Hint.Parent" xml:space="preserve"><value>从树中选择上级行政区；国家与层级会自动带出。</value></data>
+  <data name="GeoDivisions.Hint.Code" xml:space="preserve"><value>国别内唯一的区划代码（如 440100）。</value></data>
+  <data name="GeoDivisions.Hint.Kind" xml:space="preserve"><value>留空时按国家与层级自动推导，可手动指定。</value></data>
+  <data name="Field.GeoDivision.Depth" xml:space="preserve"><value>层级</value></data>
+<data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
   <data name="GeoDivisions.Column.Level" xml:space="preserve"><value>层级</value></data>
   <data name="GeoDivisions.Column.Name" xml:space="preserve"><value>名称</value></data>
   <data name="GeoDivisions.Column.Code" xml:space="preserve"><value>代码</value></data>

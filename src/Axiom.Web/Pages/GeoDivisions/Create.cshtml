@@ -42,43 +42,6 @@
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
         <div class="row g-3">
-            <div class="col-md-3">
-                <label asp-for="Input.Kind" class="form-label"></label>
-                <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
-                <span asp-validation-for="Input.Kind" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="region-country-code">@Localizer["Field.GeoDivision.CountryCode"]</label>
-                @if (Model.Input.Level == 1)
-                {
-                    @* 新建国家：自由输入 ISO 代码；datalist 仅提示已有国家。改完 2 位后 GET 刷新 Kind/父级树。 *@
-                    <input asp-for="Input.CountryCode"
-                           class="form-control text-uppercase"
-                           id="region-country-code"
-                           maxlength="2"
-                           autocomplete="off"
-                           list="region-country-code-list"
-                           placeholder="CN" />
-                    <datalist id="region-country-code-list">
-                        @foreach (var country in Model.Countries)
-                        {
-                            <option value="@country.CountryCode">@country.Name</option>
-                        }
-                    </datalist>
-                    <div class="form-text">@Localizer["GeoDivisions.Hint.CountryCode"]</div>
-                    <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
-                }
-                else
-                {
-                    <input class="form-control" id="region-country-code" value="@Model.Input.CountryCode" readonly />
-                }
-            </div>
-            <div class="col-md-3">
-                <label asp-for="Input.Code" class="form-label"></label>
-                <input asp-for="Input.Code" class="form-control" autocomplete="off" />
-                <span asp-validation-for="Input.Code" class="text-danger"></span>
-            </div>
-
             <div class="col-md-6">
                 <label class="form-label" for="region-parent-toggle">
                     @Localizer["Field.GeoDivision.Parent"]
@@ -108,10 +71,62 @@
                     };
                 }
                 <partial name="_ParentTreeSelect" model="parentSelect" />
+                <div class="form-text">@Localizer["GeoDivisions.Hint.Parent"]</div>
                 @if (Model.Input.Level > 1)
                 {
                     <span asp-validation-for="Input.ParentId" class="text-danger"></span>
                 }
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.CountryCode" class="form-label"></label>
+                @if (Model.Input.Level == 1)
+                {
+                    @* 新建国家：自由输入 ISO 代码；datalist 仅提示已有国家。国家分域 Kind 与父级树由树形下拉联动刷新。 *@
+                    <input asp-for="Input.CountryCode"
+                           class="form-control text-uppercase"
+                           id="region-country-code"
+                           maxlength="2"
+                           autocomplete="off"
+                           list="region-country-code-list"
+                           placeholder="CN" />
+                    <datalist id="region-country-code-list">
+                        @foreach (var country in Model.Countries)
+                        {
+                            <option value="@country.CountryCode">@country.Name</option>
+                        }
+                    </datalist>
+                }
+                else
+                {
+                    <input class="form-control" id="region-country-code" value="@Model.Input.CountryCode" readonly />
+                }
+                <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">@Localizer["Field.GeoDivision.Depth"]</label>
+                <input class="form-control" value="@DepthLabel(Model.Input.Level)" readonly />
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Input.Name" class="form-label">
+                    @Localizer["Field.GeoDivision.Name"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Name" class="form-control" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Code" class="form-label">
+                    @Localizer["Field.GeoDivision.Code"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Code" class="form-control" autocomplete="off" />
+                <div class="form-text">@Localizer["GeoDivisions.Hint.Code"]</div>
+                <span asp-validation-for="Input.Code" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.Kind" class="form-label"></label>
+                <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
+                <div class="form-text">@Localizer["GeoDivisions.Hint.Kind"]</div>
+                <span asp-validation-for="Input.Kind" class="text-danger"></span>
             </div>
             @if (Model.Input.Level > 1)
             {
@@ -122,14 +137,15 @@
                     <span asp-validation-for="Input.SubdivisionCode" class="text-danger"></span>
                 </div>
             }
+        </div>
+    </div>
 
-            <div class="col-md-6">
-                <label asp-for="Input.Name" class="form-label">
-                    @Localizer["Field.GeoDivision.Name"]<span class="required-mark" aria-hidden="true">*</span>
-                </label>
-                <input asp-for="Input.Name" class="form-control" />
-                <span asp-validation-for="Input.Name" class="text-danger"></span>
-            </div>
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["GeoDivisions.Section.Names"]</h2>
+            <p>@Localizer["GeoDivisions.Section.NamesHint"]</p>
+        </div>
+        <div class="row g-3">
             <div class="col-md-6">
                 <label asp-for="Input.AsciiName" class="form-label"></label>
                 <input asp-for="Input.AsciiName" class="form-control" />
@@ -176,4 +192,9 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+}
+
+@functions {
+    private string DepthLabel(int depth) =>
+        depth is >= 1 and <= 4 ? Localizer[$"GeoDivisions.Level.{depth}"].Value : $"L{depth}";
 }

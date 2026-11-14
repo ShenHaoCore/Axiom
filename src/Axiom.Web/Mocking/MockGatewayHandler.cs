@@ -679,7 +679,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                     return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
                 }
 
-                var kind = ParseGeoDivisionKind(Text(body, "kind"));
+                var kind = ParseGeoDivisionKind(Text(body, "kind"), countryCode, level);
                 if (kind is null)
                 {
                     return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
@@ -798,7 +798,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
                     var kind = original.Kind;
                     if (body.RootElement.TryGetProperty("kind", out _))
                     {
-                        var parsed = ParseGeoDivisionKind(Text(body, "kind"));
+                        var parsed = ParseGeoDivisionKind(Text(body, "kind"), original.CountryCode, original.Level);
                         if (parsed is null)
                         {
                             return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
@@ -878,9 +878,12 @@ public sealed class MockGatewayHandler : DelegatingHandler
             && level >= 1;
     }
 
-    private static string? ParseGeoDivisionKind(string? value)
+    private static string? ParseGeoDivisionKind(string? value, string countryCode, int level)
     {
-        var kind = string.IsNullOrWhiteSpace(value) ? "other" : value.Trim().ToLowerInvariant();
+        // Kind 留空时按国家与层级推导默认类型（与真实 API 的 DeriveDefault 口径一致）。
+        var kind = string.IsNullOrWhiteSpace(value)
+            ? DeriveDefaultKind(countryCode, level)
+            : value.Trim().ToLowerInvariant();
         lock (Gate)
         {
             return Enums.Any(e => e.Category.StartsWith("geo_division.kind", StringComparison.Ordinal) && e.Code == kind)
@@ -888,6 +891,19 @@ public sealed class MockGatewayHandler : DelegatingHandler
                 : null;
         }
     }
+
+    private static string DeriveDefaultKind(string countryCode, int level) => (countryCode.ToUpperInvariant(), level) switch
+    {
+        ("CN", 2) => "province",
+        ("CN", 3) => "prefecture_city",
+        ("CN", 4) => "district",
+        ("US", 2) => "state",
+        ("US", 3) => "county",
+        (_, 1) => "country",
+        (_, 2) => "province",
+        (_, 3) => "city",
+        _ => "district"
+    };
 
     private static bool TryReadParentId(JsonDocument document, out Guid? parentId)
     {
