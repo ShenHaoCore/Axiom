@@ -346,10 +346,14 @@ public sealed class CreateModel(
         }
     }
 
-    private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// 按国家分域加载 Kind 选项（该国家未维护时回退通用域）。
+    /// 返回 (选项列表, 是否加载失败)。
+    /// </summary>
+    private async Task<(List<ReferenceEnumView> Items, bool LoadFailed)> LoadKindItemsAsync(
+        string? countryCode, CancellationToken cancellationToken)
     {
-        // Kind 选项按所选国家的分域字典；该国家未维护时回退通用域。
-        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(Input.CountryCode);
+        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
         using var response = await enumClient.ListAsync(
             category,
             pageSize: 200,
@@ -357,14 +361,12 @@ public sealed class CreateModel(
         var statusFailure = HandleStatus(response.StatusCode);
         if (statusFailure is not null)
         {
-            return statusFailure;
+            return ([], true);
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = localizer["Enums.LoadFailed"].Value;
-            KindOptions = [];
-            return null;
+            return ([], true);
         }
 
         var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
@@ -383,7 +385,7 @@ public sealed class CreateModel(
             statusFailure = HandleStatus(fallback.StatusCode);
             if (statusFailure is not null)
             {
-                return statusFailure;
+                return ([], true);
             }
 
             if (fallback.IsSuccessStatusCode)
@@ -396,18 +398,41 @@ public sealed class CreateModel(
             }
         }
 
+        return (items, false);
+    }
+
+    /// <summary>国家变更时由 site.js 调用：返回该国家分域的 Kind 选项（按层级过滤 country）。</summary>
+    public async Task<IActionResult> OnGetKindOptionsAsync(
+        string? countryCode, int level = 2, CancellationToken cancellationToken = default)
+    {
+        var (items, loadFailed) = await LoadKindItemsAsync(countryCode, cancellationToken);
+        var filtered = loadFailed
+            ? []
+            : (level == 1
+                ? items.Where(item => item.Code == "country").ToList()
+                : items.Where(item => item.Code != "country").ToList());
+
+        return new JsonResult(filtered.Select(item => new { value = item.Code, text = item.Name }).ToList());
+    }
+
+    private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
+    {
+        var (items, loadFailed) = await LoadKindItemsAsync(Input.CountryCode, cancellationToken);
+        if (loadFailed)
+        {
+            ErrorMessage = localizer["Enums.LoadFailed"].Value;
+            KindOptions = [];
+            return null;
+        }
+
         // 国家行的 Kind 固定为 country；其余层级不允许选 country。
         items = Input.Level == 1
             ? items.Where(item => item.Code == "country").ToList()
             : items.Where(item => item.Code != "country").ToList();
 
-        var kindOptions = items
-            .Select(item => new SelectListItem(item.Name, item.Code))
-            .ToList();
-
         // 预置“自动推导”空选项：留空提交时由 API 按国家与层级推导默认 Kind。
         KindOptions = new[] { new SelectListItem(localizer["GeoDivisions.Form.KindAuto"].Value, "") }
-            .Concat(kindOptions)
+            .Concat(items.Select(item => new SelectListItem(item.Name, item.Code)))
             .ToList();
 
         return null;

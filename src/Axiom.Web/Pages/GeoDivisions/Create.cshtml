@@ -27,16 +27,8 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-@* 国家/父级变更走 GET 刷新层级与 Kind；用 form 属性挂到本表单，避免触发下方 POST。 *@
-<form id="region-create-reload" method="get" data-no-loading>
-    <noscript>
-        <button type="submit" class="btn btn-outline-primary mb-3">@Localizer["GeoDivisions.Create.LoadForm"]</button>
-    </noscript>
-</form>
-
 <form method="post" class="card form-card" id="region-create-form">
     <input type="hidden" asp-for="Input.Level" />
-    <input type="hidden" asp-for="Input.ParentId" />
     @if (Model.Input.Level > 1)
     {
         <input type="hidden" asp-for="Input.CountryCode" />
@@ -66,8 +58,7 @@
                            maxlength="2"
                            autocomplete="off"
                            list="region-country-code-list"
-                           placeholder="CN"
-                           data-reload-country />
+                           placeholder="CN" />
                     <datalist id="region-country-code-list">
                         @foreach (var country in Model.Countries)
                         {
@@ -100,9 +91,7 @@
                     var parentSelect = new Axiom.Web.Models.ParentTreeSelectViewModel
                     {
                         InputId = "region-parent",
-                        InputName = "parentId",
-                        FormId = "region-create-reload",
-                        AutoSubmit = true,
+                        InputName = "Input.ParentId",
                         EmptyLabel = Localizer["GeoDivisions.Form.SelectParent"].Value,
                         SearchPlaceholder = Localizer["GeoDivisions.Form.SearchParent"].Value,
                         LoadErrorText = Localizer["GeoDivisions.LoadChildrenFailed"].Value,
@@ -110,7 +99,12 @@
                         SelectedLabel = Model.SelectedParentLabel,
                         NodesUrl = Url.Page("/GeoDivisions/Create", "ParentNodes") ?? string.Empty,
                         CountryCode = Model.Input.CountryCode,
-                        MaxParentLevel = Axiom.Web.Pages.GeoDivisions.CreateModel.MaxParentLevel
+                        MaxParentLevel = Axiom.Web.Pages.GeoDivisions.CreateModel.MaxParentLevel,
+                        CountryInputId = "region-country-code",
+                        KindSelectId = "Input_Kind",
+                        KindAutoLabel = Localizer["GeoDivisions.Form.KindAuto"].Value,
+                        LevelInputId = "Input_Level",
+                        KindOptionsUrl = Url.Page("/GeoDivisions/Create", "KindOptions") ?? string.Empty
                     };
                 }
                 <partial name="_ParentTreeSelect" model="parentSelect" />

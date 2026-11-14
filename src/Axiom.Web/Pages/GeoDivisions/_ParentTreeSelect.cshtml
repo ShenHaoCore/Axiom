@@ -3,7 +3,7 @@
     var selectedText = string.IsNullOrEmpty(Model.SelectedLabel) ? Model.EmptyLabel : Model.SelectedLabel;
 }
 
-<div class="tree-select@(Model.AutoSubmit ? " tree-select-autosubmit" : "")"
+<div class="tree-select"
      data-tree-select
      data-empty-label="@Model.EmptyLabel"
      data-nodes-url="@Model.NodesUrl"
@@ -12,22 +12,16 @@
      data-selectable-level="@(Model.SelectableLevel?.ToString() ?? "")"
      data-exclude-id="@(Model.ExcludeId?.ToString() ?? "")"
      data-selected-id="@(Model.SelectedId?.ToString() ?? "")"
-     data-error-text="@Model.LoadErrorText">
-    @if (string.IsNullOrEmpty(Model.FormId))
-    {
-        <input type="hidden"
-               id="@Model.InputId"
-               name="@Model.InputName"
-               value="@(Model.SelectedId?.ToString() ?? "")" />
-    }
-    else
-    {
-        <input type="hidden"
-               id="@Model.InputId"
-               name="@Model.InputName"
-               value="@(Model.SelectedId?.ToString() ?? "")"
-               form="@Model.FormId" />
-    }
+     data-error-text="@Model.LoadErrorText"
+     data-country-input-id="@Model.CountryInputId"
+     data-kind-select-id="@Model.KindSelectId"
+     data-kind-auto-label="@Model.KindAutoLabel"
+     data-level-input-id="@Model.LevelInputId"
+     data-kind-options-url="@Model.KindOptionsUrl">
+    <input type="hidden"
+           id="@Model.InputId"
+           name="@Model.InputName"
+           value="@(Model.SelectedId?.ToString() ?? "")" />
     <button type="button"
             class="form-select tree-select-toggle"
             id="@Model.InputId-toggle"
