@@ -79,32 +79,21 @@
             </div>
             <div class="col-md-3">
                 <label asp-for="Input.CountryCode" class="form-label"></label>
-                @if (Model.Input.Level == 1)
-                {
-                    @* 新建国家：自由输入 ISO 代码；datalist 仅提示已有国家。国家分域 Kind 与父级树由树形下拉联动刷新。 *@
-                    <input asp-for="Input.CountryCode"
-                           class="form-control text-uppercase"
-                           id="region-country-code"
-                           maxlength="2"
-                           autocomplete="off"
-                           list="region-country-code-list"
-                           placeholder="CN" />
-                    <datalist id="region-country-code-list">
-                        @foreach (var country in Model.Countries)
-                        {
-                            <option value="@country.CountryCode">@country.Name</option>
-                        }
-                    </datalist>
-                }
-                else
-                {
-                    <input class="form-control" id="region-country-code" value="@Model.Input.CountryCode" readonly />
-                }
+                @* 选父级后国家自动带出（只读）；“-- Select a parent --”清空归属时才可输入新国家。 *@
+                <input asp-for="Input.CountryCode"
+                       class="form-control text-uppercase"
+                       id="region-country-code"
+                       maxlength="2"
+                       autocomplete="off"
+                       list="region-country-code-list"
+                       placeholder="CN" />
+                <datalist id="region-country-code-list">
+                    @foreach (var country in Model.Countries)
+                    {
+                        <option value="@country.CountryCode">@country.Name</option>
+                    }
+                </datalist>
                 <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">@Localizer["Field.GeoDivision.Depth"]</label>
-                <input class="form-control" value="@DepthLabel(Model.Input.Level)" readonly />
             </div>
 
             <div class="col-md-6">

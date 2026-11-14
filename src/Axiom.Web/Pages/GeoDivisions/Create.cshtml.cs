@@ -84,14 +84,10 @@ public sealed class CreateModel(
         maxParentLevel = Math.Clamp(maxParentLevel, 1, MaxParentLevel);
         var keyword = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
 
-        // 搜索：跨已加载树，直接按名称/代码查可选父级。
+        // 搜索：跨已加载树，直接按名称/代码查可选父级；未指定国家时跨全部国家。
         if (keyword is not null && parentId is null)
         {
             var cc = string.IsNullOrWhiteSpace(countryCode) ? null : countryCode.Trim().ToUpperInvariant();
-            if (cc is null || cc.Length != 2)
-            {
-                return new JsonResult(Array.Empty<ParentTreeSelectItemDto>());
-            }
 
             using var searchResponse = await regionClient.ListAsync(
                 1, 50, level: null, cc, null, keyword, cancellationToken);
@@ -147,10 +143,6 @@ public sealed class CreateModel(
         }
 
         var country = string.IsNullOrWhiteSpace(countryCode) ? null : countryCode.Trim().ToUpperInvariant();
-        if (country is null || country.Length != 2)
-        {
-            return new JsonResult(Array.Empty<ParentTreeSelectItemDto>());
-        }
 
         using var rootsResponse = await regionClient.ListAsync(
             1, 50, level: 1, country, null, null, cancellationToken);

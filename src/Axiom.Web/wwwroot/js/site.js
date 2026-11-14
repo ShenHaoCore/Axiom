@@ -60,12 +60,8 @@
 
         var rootsLoaded = false;
 
+        // 全局树不再按国家过滤；保留该函数供 Kind 刷新等场景读取当前归属。
         function currentCountryCode() {
-            var fromData = (root.getAttribute('data-country-code') || '').trim().toUpperCase();
-            if (fromData.length === 2) {
-                return fromData;
-            }
-
             var countryField = document.getElementById('region-country-code');
             var typed = countryField && countryField.value ? countryField.value.trim().toUpperCase() : '';
             return typed.length === 2 ? typed : '';
@@ -73,7 +69,7 @@
 
         function buildNodesUrl(parentId, query) {
             var params = new URLSearchParams();
-            var countryCode = currentCountryCode();
+            var countryCode = root.getAttribute('data-country-code') || '';
             if (countryCode) {
                 params.set('countryCode', countryCode);
             }
@@ -124,14 +120,66 @@
             option.setAttribute('aria-selected', 'true');
             setOpen(false);
 
-            // 层级联动：所选节点 Level + 1（空值 = 国家行，Level 1）。全程无整页刷新。
+            // 归属联动（全程无整页刷新）：
+            // 层级 = 所选节点 Level + 1（空值 = 国家行，Level 1）；
+            // 国家随父级带出并刷新 Kind 选项；上级行政区划码随父级带出。
+            var nodeLevel = parseInt(option.getAttribute('data-level') || '0', 10);
+            var nodeCountry = option.getAttribute('data-country') || '';
+            var nodeSubdivision = option.getAttribute('data-subdivision') || '';
+
             var levelInputId = root.getAttribute('data-level-input-id');
             if (levelInputId) {
                 var levelInput = document.getElementById(levelInputId);
                 if (levelInput) {
-                    var nodeLevel = parseInt(option.getAttribute('data-level') || '0', 10);
                     levelInput.value = nodeLevel > 0 ? nodeLevel + 1 : 1;
                 }
+            }
+
+            var countryInputId = root.getAttribute('data-country-input-id');
+            if (countryInputId) {
+                var countryInput = document.getElementById(countryInputId);
+                if (countryInput) {
+                    countryInput.value = nodeCountry;
+                    // 有父级时国家随父级带出（只读）；清空父级回到新建国家模式（可输入）。
+                    countryInput.readOnly = !!nodeCountry;
+                }
+            }
+
+            var subdivisionInputId = root.getAttribute('data-subdivision-input-id');
+            if (subdivisionInputId) {
+                var subdivisionInput = document.getElementById(subdivisionInputId);
+                if (subdivisionInput) {
+                    subdivisionInput.value = nodeSubdivision;
+                }
+            }
+
+            // Kind 选项按所选国家的分域刷新；未选父级（新建国家）回退通用域。随后仍回“自动推导”。
+            var kindSelect = document.getElementById(root.getAttribute('data-kind-select-id') || '');
+            var kindOptionsUrl = root.getAttribute('data-kind-options-url') || '';
+            if (kindSelect && kindOptionsUrl) {
+                var autoLabel = root.getAttribute('data-kind-auto-label') || '';
+                var kindUrl = kindOptionsUrl + (nodeCountry ? '?countryCode=' + encodeURIComponent(nodeCountry) + '&level=' + (nodeLevel + 1) : '');
+                fetch(kindUrl, { headers: { 'Accept': 'application/json' } })
+                    .then(function (response) {
+                        return response.ok ? response.json() : Promise.reject(new Error('HTTP ' + response.status));
+                    })
+                    .then(function (items) {
+                        kindSelect.innerHTML = '';
+                        var auto = document.createElement('option');
+                        auto.value = '';
+                        auto.textContent = autoLabel;
+                        kindSelect.appendChild(auto);
+                        (items || []).forEach(function (item) {
+                            var option = document.createElement('option');
+                            option.value = item.value !== undefined ? item.value : item.Value;
+                            option.textContent = item.text !== undefined ? item.text : item.Text;
+                            kindSelect.appendChild(option);
+                        });
+                        kindSelect.value = '';
+                    })
+                    .catch(function () {
+                        // 刷新失败保留现有选项。
+                    });
             }
         }
 
@@ -188,6 +236,8 @@
                 option.setAttribute('data-value', nodeId);
                 option.setAttribute('data-label', nodeLabel);
                 option.setAttribute('data-level', nodeField(node, 'level', 'Level') || 0);
+                option.setAttribute('data-country', nodeField(node, 'countryCode', 'CountryCode') || '');
+                option.setAttribute('data-subdivision', nodeField(node, 'subdivisionCode', 'SubdivisionCode') || '');
                 option.setAttribute('role', 'option');
                 option.setAttribute('aria-selected', selected ? 'true' : 'false');
                 option.textContent = nodeLabel;
@@ -278,25 +328,15 @@
                 return;
             }
 
-            var countryCode = currentCountryCode();
-            if (!countryCode) {
-                return;
-            }
-
-            if (list.getAttribute('data-loaded-country') !== countryCode) {
-                resetDynamicNodes();
-            }
-
+            // 全局树：根节点为全部国家，无需先选国家。
             if (rootsLoaded) {
                 return;
             }
 
-            root.setAttribute('data-country-code', countryCode);
             loadNodes(null, list, function (ok) {
                 if (ok) {
                     rootsLoaded = true;
                     list.setAttribute('data-loaded', '1');
-                    list.setAttribute('data-loaded-country', countryCode);
                 }
             });
         }
@@ -352,10 +392,6 @@
                     resetDynamicNodes();
                     if (!query) {
                         ensureRoots();
-                        return;
-                    }
-
-                    if (!currentCountryCode()) {
                         return;
                     }
 
