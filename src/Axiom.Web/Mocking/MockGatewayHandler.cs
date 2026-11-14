@@ -670,10 +670,16 @@ public sealed class MockGatewayHandler : DelegatingHandler
             if (request.Method == HttpMethod.Post)
             {
                 using var body = await ReadJsonAsync(request, cancellationToken);
-                var countryCode = Text(body, "countryCode")?.ToUpperInvariant();
+                if (!TryReadLevel(body, out var level))
+                {
+                    return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
+                }
+
+                // Level 1（国家行）未单独给国家代码时，以区划代码兼任国家代码。
+                var countryCode = Text(body, "countryCode")?.ToUpperInvariant()
+                    ?? (level == 1 ? Text(body, "code")?.ToUpperInvariant() : null);
                 var name = Text(body, "name");
-                if (!TryReadLevel(body, out var level)
-                    || countryCode is null || name is null
+                if (countryCode is null || name is null
                     || !TryReadParentId(body, out var parentId))
                 {
                     return Problem(HttpStatusCode.BadRequest, "行政区创建请求无效。");
@@ -892,7 +898,7 @@ public sealed class MockGatewayHandler : DelegatingHandler
         }
     }
 
-    private static string DeriveDefaultKind(string countryCode, int level) => (countryCode.ToUpperInvariant(), level) switch
+    private static string DeriveDefaultKind(string? countryCode, int level) => ((countryCode ?? string.Empty).ToUpperInvariant(), level) switch
     {
         ("CN", 2) => "province",
         ("CN", 3) => "prefecture_city",
