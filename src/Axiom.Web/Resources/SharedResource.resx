@@ -234,6 +234,7 @@
   <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
   <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
+    <data name="GeoDivisions.Form.KindAuto" xml:space="preserve"><value>自动（按国家与层级推导）</value></data>
   <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
   <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>搜索父级…</value></data>
   <data name="Field.GeoDivision.Level" xml:space="preserve"><value>层级</value></data>

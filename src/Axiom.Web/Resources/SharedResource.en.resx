@@ -234,6 +234,7 @@
   <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the region. Please try again later.</value></data>
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>The region has been updated.</value></data>
   <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>The region code already exists for this country and level.</value></data>
+    <data name="GeoDivisions.Form.KindAuto" xml:space="preserve"><value>Auto (derive from country and level)</value></data>
   <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- Select a parent --</value></data>
   <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>Search parent…</value></data>
   <data name="Field.GeoDivision.Level" xml:space="preserve"><value>Level</value></data>

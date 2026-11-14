@@ -396,14 +396,19 @@ public sealed class CreateModel(
             }
         }
 
-        KindOptions = items
+        // 国家行的 Kind 固定为 country；其余层级不允许选 country。
+        items = Input.Level == 1
+            ? items.Where(item => item.Code == "country").ToList()
+            : items.Where(item => item.Code != "country").ToList();
+
+        var kindOptions = items
             .Select(item => new SelectListItem(item.Name, item.Code))
             .ToList();
 
-        if (string.IsNullOrWhiteSpace(Input.Kind) || KindOptions.All(option => option.Value != Input.Kind))
-        {
-            Input.Kind = KindOptions.FirstOrDefault()?.Value ?? "other";
-        }
+        // 预置“自动推导”空选项：留空提交时由 API 按国家与层级推导默认 Kind。
+        KindOptions = new[] { new SelectListItem(localizer["GeoDivisions.Form.KindAuto"].Value, "") }
+            .Concat(kindOptions)
+            .ToList();
 
         return null;
     }
