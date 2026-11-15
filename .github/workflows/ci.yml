@@ -12,12 +12,36 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    # 集成测试连接的临时 PostgreSQL 实例，仅用于 CI，不保存任何生产凭据。
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: axiom_ci_test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      AXIOM_TEST_POSTGRES: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=axiom_ci_test
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore
         run: dotnet restore Axiom.slnx

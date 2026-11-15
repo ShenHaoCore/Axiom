@@ -1,0 +1,44 @@
+@model Axiom.Web.Models.GeoDivisionNodeViewModel
+
+<div class="region-node">
+    <div class="region-row">
+        @if (Model.HasChildren)
+        {
+            <a class="region-toggle" data-bs-toggle="collapse"
+               href="#node-@Model.Id" role="button" aria-expanded="false" aria-controls="node-@Model.Id" aria-label="@Model.Name">
+                <span class="region-chevron" aria-hidden="true">▶</span>
+            </a>
+        }
+        else
+        {
+            <span class="region-leaf-dot" aria-hidden="true">•</span>
+        }
+        <span class="badge-soft @LevelClass(Model.Level)">@Model.KindName</span>
+        <a asp-page="/GeoDivisions/Detail" asp-route-id="@Model.Id">@Model.Name</a>
+        <code class="text-muted small">@Model.Code</code>
+        <div class="row-actions ms-auto">
+            @if (Model.Level is >= 1 and < 4)
+            {
+                <a class="btn btn-ghost"
+                   asp-page="/GeoDivisions/Create"
+                   asp-route-countryCode="@Model.CountryCode"
+                   asp-route-parentId="@Model.Id">@Localizer["GeoDivisions.AddChild"]</a>
+            }
+            <a class="btn btn-ghost" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+        </div>
+    </div>
+    @if (Model.HasChildren)
+    {
+        @* 子级不在服务端预渲染：首次展开时由 site.js 惰性拉取 _GeoDivisionChildren 片段。 *@
+        <div id="node-@Model.Id" class="collapse">
+            <div class="region-children" data-children-container
+                 data-children-url="@Url.Page("/GeoDivisions/Index", "Children", new { id = Model.Id })"
+                 data-error-text="@Localizer["GeoDivisions.LoadChildrenFailed"]"></div>
+        </div>
+    }
+</div>
+
+@functions {
+    static string LevelClass(int level) =>
+        level is >= 1 and <= 4 ? $"level-{level}" : "level-default";
+}

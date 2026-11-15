@@ -1,0 +1,63 @@
+@page "{id:guid}"
+@model Axiom.Web.Pages.Airports.TranslationsModel
+@{
+    ViewData["Title"] = Localizer["Airports.Translations.Title"];
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Index">@Localizer["Airports.Title"]</a></li>
+        @if (Model.Airport is not null)
+        {
+            <li class="breadcrumb-item"><a asp-page="/Airports/Edit" asp-route-id="@Model.Airport.Id">@Model.Airport.Code</a></li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">@Localizer["Translations.Title"]</li>
+    </ol>
+</nav>
+
+@if (Model.Airport is not null)
+{
+    <div class="page-header">
+        <div class="page-header-main">
+            <h1>@Model.Airport.Code <small>@Model.Airport.Name</small></h1>
+            <p class="page-description">@Localizer["Translations.Description"]</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-outline-secondary" asp-page="/Airports/Edit" asp-route-id="@Model.Airport.Id">@Localizer["Common.Cancel"]</a>
+        </div>
+    </div>
+
+    @if (Model.StatusMessage is not null)
+    {
+        <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+    }
+    @if (Model.ErrorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    }
+
+    @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
+    {
+        <form method="post" class="card form-card">
+            <input type="hidden" asp-for="TranslationsLoaded" />
+
+            <div class="form-section">
+                <div class="section-heading">
+                    <h2>@Localizer["Translations.Title"]</h2>
+                    <p>@Localizer["Translations.Hint"]</p>
+                </div>
+
+                <partial name="_TranslationEditor" model="editor" />
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+                <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.Cancel"]</a>
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-warning" role="alert">@Localizer["Translations.LoadFailed"]</div>
+    }
+}

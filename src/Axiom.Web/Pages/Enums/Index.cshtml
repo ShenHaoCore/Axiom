@@ -1,0 +1,74 @@
+@page
+@model Axiom.Web.Pages.Enums.IndexModel
+@{
+    ViewData["Title"] = Localizer["Enums.Title"];
+}
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["Enums.Title"]</h1>
+        <p class="page-description">@Localizer["Enums.Description"]</p>
+    </div>
+    <div class="page-header-actions">
+        <a class="btn btn-primary" asp-page="/Enums/Create" asp-route-category="@Model.Category">@Localizer["Enums.Create"]</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+        <label class="form-label" for="Category">@Localizer["Field.Enum.Category"]</label>
+        <input class="form-control" id="Category" name="Category" value="@Model.Category"
+               placeholder="geo_division.kind" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">@Localizer["Common.Filter"]</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>@Localizer["Field.Enum.Category"]</th>
+                <th>@Localizer["Field.Enum.Code"]</th>
+                <th>@Localizer["Field.Enum.Name"]</th>
+                <th>@Localizer["Field.Enum.SortOrder"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td><code>@item.Category</code></td>
+                <td><code>@item.Code</code></td>
+                <td>@item.Name</td>
+                <td>@item.SortOrder</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" asp-page="/Enums/Edit" asp-route-id="@item.Id">@Localizer["Common.Edit"]</a>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id" class="d-inline"
+                          onsubmit="return confirm('@Localizer["Enums.DeleteConfirm"]');">
+                        <input type="hidden" name="Category" value="@Model.Category" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">@Localizer["Common.Delete"]</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0 && string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <tr>
+                <td colspan="5" class="text-muted">@Localizer["Enums.Empty"]</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

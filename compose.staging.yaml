@@ -1,0 +1,28 @@
+# 预发环境覆盖文件：切换 Staging 配置，OpenIddict 证书从宿主机目录挂载。
+# 使用方式：docker compose --env-file .env.staging -f compose.yaml -f compose.staging.yaml up -d --build
+services:
+  authhub:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      OpenIddict__Certificates__Signing__Path: /certs/signing.pfx
+      OpenIddict__Certificates__Signing__Password: ${OPENIDDICT_CERT_PASSWORD:?Set OPENIDDICT_CERT_PASSWORD}
+      OpenIddict__Certificates__Encryption__Path: /certs/encryption.pfx
+      OpenIddict__Certificates__Encryption__Password: ${OPENIDDICT_CERT_PASSWORD:?Set OPENIDDICT_CERT_PASSWORD}
+    volumes:
+      - ${OPENIDDICT_CERT_DIR:?Set OPENIDDICT_CERT_DIR}:/certs:ro
+
+  reference-data:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+
+  news-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+
+  gateway:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+
+  web:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging

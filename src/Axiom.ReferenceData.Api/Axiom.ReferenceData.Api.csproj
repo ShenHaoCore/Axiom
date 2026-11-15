@@ -2,6 +2,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Axiom.Contracts\Axiom.Contracts.csproj" />
+    <ProjectReference Include="..\Axiom.ReferenceData.Application\Axiom.ReferenceData.Application.csproj" />
+    <ProjectReference Include="..\Axiom.ReferenceData.Domain\Axiom.ReferenceData.Domain.csproj" />
+    <ProjectReference Include="..\Axiom.ReferenceData.Infrastructure\Axiom.ReferenceData.Infrastructure.csproj" />
     <ProjectReference Include="..\Axiom.SharedKernel\Axiom.SharedKernel.csproj" />
     <ProjectReference Include="..\Axiom.Observability\Axiom.Observability.csproj" />
   </ItemGroup>
@@ -15,8 +18,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.14" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
   </ItemGroup>
 
   <PropertyGroup>

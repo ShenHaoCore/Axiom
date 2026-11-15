@@ -1,12 +1,18 @@
 // 展示单条新闻详情，并支持删除。
 using System.Net;
 using System.Net.Http.Json;
+using Axiom.Web.Clients;
+using Axiom.Web.Models;
+using Axiom.Web.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.Web.Pages.News;
 
-public sealed class DetailModel(NewsClient newsClient) : PageModel
+public sealed class DetailModel(
+    NewsClient newsClient,
+    IStringLocalizer<SharedResource> localizer) : PageModel
 {
     public NewsArticleView? Article { get; private set; }
 
@@ -31,7 +37,7 @@ public sealed class DetailModel(NewsClient newsClient) : PageModel
     {
         if (ETag is null)
         {
-            ErrorMessage = "缺少并发令牌，请刷新页面后重试。";
+            ErrorMessage = localizer["Common.MissingETag"].Value;
             var reloadFailure = await LoadAsync(ArticleId, cancellationToken);
             return reloadFailure ?? Page();
         }
@@ -49,19 +55,19 @@ public sealed class DetailModel(NewsClient newsClient) : PageModel
 
         if (response.StatusCode == HttpStatusCode.Conflict)
         {
-            ErrorMessage = "新闻已被其他请求修改，请刷新后重试。";
+            ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
             var reloadFailure = await LoadAsync(ArticleId, cancellationToken);
             return reloadFailure ?? Page();
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = "删除新闻失败，请稍后重试。";
+            ErrorMessage = localizer["News.Detail.DeleteFailed"].Value;
             var reloadFailure = await LoadAsync(ArticleId, cancellationToken);
             return reloadFailure ?? Page();
         }
 
-        StatusMessage = "新闻已删除。";
+        StatusMessage = localizer["News.Detail.Deleted"].Value;
         return RedirectToPage("/News/Index");
     }
 
@@ -85,7 +91,7 @@ public sealed class DetailModel(NewsClient newsClient) : PageModel
 
         if (!response.IsSuccessStatusCode)
         {
-            ErrorMessage = "无法加载新闻详情，请稍后重试。";
+            ErrorMessage = localizer["News.Detail.LoadFailed"].Value;
             return null;
         }
 

@@ -4,15 +4,15 @@
     Layout = null;
 }
 <!doctype html>
-<html lang="zh-CN">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Axiom 登录</title>
+    <title>@Localizer["Login.Title"]</title>
 </head>
 <body>
     <main>
-        <h1>登录 Axiom</h1>
+        <h1>@Localizer["Login.Heading"]</h1>
         <form method="post">
             <input type="hidden" asp-for="ReturnUrl">
             <div asp-validation-summary="ModelOnly"></div>
@@ -26,7 +26,7 @@
                 <input asp-for="Input.Password" autocomplete="current-password">
                 <span asp-validation-for="Input.Password"></span>
             </p>
-            <button type="submit">登录</button>
+            <button type="submit">@Localizer["Login.Submit"]</button>
         </form>
     </main>
 </body>

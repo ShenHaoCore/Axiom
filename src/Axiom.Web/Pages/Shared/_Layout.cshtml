@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,36 +10,192 @@
     <link rel="stylesheet" href="~/Axiom.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-page="/Index">Axiom</a>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Index">机场档案</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/News/Index">新闻管理</a>
+@{
+    // 依据当前路径高亮顶部一级分类与侧边栏功能模块。
+    var path = ViewContext.HttpContext.Request.Path.Value?.ToLowerInvariant() ?? "/";
+    var activeNav = path.StartsWith("/news") ? "news"
+        : path.StartsWith("/geodivisions") ? "geo-divisions"
+        : path.StartsWith("/enums") ? "enums"
+        : "airports";
+    // 顶部菜单为一级分类链接：点击切换左侧菜单，具体功能模块始终展示在左侧。
+    var activeGroup = activeNav == "news" ? "content" : "data";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var userName = User.Identity?.Name ?? string.Empty;
+    var userInitial = userName.Length > 0 ? userName[..1] : "?";
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+<div class="app-shell">
+    <!-- 全宽顶栏：LOGO 与一级业务导航同一行 -->
+    <header class="app-header">
+        <button class="topbar-toggler" type="button" id="navToggle"
+                aria-label="@Localizer["Layout.ToggleNavigation"]">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M2 4h12M2 8h12M2 12h12" />
+            </svg>
+        </button>
+        <a class="app-header-brand" asp-page="/Index">
+            <span class="sidebar-brand-mark" aria-hidden="true">A</span>
+            <span class="app-header-brand-text">Axiom</span>
+        </a>
+        <nav class="app-header-nav d-none d-md-flex" aria-label="Main">
+            <!-- 一级分类：数据管理（下辖机场、行政区、枚举字典） -->
+            <a class="app-header-link @(activeGroup == "data" ? "active" : "")" asp-page="/Index" aria-current="@(activeGroup == "data" ? "page" : null)">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                    <ellipse cx="8" cy="3.5" rx="5.5" ry="2" />
+                    <path d="M2.5 3.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
+                    <path d="M2.5 7.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
+                </svg>
+                <span>@Localizer["Layout.NavSectionData"]</span>
+            </a>
+            <!-- 一级分类：内容管理（下辖新闻管理） -->
+            <a class="app-header-link @(activeGroup == "content" ? "active" : "")" asp-page="/News/Index" aria-current="@(activeGroup == "content" ? "page" : null)">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                    <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                </svg>
+                <span>@Localizer["Layout.NavSectionContent"]</span>
+            </a>
+        </nav>
+        <div class="app-header-actions">
+            <!-- 界面语言切换：只展示语言名；切换前由 site.js 检查未保存表单。 -->
+            <form method="get" action="/culture" class="topbar-language">
+                <label class="topbar-language-label" for="cultureSelect">@Localizer["Culture.UiLabel"]</label>
+                <select id="cultureSelect" name="culture" class="topbar-language-select"
+                        aria-label="@Localizer["Culture.Select"]"
+                        data-language-select
+                        data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">
+                    @foreach (var culture in LocalizationOptions.SupportedCultures)
+                    {
+                        var cultureResource = Localizer[$"Culture.{culture}"];
+                        var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
+                        <option value="@culture" selected="@(culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@cultureName</option>
+                    }
+                </select>
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+            </form>
+            @if (isAuthenticated)
+            {
+                <div class="dropdown">
+                    <button class="topbar-user-btn dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="user-avatar" aria-hidden="true">@userInitial</span>
+                        <span class="topbar-user">@userName</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">@userName</h6></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form method="post" asp-page="/Account/Logout" class="m-0">
+                                <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M6 2H3.5A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14H6" />
+                                        <path d="M10.5 5 13.5 8l-3 3M13 8H6.5" />
+                                    </svg>
+                                    <span>@Localizer["Common.SignOut"]</span>
+                                </button>
+                            </form>
                         </li>
                     </ul>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <span class="navbar-text">@User.Identity.Name</span>
-                    }
                 </div>
-            </div>
-        </nav>
+            }
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">Axiom 基础数据管理</div>
-    </footer>
+    <div class="app-body d-flex">
+        <!-- 桌面端侧边栏：当前一级分类下的功能模块 -->
+        <aside class="sidebar d-none d-md-flex flex-column">
+            <nav class="sidebar-nav flex-grow-1" aria-label="Section">
+                @if (activeGroup == "data")
+                {
+                    <div class="sidebar-section"><span>@Localizer["Layout.NavSectionData"]</span></div>
+                    <a class="sidebar-link @(activeNav == "airports" ? "active" : "")" asp-page="/Index" aria-current="@(activeNav == "airports" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                            <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
+                        </svg>
+                        <span>@Localizer["Nav.Airports"]</span>
+                    </a>
+                    <a class="sidebar-link @(activeNav == "geo-divisions" ? "active" : "")" asp-page="/GeoDivisions/Index" aria-current="@(activeNav == "geo-divisions" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6.5" />
+                            <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
+                        </svg>
+                        <span>@Localizer["Nav.GeoDivisions"]</span>
+                    </a>
+                    <a class="sidebar-link @(activeNav == "enums" ? "active" : "")" asp-page="/Enums/Index" aria-current="@(activeNav == "enums" ? "page" : null)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                            <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
+                        </svg>
+                        <span>@Localizer["Nav.Enums"]</span>
+                    </a>
+                }
+                else
+                {
+                    <div class="sidebar-section"><span>@Localizer["Layout.NavSectionContent"]</span></div>
+                    <a class="sidebar-link active" asp-page="/News/Index" aria-current="page">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                            <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                        </svg>
+                        <span>@Localizer["Nav.News"]</span>
+                    </a>
+                }
+            </nav>
+        </aside>
+        <div class="app-main">
+        <main role="main" class="content">
+            <div class="content-inner">
+                @RenderBody()
+            </div>
+        </main>
+        <footer class="footer">
+            @Localizer["Layout.Footer"]
+        </footer>
+        </div>
+    </div>
+</div>
+
+<!-- 移动端抽屉导航 -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="mobileNavLabel">
+            <span class="sidebar-brand-mark me-2" aria-hidden="true">A</span>Axiom
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <nav aria-label="Mobile">
+            <div class="sidebar-section"><span>@Localizer["Layout.NavSectionData"]</span></div>
+            <a class="sidebar-link @(activeNav == "airports" ? "active" : "")" asp-page="/Index" data-bs-dismiss="offcanvas">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                    <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
+                </svg>
+                <span>@Localizer["Nav.Airports"]</span>
+            </a>
+            <a class="sidebar-link @(activeNav == "geo-divisions" ? "active" : "")" asp-page="/GeoDivisions/Index" data-bs-dismiss="offcanvas">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
+                </svg>
+                <span>@Localizer["Nav.GeoDivisions"]</span>
+            </a>
+            <a class="sidebar-link @(activeNav == "enums" ? "active" : "")" asp-page="/Enums/Index" data-bs-dismiss="offcanvas">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                    <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
+                </svg>
+                <span>@Localizer["Nav.Enums"]</span>
+            </a>
+            <div class="sidebar-section"><span>@Localizer["Layout.NavSectionContent"]</span></div>
+            <a class="sidebar-link @(activeNav == "news" ? "active" : "")" asp-page="/News/Index" data-bs-dismiss="offcanvas">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+                    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                    <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                </svg>
+                <span>@Localizer["Nav.News"]</span>
+            </a>
+        </nav>
+    </div>
+</div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

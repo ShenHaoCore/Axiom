@@ -1,0 +1,96 @@
+@page
+@model Axiom.Web.Pages.Airports.CreateModel
+@{
+    ViewData["Title"] = Localizer["Airports.CreateHeading"];
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Index">@Localizer["Airports.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Localizer["Airports.CreateHeading"]</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@Localizer["Airports.CreateHeading"]</h1>
+        <p class="page-description">@Localizer["Airports.CreateDescription"]</p>
+    </div>
+</div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<form method="post" class="card form-card" id="airport-create-form">
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["Airports.Edit.FormHeading"]</h2>
+            <p>@Localizer["Airports.Section.IdentityDescription"]</p>
+        </div>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Code" class="form-label">
+                    @Localizer["Field.Airport.Code"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Code" class="form-control" autocomplete="off" placeholder="PVG">
+                <div class="form-text">@Localizer["Airports.Hint.Code"]</div>
+                <span asp-validation-for="Input.Code" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.Name" class="form-label">
+                    @Localizer["Field.Airport.Name"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.Name" class="form-control">
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.CountryCode" class="form-label">
+                    @Localizer["Field.Airport.CountryCode"]<span class="required-mark" aria-hidden="true">*</span>
+                </label>
+                <input asp-for="Input.CountryCode" class="form-control" autocomplete="off" placeholder="CN">
+                <div class="form-text">@Localizer["Airports.Hint.CountryCode"]</div>
+                <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Input.City" class="form-label"></label>
+                <input asp-for="Input.City" class="form-control">
+                <span asp-validation-for="Input.City" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="section-heading">
+            <h2>@Localizer["Airports.Section.Location"]</h2>
+            <p>@Localizer["Airports.Hint.Location"]</p>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Latitude" class="form-label"></label>
+                <input asp-for="Input.Latitude" class="form-control" step="any" placeholder="31.1443">
+                <span asp-validation-for="Input.Latitude" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Longitude" class="form-label"></label>
+                <input asp-for="Input.Longitude" class="form-control" step="any" placeholder="121.8083">
+                <span asp-validation-for="Input.Longitude" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@Localizer["Airports.CreateHeading"]</button>
+        <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.Cancel"]</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

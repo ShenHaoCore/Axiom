@@ -1,0 +1,135 @@
+@model TranslationEditorModel
+@*
+    共享译文编辑器：默认语言原文只读页签 + 各语言编辑页签 + 翻译进度。
+    自身不包含 form 与保存按钮，由调用页面的表单包裹。
+*@
+<div class="translation-editor">
+    <div class="translation-toolbar">
+        <span class="translation-source-hint">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="8" cy="8" r="6.5" />
+                <path d="M8 7.5v4M8 4.5v.5" />
+            </svg>
+            <span>@Localizer["Translations.SourceFormat", Model.SourceLanguage]</span>
+        </span>
+        <span class="translation-progress">@Localizer["Translations.Progress", Model.TranslatedCount, Model.Locales.Count]</span>
+    </div>
+
+    @if (Model.Locales.Count == 0)
+    {
+        <div class="translation-source-empty">@Localizer["Translations.SourceEmpty"]</div>
+    }
+    else
+    {
+        <ul class="nav nav-tabs translation-tabs" role="tablist">
+            <!-- 默认语言：只读原文页签，不可编辑。 -->
+            <li class="nav-item" role="presentation">
+                <button type="button" class="nav-link active"
+                        id="translation-tab-source"
+                        data-bs-toggle="tab" data-bs-target="#translation-pane-source"
+                        role="tab" aria-controls="translation-pane-source"
+                        aria-selected="true">
+                    <span>@Model.SourceLanguage</span>
+                    <span class="translation-status is-source">@Localizer["Translations.SourceTab"]</span>
+                </button>
+            </li>
+            @for (var i = 0; i < Model.Locales.Count; i++)
+            {
+                var locale = Model.Locales[i];
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link"
+                            id="translation-tab-@locale.Culture"
+                            data-bs-toggle="tab" data-bs-target="#translation-pane-@locale.Culture"
+                            role="tab" aria-controls="translation-pane-@locale.Culture"
+                            aria-selected="false">
+                        <span>@locale.Label</span>
+                        <span class="translation-status @(locale.IsTranslated ? "is-translated" : "is-missing")"
+                              data-translation-status-for="translation-pane-@locale.Culture"
+                              data-translated-text="@Localizer["Translations.Status.Translated"]"
+                              data-missing-text="@Localizer["Translations.Status.Missing"]">
+                            @(locale.IsTranslated ? Localizer["Translations.Status.Translated"] : Localizer["Translations.Status.Missing"])
+                        </span>
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-content translation-tab-content">
+            <!-- 原文页签：只读展示默认语言内容。 -->
+            <div class="tab-pane fade show active" id="translation-pane-source" role="tabpanel"
+                 aria-labelledby="translation-tab-source" tabindex="0">
+                @for (var s = 0; s < Model.SourceFields.Count; s++)
+                {
+                    var sourceField = Model.SourceFields[s];
+                    var sourceId = $"translation-source-{s}";
+                    <div class="translation-field">
+                        <label class="form-label" for="@sourceId">@sourceField.Label</label>
+                        @if (sourceField.Multiline)
+                        {
+                            <textarea class="form-control translation-source-input" id="@sourceId" rows="6" readonly>@sourceField.SourceValue</textarea>
+                        }
+                        else
+                        {
+                            <input class="form-control translation-source-input" id="@sourceId"
+                                   value="@sourceField.SourceValue" readonly />
+                        }
+                    </div>
+                }
+            </div>
+
+            @for (var i = 0; i < Model.Locales.Count; i++)
+            {
+                var locale = Model.Locales[i];
+                <div class="tab-pane fade"
+                     id="translation-pane-@locale.Culture"
+                     data-translation-pane
+                     role="tabpanel" aria-labelledby="translation-tab-@locale.Culture" tabindex="0">
+                    @foreach (var field in locale.Fields)
+                    {
+                        var fieldId = FieldId(field);
+                        <div class="translation-field">
+                            <div class="translation-field-header">
+                                <label class="form-label" for="@fieldId">@field.Label</label>
+                                @if (!string.IsNullOrWhiteSpace(field.SourceValue))
+                                {
+                                    <button type="button" class="translation-copy"
+                                            data-copy-source="@fieldId"
+                                            data-source-value="@field.SourceValue"
+                                            data-copied-text="@Localizer["Translations.CopiedSource"]">@Localizer["Translations.CopySource"]</button>
+                                }
+                            </div>
+                            @if (field.Multiline)
+                            {
+                                <textarea class="form-control" id="@fieldId" name="@field.Name" rows="6"
+                                          maxlength="@field.MaxLength" data-translation-input>@field.Value</textarea>
+                            }
+                            else
+                            {
+                                <input class="form-control" id="@fieldId" name="@field.Name"
+                                       value="@field.Value" maxlength="@field.MaxLength" data-translation-input />
+                            }
+
+                            @if (string.IsNullOrWhiteSpace(field.SourceValue))
+                            {
+                                <div class="translation-source-empty">@Localizer["Translations.SourceEmpty"]</div>
+                            }
+                            else
+                            {
+                                <div class="translation-source-value">
+                                    <span class="translation-source-value-label">@Localizer["Translations.SourceLabel"]</span>
+                                    @field.SourceValue
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@functions {
+    // 把绑定路径（Translations[en].Name）转成合法的元素 id。
+    private static string FieldId(TranslationField field) =>
+        "translation-" + field.Name.Replace("[", "-").Replace("]", string.Empty).Replace(".", "-");
+}

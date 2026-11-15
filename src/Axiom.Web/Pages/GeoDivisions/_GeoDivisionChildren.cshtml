@@ -1,0 +1,10 @@
+@model IReadOnlyList<Axiom.Web.Models.GeoDivisionNodeViewModel>
+@* 惰性加载片段：某节点的直接子级列表，由 /GeoDivisions?handler=Children 返回。 *@
+@foreach (var node in Model)
+{
+    <partial name="_GeoDivisionTreeNode" model="node" />
+}
+@if (Model.Count == 0)
+{
+    <p class="text-muted mb-0">@Localizer["GeoDivisions.TreeEmpty"]</p>
+}

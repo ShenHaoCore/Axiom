@@ -1,8 +1,11 @@
 // 将外部机场列表 REST 查询转换为带 Deadline 的内部 gRPC 调用。
 using Axiom.Contracts.ReferenceData;
 using Axiom.Contracts.ReferenceData.V1;
+using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
+using Axiom.SharedKernel.Resources;
 using Grpc.Core;
+using Microsoft.Extensions.Localization;
 
 namespace Axiom.ApiGateway;
 
@@ -17,17 +20,21 @@ public static class ReferenceDataGrpcEndpoints
         [AsParameters] LocationQueryParameters query,
         HttpContext httpContext,
         ReferenceDataQuery.ReferenceDataQueryClient client,
+        IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken cancellationToken)
     {
         var errors = query.Validate();
         if (errors.Count > 0)
         {
-            return Results.ValidationProblem(errors);
+            return Results.ValidationProblem(
+                errors.ToMessages(localizer),
+                title: localizer[ApiErrorCodes.VALIDATION_FAILED].Value);
         }
 
         var metadata = new Metadata
         {
-            { "Authorization", httpContext.Request.Headers.Authorization.ToString() }
+            { "Authorization", httpContext.Request.Headers.Authorization.ToString() },
+            { "Accept-Language", httpContext.Request.Headers.AcceptLanguage.ToString() }
         };
         var request = new ListAirportsRequest
         {
@@ -64,11 +71,15 @@ public static class ReferenceDataGrpcEndpoints
         }
         catch (RpcException exception) when (exception.StatusCode == StatusCode.DeadlineExceeded)
         {
-            return Results.Problem(statusCode: StatusCodes.Status504GatewayTimeout, title: "基础数据查询超时。");
+            return Results.Problem(
+                statusCode: StatusCodes.Status504GatewayTimeout,
+                title: localizer[ApiErrorCodes.GATEWAY_TIMEOUT].Value);
         }
         catch (RpcException exception) when (exception.StatusCode == StatusCode.Unavailable)
         {
-            return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "基础数据服务暂不可用。");
+            return Results.Problem(
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: localizer[ApiErrorCodes.GATEWAY_UNAVAILABLE].Value);
         }
     }
 }

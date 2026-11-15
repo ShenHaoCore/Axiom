@@ -23,15 +23,19 @@ public sealed class TestAuthHandler(
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var claims = values.ToString()
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        var permissions = values.ToString()
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var claims = permissions
             .Select(permission => new Claim(AxiomClaimTypes.PERMISSION, permission))
             .ToList();
         claims.Add(new Claim(ClaimTypes.NameIdentifier, "integration-test-user"));
 
         var identity = new ClaimsIdentity(claims, SCHEME);
         var properties = new AuthenticationProperties();
-        properties.StoreTokens([new AuthenticationToken { Name = "access_token", Value = "test-access-token" }]);
+        var accessToken = permissions.Contains(ReferenceDataPermissions.MANAGE)
+            ? "test-access-token"
+            : "test-read-access-token";
+        properties.StoreTokens([new AuthenticationToken { Name = "access_token", Value = accessToken }]);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), properties, SCHEME);
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }

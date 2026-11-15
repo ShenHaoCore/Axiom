@@ -1,3 +1,7 @@
-﻿@using Axiom.Web
+﻿@using Axiom.SharedKernel.Localization
+@using Axiom.Web.Models
+@using Axiom.Web.Resources
 @namespace Axiom.Web.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> Localizer
+@inject AxiomLocalizationOptions LocalizationOptions

@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- 布局 / 导航 -->
+  <data name="Nav.Airports" xml:space="preserve"><value>机场档案</value></data>
+  <data name="Nav.News" xml:space="preserve"><value>新闻管理</value></data>
+  <data name="Nav.GeoDivisions" xml:space="preserve"><value>行政区</value></data>
+  <data name="Nav.Enums" xml:space="preserve"><value>枚举字典</value></data>
+  <data name="Enums.Title" xml:space="preserve"><value>枚举字典</value></data>
+  <data name="Enums.Description" xml:space="preserve"><value>维护各业务可引用的枚举分类与代码。</value></data>
+  <data name="Enums.Create" xml:space="preserve"><value>新增枚举</value></data>
+  <data name="Enums.Edit" xml:space="preserve"><value>编辑枚举</value></data>
+  <data name="Enums.Empty" xml:space="preserve"><value>暂无枚举项。</value></data>
+  <data name="Enums.LoadFailed" xml:space="preserve"><value>加载枚举失败。</value></data>
+  <data name="Enums.Created" xml:space="preserve"><value>枚举已创建。</value></data>
+  <data name="Enums.CreateFailed" xml:space="preserve"><value>创建枚举失败。</value></data>
+  <data name="Enums.Updated" xml:space="preserve"><value>枚举已更新。</value></data>
+  <data name="Enums.EditFailed" xml:space="preserve"><value>更新枚举失败。</value></data>
+  <data name="Enums.Deleted" xml:space="preserve"><value>枚举已删除。</value></data>
+  <data name="Enums.DeleteFailed" xml:space="preserve"><value>删除枚举失败。</value></data>
+  <data name="Enums.DeleteInUse" xml:space="preserve"><value>枚举仍被引用，无法删除。</value></data>
+  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>确认删除该枚举项？</value></data>
+  <data name="Enums.NotFound" xml:space="preserve"><value>枚举项不存在。</value></data>
+  <data name="Enums.CodeConflict" xml:space="preserve"><value>相同分类下代码已存在。</value></data>
+  <data name="Field.Enum.Category" xml:space="preserve"><value>分类</value></data>
+  <data name="Field.Enum.Code" xml:space="preserve"><value>代码</value></data>
+  <data name="Field.Enum.Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Field.Enum.SortOrder" xml:space="preserve"><value>排序</value></data>
+  <data name="Validation.Enum.CategoryRequired" xml:space="preserve"><value>分类不能为空。</value></data>
+  <data name="Validation.Enum.CategoryTooLong" xml:space="preserve"><value>分类最多 64 个字符。</value></data>
+  <data name="Validation.Enum.CodeRequired" xml:space="preserve"><value>代码不能为空。</value></data>
+  <data name="Validation.Enum.CodeTooLong" xml:space="preserve"><value>代码最多 64 个字符。</value></data>
+  <data name="Validation.Enum.NameRequired" xml:space="preserve"><value>名称不能为空。</value></data>
+  <data name="Validation.Enum.NameTooLong" xml:space="preserve"><value>名称最多 100 个字符。</value></data>
+  <data name="Layout.NavSectionData" xml:space="preserve"><value>数据管理</value></data>
+  <data name="Layout.NavSectionContent" xml:space="preserve"><value>内容管理</value></data>
+  <data name="Layout.ToggleNavigation" xml:space="preserve"><value>切换导航菜单</value></data>
+  <data name="Layout.Footer" xml:space="preserve"><value>Axiom 基础数据管理</value></data>
+  <data name="Culture.Select" xml:space="preserve"><value>选择界面语言</value></data>
+  <data name="Culture.zh-CN" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Culture.en" xml:space="preserve"><value>English</value></data>
+  <data name="Culture.UiLabel" xml:space="preserve"><value>界面语言</value></data>
+  <data name="Layout.UnsavedChanges" xml:space="preserve"><value>切换界面语言会刷新页面，未保存的修改将丢失。确定继续吗？</value></data>
+
+  <!-- 通用 -->
+  <data name="Common.Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Common.View" xml:space="preserve"><value>查看</value></data>
+  <data name="Common.Edit" xml:space="preserve"><value>编辑</value></data>
+  <data name="Common.Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="Common.Search" xml:space="preserve"><value>搜索</value></data>
+  <data name="Common.Clear" xml:space="preserve"><value>清除</value></data>
+  <data name="Common.Filter" xml:space="preserve"><value>筛选</value></data>
+  <data name="Common.BackToList" xml:space="preserve"><value>返回列表</value></data>
+  <data name="Common.TotalCount" xml:space="preserve"><value>共 {0} 条。</value></data>
+  <data name="Common.MissingETag" xml:space="preserve"><value>缺少并发令牌，请刷新页面后重试。</value></data>
+  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>内容已被其他请求修改，请刷新后重试。</value></data>
+  <data name="Common.ValidationFailed" xml:space="preserve"><value>提交内容未通过服务端校验，请检查后重试。</value></data>
+  <data name="Common.LoadFailed" xml:space="preserve"><value>无法加载数据，请稍后重试。</value></data>
+  <data name="Common.Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Common.SignOut" xml:space="preserve"><value>退出登录</value></data>
+  <data name="Common.DangerZone" xml:space="preserve"><value>危险操作</value></data>
+  <data name="Common.DeleteWarning" xml:space="preserve"><value>删除后不可恢复，请谨慎操作。</value></data>
+
+  <!-- 翻译维护 -->
+  <data name="Translations.Title" xml:space="preserve"><value>多语言翻译</value></data>
+  <data name="Translations.Hint" xml:space="preserve"><value>为非默认语言填写译文；留空的字段不会保存，全部留空将清除该语言的译文。</value></data>
+  <data name="Translations.Manage" xml:space="preserve"><value>翻译</value></data>
+  <data name="Translations.Saved" xml:space="preserve"><value>翻译已保存。</value></data>
+  <data name="Translations.SaveFailed" xml:space="preserve"><value>保存翻译失败，请稍后重试。</value></data>
+  <data name="Translations.LoadFailed" xml:space="preserve"><value>无法加载翻译，请稍后重试。</value></data>
+  <data name="Translations.Description" xml:space="preserve"><value>为当前记录维护各语言的名称与描述，留空表示不提供该语言的译文。</value></data>
+  <data name="Translations.SourceFormat" xml:space="preserve"><value>原文（{0}）</value></data>
+  <data name="Translations.SourceLabel" xml:space="preserve"><value>原文</value></data>
+  <data name="Translations.SourceEmpty" xml:space="preserve"><value>默认语言内容为空。</value></data>
+  <data name="Translations.Status.Translated" xml:space="preserve"><value>已翻译</value></data>
+  <data name="Translations.Status.Missing" xml:space="preserve"><value>未翻译</value></data>
+  <data name="Translations.SourceTab" xml:space="preserve"><value>原文</value></data>
+  <data name="Translations.Progress" xml:space="preserve"><value>已完成 {0}/{1} 种语言</value></data>
+  <data name="Translations.CopySource" xml:space="preserve"><value>填入原文</value></data>
+  <data name="Translations.CopiedSource" xml:space="preserve"><value>已填入</value></data>
+
+  <!-- 机场 -->
+  <data name="Airports.Title" xml:space="preserve"><value>机场档案</value></data>
+  <data name="Airports.CreateHeading" xml:space="preserve"><value>新增机场</value></data>
+  <data name="Airports.ListHeading" xml:space="preserve"><value>机场列表</value></data>
+  <data name="Airports.Column.Code" xml:space="preserve"><value>代码</value></data>
+  <data name="Airports.Column.Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Airports.Column.Country" xml:space="preserve"><value>国家</value></data>
+  <data name="Airports.Column.City" xml:space="preserve"><value>城市</value></data>
+  <data name="Airports.Column.Latitude" xml:space="preserve"><value>纬度</value></data>
+  <data name="Airports.Column.Longitude" xml:space="preserve"><value>经度</value></data>
+  <data name="Airports.Empty" xml:space="preserve"><value>暂无机场档案。</value></data>
+  <data name="Airports.Created" xml:space="preserve"><value>机场已新增。</value></data>
+  <data name="Airports.LoadFailed" xml:space="preserve"><value>无法加载机场列表，请稍后重试。</value></data>
+  <data name="Airports.CodeConflict" xml:space="preserve"><value>机场代码已存在。</value></data>
+  <data name="Airports.CreateFailed" xml:space="preserve"><value>新增机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Title" xml:space="preserve"><value>编辑机场</value></data>
+  <data name="Airports.Edit.DetailsHeading" xml:space="preserve"><value>机场详情</value></data>
+  <data name="Airports.Edit.FormHeading" xml:space="preserve"><value>基本信息</value></data>
+  <data name="Airports.Edit.LoadFailed" xml:space="preserve"><value>无法加载机场详情，请稍后重试。</value></data>
+  <data name="Airports.Edit.SaveFailed" xml:space="preserve"><value>保存机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Updated" xml:space="preserve"><value>机场已更新。</value></data>
+  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>确定删除这个机场吗？</value></data>
+  <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>删除机场失败，请稍后重试。</value></data>
+  <data name="Airports.Edit.Deleted" xml:space="preserve"><value>机场已删除。</value></data>
+  <data name="Airports.Translations.Title" xml:space="preserve"><value>机场翻译</value></data>
+  <data name="Airports.Description" xml:space="preserve"><value>管理机场主数据，包括代码、名称、所属国家与地理坐标。</value></data>
+  <data name="Airports.CreateDescription" xml:space="preserve"><value>填写机场标识与位置信息，保存后立即出现在列表中。</value></data>
+  <data name="Airports.Edit.Description" xml:space="preserve"><value>修改机场基础信息，保存后立即生效。</value></data>
+  <data name="Airports.Section.IdentityDescription" xml:space="preserve"><value>机场的唯一标识与所属国家。</value></data>
+  <data name="Airports.Section.Location" xml:space="preserve"><value>位置坐标</value></data>
+  <data name="Airports.Hint.Code" xml:space="preserve"><value>3 位 IATA 代码，例如 PVG。</value></data>
+  <data name="Airports.Hint.CountryCode" xml:space="preserve"><value>2 位 ISO 国家代码，例如 CN。</value></data>
+  <data name="Airports.Hint.Location" xml:space="preserve"><value>使用十进制度；纬度 -90 到 90，经度 -180 到 180。</value></data>
+  <data name="Airports.EmptyHint" xml:space="preserve"><value>新增机场后，这里会显示机场列表与操作入口。</value></data>
+
+  <!-- 新闻 -->
+  <data name="News.Title" xml:space="preserve"><value>新闻管理</value></data>
+  <data name="News.New" xml:space="preserve"><value>新增新闻</value></data>
+  <data name="News.Status.All" xml:space="preserve"><value>全部</value></data>
+  <data name="News.Status.Draft" xml:space="preserve"><value>草稿</value></data>
+  <data name="News.Status.Published" xml:space="preserve"><value>已发布</value></data>
+  <data name="News.Status.Archived" xml:space="preserve"><value>已归档</value></data>
+  <data name="News.Column.Title" xml:space="preserve"><value>标题</value></data>
+  <data name="News.Column.Category" xml:space="preserve"><value>分类</value></data>
+  <data name="News.Column.Status" xml:space="preserve"><value>状态</value></data>
+  <data name="News.Column.Author" xml:space="preserve"><value>作者</value></data>
+  <data name="News.Column.PublishedAt" xml:space="preserve"><value>发布时间</value></data>
+  <data name="News.Empty" xml:space="preserve"><value>暂无新闻。</value></data>
+  <data name="News.LoadFailed" xml:space="preserve"><value>无法加载新闻列表，请稍后重试。</value></data>
+  <data name="News.Detail.Title" xml:space="preserve"><value>新闻详情</value></data>
+  <data name="News.Detail.Summary" xml:space="preserve"><value>摘要</value></data>
+  <data name="News.Detail.Unpublished" xml:space="preserve"><value>未发布</value></data>
+  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这条新闻吗？</value></data>
+  <data name="News.Detail.Deleted" xml:space="preserve"><value>新闻已删除。</value></data>
+  <data name="News.Detail.DeleteFailed" xml:space="preserve"><value>删除新闻失败，请稍后重试。</value></data>
+  <data name="News.Detail.LoadFailed" xml:space="preserve"><value>无法加载新闻详情，请稍后重试。</value></data>
+  <data name="News.Edit.EditTitle" xml:space="preserve"><value>编辑新闻</value></data>
+  <data name="News.Edit.CreateTitle" xml:space="preserve"><value>新增新闻</value></data>
+  <data name="News.Edit.LoadFailed" xml:space="preserve"><value>无法加载新闻内容，请稍后重试。</value></data>
+  <data name="News.Edit.SaveFailed" xml:space="preserve"><value>保存新闻失败，请稍后重试。</value></data>
+  <data name="News.Edit.Created" xml:space="preserve"><value>新闻已创建。</value></data>
+  <data name="News.Edit.Updated" xml:space="preserve"><value>新闻已更新。</value></data>
+  <data name="News.Description" xml:space="preserve"><value>创建、编辑、发布与归档新闻内容。</value></data>
+  <data name="News.EmptyHint" xml:space="preserve"><value>创建第一篇新闻后，这里会显示内容列表。</value></data>
+  <data name="News.Edit.Description" xml:space="preserve"><value>填写新闻元信息与正文，保存后可随时回来修改。</value></data>
+  <data name="News.Section.Meta" xml:space="preserve"><value>基本信息</value></data>
+  <data name="News.Section.MetaHint" xml:space="preserve"><value>标题、分类、作者与发布状态。</value></data>
+  <data name="News.Section.Content" xml:space="preserve"><value>正文</value></data>
+  <data name="News.Edit.SummaryHint" xml:space="preserve"><value>列表与详情页展示的简短摘要，最多 500 个字符。</value></data>
+  <data name="News.Edit.ContentHint" xml:space="preserve"><value>支持纯文本与换行，最多 50000 个字符。</value></data>
+  <data name="News.Detail.Article" xml:space="preserve"><value>正文</value></data>
+  <data name="News.Detail.Meta" xml:space="preserve"><value>文章信息</value></data>
+
+  <!-- 行政区 -->
+  <data name="GeoDivisions.Title" xml:space="preserve"><value>行政区浏览</value></data>
+  <data name="GeoDivisions.LoadChildrenFailed" xml:space="preserve"><value>子级行政区加载失败，点击重试。</value></data>
+  <data name="GeoDivisions.SearchLabel" xml:space="preserve"><value>搜索行政区</value></data>
+  <data name="GeoDivisions.SearchPlaceholder" xml:space="preserve"><value>按名称搜索…</value></data>
+  <data name="GeoDivisions.SearchResults" xml:space="preserve"><value>搜索结果</value></data>
+  <data name="GeoDivisions.SearchTotal" xml:space="preserve"><value>共 {0} 条</value></data>
+  <data name="GeoDivisions.NoMatch" xml:space="preserve"><value>未找到匹配 "{0}" 的行政区。</value></data>
+    <data name="GeoDivisions.Section.Names" xml:space="preserve"><value>别名与本地名</value></data>
+  <data name="GeoDivisions.Section.NamesHint" xml:space="preserve"><value>可选：其他语言或书写形式的名称。</value></data>
+  <data name="GeoDivisions.Section.Optional" xml:space="preserve"><value>更多信息（选填）</value></data>
+  <data name="Field.GeoDivision.Depth" xml:space="preserve"><value>层级</value></data>
+<data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
+  <data name="GeoDivisions.Column.Level" xml:space="preserve"><value>层级</value></data>
+  <data name="GeoDivisions.Column.Name" xml:space="preserve"><value>名称</value></data>
+  <data name="GeoDivisions.Column.Code" xml:space="preserve"><value>代码</value></data>
+  <data name="GeoDivisions.Column.Country" xml:space="preserve"><value>国家</value></data>
+  <data name="GeoDivisions.Column.Subdivision" xml:space="preserve"><value>一级区划代码</value></data>
+  <data name="GeoDivisions.Column.Population" xml:space="preserve"><value>人口</value></data>
+  <data name="GeoDivisions.Level.1" xml:space="preserve"><value>第1层</value></data>
+  <data name="GeoDivisions.Level.2" xml:space="preserve"><value>第2层</value></data>
+  <data name="GeoDivisions.Level.3" xml:space="preserve"><value>第3层</value></data>
+  <data name="GeoDivisions.Level.4" xml:space="preserve"><value>第4层</value></data>
+  <data name="GeoDivisions.Municipality" xml:space="preserve"><value>直辖市</value></data>
+  <data name="GeoDivisions.AutonomousRegion" xml:space="preserve"><value>自治区</value></data>
+  <data name="GeoDivisions.SpecialAdministrativeRegion" xml:space="preserve"><value>特别行政区</value></data>
+  <data name="GeoDivisions.Kind.standard" xml:space="preserve"><value>标准</value></data>
+  <data name="GeoDivisions.Kind.municipality" xml:space="preserve"><value>直辖市</value></data>
+  <data name="GeoDivisions.Kind.autonomous_region" xml:space="preserve"><value>自治区</value></data>
+  <data name="GeoDivisions.Kind.special_administrative_region" xml:space="preserve"><value>特别行政区</value></data>
+  <data name="GeoDivisions.LoadCountriesFailed" xml:space="preserve"><value>无法加载国家列表。</value></data>
+  <data name="GeoDivisions.SearchFailed" xml:space="preserve"><value>搜索行政区失败。</value></data>
+  <data name="GeoDivisions.LoadTreeFailed" xml:space="preserve"><value>无法加载 {0} 的行政区层级。</value></data>
+  <data name="GeoDivisions.Description" xml:space="preserve"><value>按国家浏览行政区层级，或按名称快速检索。</value></data>
+  <data name="GeoDivisions.NoMatchHint" xml:space="preserve"><value>尝试缩短关键词，或切换国家后重新搜索。</value></data>
+  <data name="GeoDivisions.TreeEmpty" xml:space="preserve"><value>该国家暂无行政区数据。</value></data>
+
+  <!-- 行政区详情 -->
+  <data name="GeoDivisions.Detail.Title" xml:space="preserve"><value>行政区详情</value></data>
+  <data name="GeoDivisions.Detail.BackToTree" xml:space="preserve"><value>返回层级树</value></data>
+  <data name="GeoDivisions.Detail.BasicInfo" xml:space="preserve"><value>基本信息</value></data>
+  <data name="GeoDivisions.Detail.GeoData" xml:space="preserve"><value>地理数据</value></data>
+  <data name="GeoDivisions.Detail.Level" xml:space="preserve"><value>层级</value></data>
+  <data name="GeoDivisions.Detail.Code" xml:space="preserve"><value>代码</value></data>
+  <data name="GeoDivisions.Detail.Country" xml:space="preserve"><value>国家</value></data>
+  <data name="GeoDivisions.Detail.SubdivisionCode" xml:space="preserve"><value>一级区划代码</value></data>
+  <data name="GeoDivisions.Detail.AsciiName" xml:space="preserve"><value>Ascii 名</value></data>
+  <data name="GeoDivisions.Detail.GeoNameId" xml:space="preserve"><value>GeoNames ID</value></data>
+  <data name="GeoDivisions.Detail.Population" xml:space="preserve"><value>人口</value></data>
+  <data name="GeoDivisions.Detail.Coordinates" xml:space="preserve"><value>经纬度</value></data>
+  <data name="GeoDivisions.Detail.ParentId" xml:space="preserve"><value>父节点 ID</value></data>
+  <data name="GeoDivisions.Detail.RecordId" xml:space="preserve"><value>记录 ID</value></data>
+  <data name="GeoDivisions.Detail.Meta" xml:space="preserve"><value>记录信息</value></data>
+  <data name="GeoDivisions.Detail.LoadFailed" xml:space="preserve"><value>无法加载行政区详情。</value></data>
+  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这个行政区吗？</value></data>
+  <data name="GeoDivisions.Detail.Deleted" xml:space="preserve"><value>行政区已删除。</value></data>
+  <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>删除行政区失败，请稍后重试。</value></data>
+  <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>该行政区仍有子节点，请先删除或移动子节点。</value></data>
+  <data name="GeoDivisions.Create.Title" xml:space="preserve"><value>新增行政区</value></data>
+  <data name="GeoDivisions.Create.Description" xml:space="preserve"><value>在同一页填写行政区信息；变更国家或父级会刷新类型等选项。</value></data>
+  <data name="GeoDivisions.Create.SetupHeading" xml:space="preserve"><value>选择层级与国家</value></data>
+  <data name="GeoDivisions.Create.SetupHint" xml:space="preserve"><value>不选父级即为新建国家：填写 2 位国家代码即可；选择父级则挂到已有行政区下。</value></data>
+  <data name="GeoDivisions.Hint.CountryCode" xml:space="preserve"><value>2 位 ISO 国家代码；可输入新国家，或从列表选已有代码。</value></data>
+  <data name="GeoDivisions.Create.LoadForm" xml:space="preserve"><value>加载新增表单</value></data>
+  <data name="GeoDivisions.AddChild" xml:space="preserve"><value>新增子级</value></data>
+  <data name="GeoDivisions.Create.SaveFailed" xml:space="preserve"><value>新增行政区失败，请稍后重试。</value></data>
+  <data name="GeoDivisions.Create.Created" xml:space="preserve"><value>行政区已新增。</value></data>
+  <data name="GeoDivisions.Edit.Title" xml:space="preserve"><value>编辑行政区</value></data>
+  <data name="GeoDivisions.Edit.Description" xml:space="preserve"><value>修改行政区名称、代码与地理信息。</value></data>
+  <data name="GeoDivisions.Section.Identity" xml:space="preserve"><value>标识与归属</value></data>
+  <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>类型、所属国家/父级与代码。</value></data>
+  <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>地理与人口</value></data>
+  <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>可选信息，用于地图展示与统计。</value></data>
+  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>一级区划代码，最多 20 个字符。</value></data>
+  <data name="GeoDivisions.Edit.LoadFailed" xml:space="preserve"><value>无法加载行政区内容。</value></data>
+  <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
+  <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
+  <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
+  <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
+  <data name="GeoDivisions.Form.RootOption" xml:space="preserve"><value>根（新建国家）</value></data>
+  <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>搜索父级…</value></data>
+  <data name="Field.GeoDivision.Level" xml:space="preserve"><value>层级</value></data>
+  <data name="Field.GeoDivision.Kind" xml:space="preserve"><value>类型</value></data>
+  <data name="Field.GeoDivision.CountryCode" xml:space="preserve"><value>国家代码</value></data>
+  <data name="Field.GeoDivision.SubdivisionCode" xml:space="preserve"><value>一级区划代码</value></data>
+  <data name="Field.GeoDivision.Code" xml:space="preserve"><value>行政区代码</value></data>
+  <data name="Field.GeoDivision.AsciiName" xml:space="preserve"><value>Ascii 名</value></data>
+  <data name="Field.GeoDivision.LocalName" xml:space="preserve"><value>当地名称</value></data>
+  <data name="Field.GeoDivision.Latitude" xml:space="preserve"><value>纬度</value></data>
+  <data name="Field.GeoDivision.Longitude" xml:space="preserve"><value>经度</value></data>
+  <data name="Field.GeoDivision.Population" xml:space="preserve"><value>人口</value></data>
+  <data name="Field.GeoDivision.Parent" xml:space="preserve"><value>父级行政区</value></data>
+  <data name="Validation.GeoDivision.LevelRange" xml:space="preserve"><value>层级必须为不小于 1 的整数。</value></data>
+  <data name="Validation.GeoDivision.KindTooLong" xml:space="preserve"><value>类型最多 64 个字符。</value></data>
+  <data name="Validation.GeoDivision.CountryCodeRequired" xml:space="preserve"><value>国家代码必填。</value></data>
+  <data name="Validation.GeoDivision.CountryCodeFormat" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="Validation.GeoDivision.SubdivisionCodeTooLong" xml:space="preserve"><value>一级区划代码不能超过 20 个字符。</value></data>
+  <data name="Validation.GeoDivision.CodeTooLong" xml:space="preserve"><value>行政区代码不能超过 50 个字符。</value></data>
+  <data name="Validation.GeoDivision.NameRequired" xml:space="preserve"><value>名称必填。</value></data>
+  <data name="Validation.GeoDivision.NameTooLong" xml:space="preserve"><value>名称不能超过 200 个字符。</value></data>
+  <data name="Validation.GeoDivision.AsciiNameTooLong" xml:space="preserve"><value>Ascii 名不能超过 200 个字符。</value></data>
+  <data name="Validation.GeoDivision.LocalNameTooLong" xml:space="preserve"><value>当地名称不能超过 200 个字符。</value></data>
+  <data name="Validation.GeoDivision.LatitudeRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
+  <data name="Validation.GeoDivision.LongitudeRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
+  <data name="Validation.GeoDivision.PopulationRange" xml:space="preserve"><value>人口不能为负数。</value></data>
+  <data name="Validation.GeoDivision.ParentRequired" xml:space="preserve"><value>当前层级必须选择父级行政区。</value></data>
+  <data name="Validation.GeoDivision.ParentInvalid" xml:space="preserve"><value>父级行政区与当前国家或层级不匹配，请重新选择。</value></data>
+
+  <!-- 字段标签 -->
+  <data name="Field.Airport.Code" xml:space="preserve"><value>机场代码</value></data>
+  <data name="Field.Airport.Name" xml:space="preserve"><value>机场名称</value></data>
+  <data name="Field.Airport.CountryCode" xml:space="preserve"><value>国家代码</value></data>
+  <data name="Field.Airport.City" xml:space="preserve"><value>城市</value></data>
+  <data name="Field.Airport.Latitude" xml:space="preserve"><value>纬度</value></data>
+  <data name="Field.Airport.Longitude" xml:space="preserve"><value>经度</value></data>
+  <data name="Field.News.Title" xml:space="preserve"><value>标题</value></data>
+  <data name="Field.News.Summary" xml:space="preserve"><value>摘要</value></data>
+  <data name="Field.News.Content" xml:space="preserve"><value>正文</value></data>
+  <data name="Field.News.Category" xml:space="preserve"><value>分类</value></data>
+  <data name="Field.News.Author" xml:space="preserve"><value>作者</value></data>
+  <data name="Field.News.Status" xml:space="preserve"><value>状态</value></data>
+  <data name="Field.GeoDivision.Name" xml:space="preserve"><value>名称</value></data>
+
+  <!-- 表单校验 -->
+  <data name="Validation.Airport.CodeRequired" xml:space="preserve"><value>机场代码必填。</value></data>
+  <data name="Validation.Airport.CodeFormat" xml:space="preserve"><value>机场代码必须是 3 个英文字母。</value></data>
+  <data name="Validation.Airport.NameRequired" xml:space="preserve"><value>机场名称必填。</value></data>
+  <data name="Validation.Airport.NameTooLong" xml:space="preserve"><value>机场名称不能超过 200 个字符。</value></data>
+  <data name="Validation.Airport.CountryCodeRequired" xml:space="preserve"><value>国家代码必填。</value></data>
+  <data name="Validation.Airport.CountryCodeFormat" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
+  <data name="Validation.Airport.CityTooLong" xml:space="preserve"><value>城市名称不能超过 100 个字符。</value></data>
+  <data name="Validation.Airport.LatitudeRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
+  <data name="Validation.Airport.LongitudeRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
+  <data name="Validation.News.TitleRequired" xml:space="preserve"><value>标题必填。</value></data>
+  <data name="Validation.News.TitleTooLong" xml:space="preserve"><value>标题不能超过 200 个字符。</value></data>
+  <data name="Validation.News.SummaryTooLong" xml:space="preserve"><value>摘要不能超过 500 个字符。</value></data>
+  <data name="Validation.News.ContentRequired" xml:space="preserve"><value>正文必填。</value></data>
+  <data name="Validation.News.ContentTooLong" xml:space="preserve"><value>正文不能超过 50000 个字符。</value></data>
+  <data name="Validation.News.CategoryRequired" xml:space="preserve"><value>分类必填。</value></data>
+  <data name="Validation.News.CategoryTooLong" xml:space="preserve"><value>分类不能超过 50 个字符。</value></data>
+  <data name="Validation.News.AuthorRequired" xml:space="preserve"><value>作者必填。</value></data>
+  <data name="Validation.News.AuthorTooLong" xml:space="preserve"><value>作者不能超过 100 个字符。</value></data>
+  <data name="Validation.News.StatusInvalid" xml:space="preserve"><value>状态必须为 Draft、Published 或 Archived。</value></data>
+
+  <!-- 错误页 -->
+  <data name="Error.Title" xml:space="preserve"><value>错误</value></data>
+  <data name="Error.Heading" xml:space="preserve"><value>错误。</value></data>
+  <data name="Error.Message" xml:space="preserve"><value>处理你的请求时发生错误。</value></data>
+  <data name="Error.RequestId" xml:space="preserve"><value>请求 ID：</value></data>
+  <data name="Error.DevelopmentMode" xml:space="preserve"><value>开发模式</value></data>
+  <data name="Error.DevelopmentDetail" xml:space="preserve"><value>切换到 Development 环境可显示详细的错误信息。</value></data>
+  <data name="Error.DevelopmentWarningTitle" xml:space="preserve"><value>不应在已部署的应用程序中启用 Development 环境。</value></data>
+  <data name="Error.DevelopmentWarning" xml:space="preserve"><value>这可能导致将异常中的敏感信息显示给最终用户。若要在本地调试，请将 ASPNETCORE_ENVIRONMENT 环境变量设置为 Development 并重启应用。</value></data>
+</root>

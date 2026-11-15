@@ -1,0 +1,55 @@
+@model Axiom.Web.Models.ParentTreeSelectViewModel
+@{
+    var selectedText = string.IsNullOrEmpty(Model.SelectedLabel) ? Model.EmptyLabel : Model.SelectedLabel;
+}
+
+<div class="tree-select"
+     data-tree-select
+     data-empty-label="@Model.EmptyLabel"
+     data-nodes-url="@Model.NodesUrl"
+     data-country-code="@Model.CountryCode"
+     data-max-parent-level="@Model.MaxParentLevel"
+     data-selectable-level="@(Model.SelectableLevel?.ToString() ?? "")"
+     data-exclude-id="@(Model.ExcludeId?.ToString() ?? "")"
+     data-selected-id="@(Model.SelectedId?.ToString() ?? "")"
+     data-error-text="@Model.LoadErrorText"
+     data-kind-select-id="@Model.KindSelectId"
+     data-level-input-id="@Model.LevelInputId"
+     data-kind-options-url="@Model.KindOptionsUrl">
+    <input type="hidden"
+           id="@Model.InputId"
+           name="@Model.InputName"
+           value="@(Model.SelectedId?.ToString() ?? "")" />
+    <button type="button"
+            class="form-select tree-select-toggle"
+            id="@Model.InputId-toggle"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="@Model.InputId-panel">
+        <span class="tree-select-label">@selectedText</span>
+    </button>
+    <div class="tree-select-panel" id="@Model.InputId-panel" hidden>
+        <div class="tree-select-search">
+            <input type="search"
+                   class="form-control"
+                   placeholder="@Model.SearchPlaceholder"
+                   autocomplete="off"
+                   data-tree-select-filter />
+        </div>
+        <ul class="tree-select-list" role="listbox" aria-labelledby="@Model.InputId-toggle" data-tree-select-list>
+            @if (Model.AllowRoot)
+            {
+                <li class="tree-select-item">
+                    <button type="button"
+                            class="tree-select-option@(Model.SelectedId is null ? " is-selected" : "")"
+                            data-value=""
+                            data-label="@Model.EmptyLabel"
+                            role="option"
+                            aria-selected="@(Model.SelectedId is null ? "true" : "false")">
+                        @Model.EmptyLabel
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
