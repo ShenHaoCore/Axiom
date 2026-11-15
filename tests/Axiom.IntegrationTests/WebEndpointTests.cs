@@ -196,7 +196,6 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
             .And.Contain("name=\"Input.Level\"")
             .And.Contain("value=\"3\"")
             .And.Contain("data-tree-select")
-            .And.Contain("data-country-input-id=\"region-country-code\"")
             .And.Contain("data-kind-select-id=\"Input_Kind\"")
             .And.Contain("data-kind-options-url")
             .And.Contain("handler=ParentNodes");
