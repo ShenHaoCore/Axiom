@@ -1,0 +1,32 @@
+name: Branch Naming
+
+on:
+  pull_request:
+    branches: [main, develop, "release/**", "hotfix/**"]
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-naming:
+    name: branch-naming
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校验 head 分支命名
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 允许：主干分支、规范前缀分支、Dependabot 自动分支
+          case "$HEAD_REF" in
+            main|develop|dependabot/*) echo "分支 '$HEAD_REF' 符合规范"; exit 0 ;;
+          esac
+          pattern='^(feature|bugfix|hotfix|release|chore|docs|refactor)/[a-z0-9][a-z0-9._/-]*$'
+          if [[ "$HEAD_REF" =~ $pattern ]]; then
+            echo "分支 '$HEAD_REF' 符合规范"
+          else
+            echo "::error::分支名 '$HEAD_REF' 不符合规范，应为 feature/*、bugfix/*、hotfix/*、release/*、chore/*、docs/*、refactor/*，且使用小写字母、数字、点、下划线或连字符。"
+            exit 1
+          fi

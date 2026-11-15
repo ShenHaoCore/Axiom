@@ -1,0 +1,113 @@
+name: Branch Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  schedule:
+    # 每周一 02:00（Asia/Shanghai）
+    - cron: "0 18 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "仅输出将要删除的分支，不实际删除"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  delete-pr-branch:
+    name: 删除已关闭 PR 的分支
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: 删除 head 分支
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$HEAD_REPO" != "$REPO" ]]; then
+            echo "Fork 分支，跳过：$HEAD_REF"
+            exit 0
+          fi
+          case "$HEAD_REF" in
+            main|develop|release/*|hotfix/*)
+              echo "保护分支，跳过：$HEAD_REF"
+              exit 0
+              ;;
+          esac
+          if git ls-remote --exit-code --heads origin "$HEAD_REF" >/dev/null 2>&1; then
+            git push origin --delete "$HEAD_REF"
+            echo "已删除分支：$HEAD_REF"
+          else
+            echo "分支已不存在：$HEAD_REF"
+          fi
+
+  sweep:
+    name: 定时清理与陈旧分支巡检
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DRY_RUN: ${{ inputs.dry_run || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 清理已合并 / 已关闭 PR 的分支
+        shell: bash
+        run: |
+          set -uo pipefail
+          git fetch --prune origin
+          mapfile -t branches < <(git ls-remote --heads origin | awk '{print $2}' | sed 's#^refs/heads/##')
+          {
+            echo "## 分支清理结果"
+            echo
+            echo "| 分支 | 状态 | 处理 |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for branch in "${branches[@]}"; do
+            case "$branch" in
+              main|develop|release/*|hotfix/*) continue ;;
+            esac
+            prs=$(gh pr list --head "$branch" --state all --limit 100 --json state)
+            if jq -e 'any(.[]; .state == "OPEN")' <<<"$prs" >/dev/null; then
+              echo "| \`$branch\` | 有打开的 PR | 保留 |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            if jq -e 'any(.[]; .state == "MERGED" or .state == "CLOSED")' <<<"$prs" >/dev/null; then
+              if [[ "$DRY_RUN" == "true" ]]; then
+                echo "| \`$branch\` | 关联 PR 已合并/关闭 | 待删除（dry-run） |" >> "$GITHUB_STEP_SUMMARY"
+              else
+                git push origin --delete "$branch" >/dev/null 2>&1 && result="已删除" || result="删除失败"
+                echo "| \`$branch\` | 关联 PR 已合并/关闭 | $result |" >> "$GITHUB_STEP_SUMMARY"
+              fi
+              continue
+            fi
+            last=$(git log -1 --format=%ct "origin/$branch" 2>/dev/null || echo 0)
+            age=$(( ( $(date +%s) - last ) / 86400 ))
+            if (( age >= 90 )); then
+              echo "| \`$branch\` | 无 PR，且 $age 天无提交 | 建议删除（仅提醒） |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| \`$branch\` | 无 PR，$age 天内有提交 | 保留 |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 保护分支（main、develop、release/*、hotfix/*）永远不会被自动删除。" >> "$GITHUB_STEP_SUMMARY"

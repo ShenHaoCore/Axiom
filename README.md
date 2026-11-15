@@ -141,10 +141,11 @@ dotnet format Axiom.slnx --verify-no-changes
 | `release/*` | 发版准备 | PR → `main`，并回合 `develop` |
 | `hotfix/*` | 线上紧急修复 | PR → `main`，并回合 `develop` |
 
-- 分支命名使用 `feature/<简述>`、`bugfix/<简述>`、`release/<版本号>`、`hotfix/<简述>`。
+- 分支命名使用 `feature/<简述>`、`bugfix/<简述>`、`release/<版本号>`、`hotfix/<简述>`、`chore/<简述>` 等，由 `branch-naming` 检查强制校验。
 - `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强制推送，必须通过 PR，仅允许线性历史（squash 或 rebase）。
 - 提交信息遵循 Conventional Commits：`feat:`、`fix:`、`chore:`、`docs:` 等。
 - PR 会自动执行 `.github/workflows/ci.yml`：restore、build、test、format 检查。
+- PR 合并或关闭后自动删除 head 分支，每周定时巡检无主分支，规则详见 [docs/branching.md](docs/branching.md)。
 
 ## 接口约定
 
@@ -155,6 +156,6 @@ dotnet format Axiom.slnx --verify-no-changes
 
 ## 文档
 
-架构边界、鉴权链路、数据库划分和容器验收结论见 [docs/architecture.md](docs/architecture.md)。
+架构边界、鉴权链路、数据库划分和容器验收结论见 [docs/architecture.md](docs/architecture.md)；分支模型、发布与热修流程见 [docs/branching.md](docs/branching.md)。
 
 未验收项：Jaeger、Loki、Prometheus、Grafana 与 otel-collector 因镜像不可用尚未启动。
