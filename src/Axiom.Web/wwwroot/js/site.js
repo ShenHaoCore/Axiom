@@ -59,13 +59,7 @@
         }
 
         var rootsLoaded = false;
-
-        // 全局树不再按国家过滤；保留该函数供 Kind 刷新等场景读取当前归属。
-        function currentCountryCode() {
-            var countryField = document.getElementById('region-country-code');
-            var typed = countryField && countryField.value ? countryField.value.trim().toUpperCase() : '';
-            return typed.length === 2 ? typed : '';
-        }
+        var searchSeq = 0;
 
         function buildNodesUrl(parentId, query) {
             var params = new URLSearchParams();
@@ -122,7 +116,7 @@
 
             // 归属联动（全程无整页刷新）：
             // 层级 = 所选节点 Level + 1（空值 = 国家行，Level 1）；
-            // 国家随父级带出并刷新 Kind 选项；上级行政区划码随父级带出。
+            // Kind 选项按所选国家分域刷新；上级行政区划码随父级带出。
             var nodeLevel = parseInt(option.getAttribute('data-level') || '0', 10);
             var nodeCountry = option.getAttribute('data-country') || '';
             var nodeSubdivision = option.getAttribute('data-subdivision') || '';
@@ -135,16 +129,6 @@
                 }
             }
 
-            var countryInputId = root.getAttribute('data-country-input-id');
-            if (countryInputId) {
-                var countryInput = document.getElementById(countryInputId);
-                if (countryInput) {
-                    countryInput.value = nodeCountry;
-                    // 有父级时国家随父级带出（只读）；清空父级回到新建国家模式（可输入）。
-                    countryInput.readOnly = !!nodeCountry;
-                }
-            }
-
             var subdivisionInputId = root.getAttribute('data-subdivision-input-id');
             if (subdivisionInputId) {
                 var subdivisionInput = document.getElementById(subdivisionInputId);
@@ -153,29 +137,28 @@
                 }
             }
 
-            // Kind 选项按所选国家的分域刷新；未选父级（新建国家）回退通用域。随后仍回“自动推导”。
+            // Kind 选项按所选国家的分域刷新；刷新后默认选中第一项。
             var kindSelect = document.getElementById(root.getAttribute('data-kind-select-id') || '');
             var kindOptionsUrl = root.getAttribute('data-kind-options-url') || '';
             if (kindSelect && kindOptionsUrl) {
-                var autoLabel = root.getAttribute('data-kind-auto-label') || '';
-                var kindUrl = kindOptionsUrl + (nodeCountry ? '?countryCode=' + encodeURIComponent(nodeCountry) + '&level=' + (nodeLevel + 1) : '');
+                // 根（新建国家，Level 1）只保留 country；有父级时按国家分域取该层级类型。
+                // kindOptionsUrl 已含 ?handler=，追加参数必须用 &，否则 handler 匹配失败会静默返回整页 HTML。
+                var kindUrl = kindOptionsUrl + '&level=' + (nodeLevel + 1) + (nodeCountry ? '&countryCode=' + encodeURIComponent(nodeCountry) : '');
                 fetch(kindUrl, { headers: { 'Accept': 'application/json' } })
                     .then(function (response) {
                         return response.ok ? response.json() : Promise.reject(new Error('HTTP ' + response.status));
                     })
                     .then(function (items) {
                         kindSelect.innerHTML = '';
-                        var auto = document.createElement('option');
-                        auto.value = '';
-                        auto.textContent = autoLabel;
-                        kindSelect.appendChild(auto);
                         (items || []).forEach(function (item) {
                             var option = document.createElement('option');
                             option.value = item.value !== undefined ? item.value : item.Value;
                             option.textContent = item.text !== undefined ? item.text : item.Text;
                             kindSelect.appendChild(option);
                         });
-                        kindSelect.value = '';
+                        if (kindSelect.options.length > 0) {
+                            kindSelect.selectedIndex = 0;
+                        }
                     })
                     .catch(function () {
                         // 刷新失败保留现有选项。
@@ -260,7 +243,7 @@
             });
         }
 
-        function loadNodes(parentId, targetList, onDone, query) {
+        function loadNodes(parentId, targetList, onDone, query, isStale) {
             targetList.setAttribute('data-loading', '1');
             var loading = document.createElement('li');
             loading.className = 'tree-select-item tree-select-loading';
@@ -279,6 +262,13 @@
                     targetList.querySelectorAll('.tree-select-loading').forEach(function (el) {
                         el.remove();
                     });
+                    // 过期响应（用户已发起新搜索）直接丢弃，避免重复结果。
+                    if (typeof isStale === 'function' && isStale()) {
+                        if (typeof onDone === 'function') {
+                            onDone(false);
+                        }
+                        return;
+                    }
                     appendNodes(targetList, nodes);
                     if (typeof onDone === 'function') {
                         onDone(true);
@@ -320,7 +310,6 @@
             });
             rootsLoaded = false;
             list.removeAttribute('data-loaded');
-            list.removeAttribute('data-loaded-country');
         }
 
         function ensureRoots() {
@@ -333,6 +322,8 @@
                 return;
             }
 
+            // 重开面板时可能残留上次搜索的结果：先清空再载根，避免重复。
+            resetDynamicNodes();
             loadNodes(null, list, function (ok) {
                 if (ok) {
                     rootsLoaded = true;
@@ -363,7 +354,21 @@
             panel.hidden = !open;
             toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
             if (open) {
-                ensureRoots();
+                var query = filter ? filter.value.trim() : '';
+                if (query) {
+                    // 过滤框仍有内容：重跑搜索并丢弃残留结果，避免与根节点重复。
+                    var seq = ++searchSeq;
+                    resetDynamicNodes();
+                    loadNodes(null, list, function (ok) {
+                        if (ok) {
+                            list.setAttribute('data-loaded', '1');
+                        }
+                    }, query, function () {
+                        return seq !== searchSeq;
+                    });
+                } else {
+                    ensureRoots();
+                }
                 if (filter) {
                     filter.focus();
                 }
@@ -389,6 +394,7 @@
                 window.clearTimeout(searchTimer);
                 searchTimer = window.setTimeout(function () {
                     var query = filter.value.trim();
+                    var seq = ++searchSeq;
                     resetDynamicNodes();
                     if (!query) {
                         ensureRoots();
@@ -398,9 +404,10 @@
                     loadNodes(null, list, function (ok) {
                         if (ok) {
                             list.setAttribute('data-loaded', '1');
-                            list.setAttribute('data-loaded-country', currentCountryCode());
                         }
-                    }, query);
+                    }, query, function () {
+                        return seq !== searchSeq;
+                    });
                 }, 250);
             });
         }
@@ -417,62 +424,6 @@
                 toggle.focus();
             }
         });
-
-        // 国家代码变更：AJAX 刷新 Kind 选项（按国家分域）并重置父级树，不整页刷新。
-        var countryInputId = root.getAttribute('data-country-input-id');
-        var countryInput = countryInputId ? document.getElementById(countryInputId) : null;
-        var kindSelectId = root.getAttribute('data-kind-select-id');
-        var kindOptionsUrl = root.getAttribute('data-kind-options-url') || '';
-        if (countryInput && kindSelectId && kindOptionsUrl) {
-            countryInput.addEventListener('change', function () {
-                var code = (countryInput.value || '').trim().toUpperCase();
-                if (code.length !== 2 || !/^[A-Z]{2}$/.test(code)) {
-                    return;
-                }
-
-                countryInput.value = code;
-                root.setAttribute('data-country-code', code);
-                resetDynamicNodes();
-
-                var kindSelect = document.getElementById(kindSelectId);
-                if (!kindSelect) {
-                    return;
-                }
-
-                var autoLabel = root.getAttribute('data-kind-auto-label') || '';
-                // 目标层级：已选父级则为其 Level + 1；未选（国家行）为 1。
-                var targetLevel = 1;
-                if (levelInputId) {
-                    var levelInput = document.getElementById(levelInputId);
-                    if (levelInput) {
-                        targetLevel = parseInt(levelInput.value || '1', 10) || 1;
-                    }
-                }
-
-                fetch(kindOptionsUrl + '?countryCode=' + encodeURIComponent(code) + '&level=' + targetLevel,
-                        { headers: { 'Accept': 'application/json' } })
-                    .then(function (response) {
-                        return response.ok ? response.json() : Promise.reject(new Error('HTTP ' + response.status));
-                    })
-                    .then(function (items) {
-                        kindSelect.innerHTML = '';
-                        var auto = document.createElement('option');
-                        auto.value = '';
-                        auto.textContent = autoLabel;
-                        kindSelect.appendChild(auto);
-                        (items || []).forEach(function (item) {
-                            var option = document.createElement('option');
-                            option.value = item.value !== undefined ? item.value : item.Value;
-                            option.textContent = item.text !== undefined ? item.text : item.Text;
-                            kindSelect.appendChild(option);
-                        });
-                        kindSelect.value = '';
-                    })
-                    .catch(function () {
-                        // 刷新失败保留现有选项。
-                    });
-            });
-        }
     });
 
     // ---------- 界面语言切换 ----------

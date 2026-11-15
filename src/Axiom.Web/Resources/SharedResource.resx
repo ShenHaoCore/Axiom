@@ -159,9 +159,6 @@
 
   <!-- 行政区 -->
   <data name="GeoDivisions.Title" xml:space="preserve"><value>行政区浏览</value></data>
-  <data name="GeoDivisions.Country" xml:space="preserve"><value>国家</value></data>
-  <data name="GeoDivisions.SelectCountry" xml:space="preserve"><value>-- 选择国家 --</value></data>
-  <data name="GeoDivisions.AllCountries" xml:space="preserve"><value>全部国家</value></data>
   <data name="GeoDivisions.LoadChildrenFailed" xml:space="preserve"><value>子级行政区加载失败，点击重试。</value></data>
   <data name="GeoDivisions.SearchLabel" xml:space="preserve"><value>搜索行政区</value></data>
   <data name="GeoDivisions.SearchPlaceholder" xml:space="preserve"><value>按名称搜索…</value></data>
@@ -170,9 +167,7 @@
   <data name="GeoDivisions.NoMatch" xml:space="preserve"><value>未找到匹配 "{0}" 的行政区。</value></data>
     <data name="GeoDivisions.Section.Names" xml:space="preserve"><value>别名与本地名</value></data>
   <data name="GeoDivisions.Section.NamesHint" xml:space="preserve"><value>可选：其他语言或书写形式的名称。</value></data>
-  <data name="GeoDivisions.Hint.Parent" xml:space="preserve"><value>从树中选择上级行政区；国家与层级会自动带出。</value></data>
-  <data name="GeoDivisions.Hint.Code" xml:space="preserve"><value>国别内唯一的区划代码（如 440100）。</value></data>
-  <data name="GeoDivisions.Hint.Kind" xml:space="preserve"><value>留空时按国家与层级自动推导，可手动指定。</value></data>
+  <data name="GeoDivisions.Section.Optional" xml:space="preserve"><value>更多信息（选填）</value></data>
   <data name="Field.GeoDivision.Depth" xml:space="preserve"><value>层级</value></data>
 <data name="GeoDivisions.TreeTitle" xml:space="preserve"><value>行政区层级</value></data>
   <data name="GeoDivisions.Column.Level" xml:space="preserve"><value>层级</value></data>
@@ -240,8 +235,8 @@
   <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>
   <data name="GeoDivisions.Form.UniqueConflict" xml:space="preserve"><value>同一国家和层级下，行政区代码已存在。</value></data>
-    <data name="GeoDivisions.Form.KindAuto" xml:space="preserve"><value>自动（按国家与层级推导）</value></data>
   <data name="GeoDivisions.Form.SelectParent" xml:space="preserve"><value>-- 选择父级 --</value></data>
+  <data name="GeoDivisions.Form.RootOption" xml:space="preserve"><value>根（新建国家）</value></data>
   <data name="GeoDivisions.Form.SearchParent" xml:space="preserve"><value>搜索父级…</value></data>
   <data name="Field.GeoDivision.Level" xml:space="preserve"><value>层级</value></data>
   <data name="Field.GeoDivision.Kind" xml:space="preserve"><value>类型</value></data>

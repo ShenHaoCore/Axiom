@@ -97,13 +97,13 @@ public static class GeoDivisionKinds
 
     private static List<(string Category, string Code, string Name, int SortOrder)> BuildSeedItems()
     {
-        // 通用兜底：未维护国别类型的国家使用
+        // 通用兜底：未维护国别类型的国家使用。country（国家行）仅在通用域维护。
         var baseKinds = new[] { (Country, "国家"), (Province, "省"), (PrefectureCity, "地级市"), (County, "县"), (City, "市"), (Other, "其他") };
 
         // 中国：全量行政区划类型
         var cn = new[]
         {
-            (Country, "国家"), (Province, "省"), (Municipality, "直辖市"), (AutonomousRegion, "自治区"),
+            (Province, "省"), (Municipality, "直辖市"), (AutonomousRegion, "自治区"),
             (SpecialAdministrativeRegion, "特别行政区"), (AutonomousPrefecture, "自治州"), (PrefectureCity, "地级市"),
             (Prefecture, "地区"), (League, "盟"), (CountyLevel, "省直辖县级行政区划"), (County, "县"),
             (CountyCity, "县级市"), (District, "市辖区"), (AutonomousCounty, "自治县"), (Banner, "旗"),
@@ -113,17 +113,17 @@ public static class GeoDivisionKinds
         // 美国
         var us = new[]
         {
-            (Country, "国家"), (State, "州"), (County, "县"), (Borough, "自治市镇"),
+            (State, "州"), (County, "县"), (Borough, "自治市镇"),
             (Parish, "教区"), (CensusArea, "人口普查区"), (City, "市"), (Other, "其他")
         };
 
         // 英国
-        var gb = new[] { (Country, "国家"), (ConstituentCountry, "构成国"), (City, "市"), (Other, "其他") };
+        var gb = new[] { (ConstituentCountry, "构成国"), (City, "市"), (Other, "其他") };
 
         // 日本
         var jp = new[]
         {
-            (Country, "国家"), (Metropolis, "都"), (Prefecture, "府"), (SpecialWard, "特别区"),
+            (Metropolis, "都"), (Prefecture, "府"), (SpecialWard, "特别区"),
             (City, "市"), (Other, "其他")
         };
 

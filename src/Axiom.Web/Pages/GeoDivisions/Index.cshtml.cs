@@ -16,7 +16,7 @@ public sealed class IndexModel(
     ReferenceEnumClient enumClient,
     IStringLocalizer<SharedResource> localizer) : PageModel
 {
-    // 国家列表：层级树的根节点 + 搜索下拉筛选项
+    // 国家列表：层级树的根节点。
     public IReadOnlyList<GeoDivisionView> Countries { get; private set; } = [];
 
     // Kind 显示名（来自枚举字典 reference_enums，显示名由字典表维护）
@@ -44,20 +44,16 @@ public sealed class IndexModel(
     public IReadOnlyList<GeoDivisionView> SearchResults { get; private set; } = [];
     public int SearchTotalCount { get; private set; }
 
-    // 搜索过滤的国家代码（URL 参数 / 表单）；「全部国家」时为 null
-    public string? SelectedCountryCode { get; private set; }
-
     public string? SearchQuery { get; private set; }
 
     public string? ErrorMessage { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(
-        string? countryCode,
         string? q,
         CancellationToken cancellationToken = default)
     {
         await LoadKindNamesAsync(cancellationToken);
-        // 总是拉国家列表：树的根节点 + 下拉筛选
+        // 总是拉国家列表：树的根节点。
         var countriesResponse = await regionClient.ListAsync(1, 250, level: 1, null, null, null, cancellationToken);
         if (!countriesResponse.IsSuccessStatusCode)
         {
@@ -70,19 +66,12 @@ public sealed class IndexModel(
         var countriesPage = await countriesResponse.Content.ReadFromJsonAsync<PagedResponse<GeoDivisionView>>(cancellationToken);
         Countries = countriesPage?.Items ?? [];
 
-        // 搜索过滤范围：countryCode=all 或未指定时跨全部国家搜索。
-        var requestedCountry = countryCode?.Trim();
-        SelectedCountryCode = string.IsNullOrEmpty(requestedCountry)
-            || string.Equals(requestedCountry, "all", StringComparison.OrdinalIgnoreCase)
-            ? null
-            : requestedCountry.ToUpperInvariant();
-
-        // 搜索模式：树不受筛选影响，始终展示全部国家。
+        // 搜索模式：树不受搜索影响，始终展示全部国家。
         if (!string.IsNullOrWhiteSpace(q))
         {
             SearchQuery = q.Trim();
             var searchResponse = await regionClient.ListAsync(
-                1, 100, null, SelectedCountryCode, null, SearchQuery, cancellationToken);
+                1, 100, null, null, null, SearchQuery, cancellationToken);
 
             if (!searchResponse.IsSuccessStatusCode)
             {

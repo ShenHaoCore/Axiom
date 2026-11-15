@@ -159,7 +159,10 @@ public sealed class EditModel(
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
         // 与新建页一致：按国家分域字典；该国家未维护时回退通用域。
-        var countryCode = Input.CountryCode ?? GeoDivision?.CountryCode;
+        // 国家行（L=1）固定读通用域：country 仅在通用域维护。
+        var countryCode = (GeoDivision?.Level ?? Input.Level) == 1
+            ? null
+            : Input.CountryCode ?? GeoDivision?.CountryCode;
         var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
         using var response = await enumClient.ListAsync(
             category,
@@ -205,6 +208,11 @@ public sealed class EditModel(
                     .ToList();
             }
         }
+
+        // 与新建页一致：国家行 Kind 固定为 country；其余层级不允许选 country。
+        items = (GeoDivision?.Level ?? 1) == 1
+            ? items.Where(item => item.Code == "country").ToList()
+            : items.Where(item => item.Code != "country").ToList();
 
         KindOptions = items
             .Select(item => new SelectListItem(item.Name, item.Code))

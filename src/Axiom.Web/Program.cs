@@ -45,11 +45,11 @@ var useMockAuth = builder.Environment.IsDevelopment() && builder.Configuration.G
 
 builder.Services.AddTransient<MockGatewayHandler>();
 // 网关地址只读一次：配置缺失时回退到本地网关默认端口。
-var gatewayBaseAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100");
-var referenceDataClient = builder.Services.AddHttpClient<ReferenceDataClient>(client => client.BaseAddress = gatewayBaseAddress);
-var newsClient = builder.Services.AddHttpClient<NewsClient>(client => client.BaseAddress = gatewayBaseAddress);
-var regionClient = builder.Services.AddHttpClient<GeoDivisionClient>(client => client.BaseAddress = gatewayBaseAddress);
-var enumClient = builder.Services.AddHttpClient<ReferenceEnumClient>(client => client.BaseAddress = gatewayBaseAddress);
+var gatewayAddress = new Uri(builder.Configuration["ApiGateway:BaseAddress"] ?? "http://localhost:5100");
+var referenceDataClient = builder.Services.AddHttpClient<ReferenceDataClient>(client => client.BaseAddress = gatewayAddress);
+var newsClient = builder.Services.AddHttpClient<NewsClient>(client => client.BaseAddress = gatewayAddress);
+var regionClient = builder.Services.AddHttpClient<GeoDivisionClient>(client => client.BaseAddress = gatewayAddress);
+var enumClient = builder.Services.AddHttpClient<ReferenceEnumClient>(client => client.BaseAddress = gatewayAddress);
 if (useMockAuth)
 {
     referenceDataClient.AddHttpMessageHandler<MockGatewayHandler>();

@@ -13,9 +13,7 @@
      data-exclude-id="@(Model.ExcludeId?.ToString() ?? "")"
      data-selected-id="@(Model.SelectedId?.ToString() ?? "")"
      data-error-text="@Model.LoadErrorText"
-     data-country-input-id="@Model.CountryInputId"
      data-kind-select-id="@Model.KindSelectId"
-     data-kind-auto-label="@Model.KindAutoLabel"
      data-level-input-id="@Model.LevelInputId"
      data-kind-options-url="@Model.KindOptionsUrl">
     <input type="hidden"
@@ -39,16 +37,19 @@
                    data-tree-select-filter />
         </div>
         <ul class="tree-select-list" role="listbox" aria-labelledby="@Model.InputId-toggle" data-tree-select-list>
-            <li class="tree-select-item">
-                <button type="button"
-                        class="tree-select-option@(Model.SelectedId is null ? " is-selected" : "")"
-                        data-value=""
-                        data-label="@Model.EmptyLabel"
-                        role="option"
-                        aria-selected="@(Model.SelectedId is null ? "true" : "false")">
-                    @Model.EmptyLabel
-                </button>
-            </li>
+            @if (Model.AllowRoot)
+            {
+                <li class="tree-select-item">
+                    <button type="button"
+                            class="tree-select-option@(Model.SelectedId is null ? " is-selected" : "")"
+                            data-value=""
+                            data-label="@Model.EmptyLabel"
+                            role="option"
+                            aria-selected="@(Model.SelectedId is null ? "true" : "false")">
+                        @Model.EmptyLabel
+                    </button>
+                </li>
+            }
         </ul>
     </div>
 </div>

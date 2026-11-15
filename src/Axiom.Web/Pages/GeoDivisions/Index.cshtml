@@ -10,8 +10,7 @@
         <p class="page-description">@Localizer["GeoDivisions.Description"]</p>
     </div>
     <div class="page-actions">
-        <a class="btn btn-primary" asp-page="/GeoDivisions/Create"
-           asp-route-countryCode="@Model.SelectedCountryCode">
+        <a class="btn btn-primary" asp-page="/GeoDivisions/Create">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />
             </svg>
@@ -25,20 +24,8 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<!-- 筛选：国家 + 名称搜索 -->
+<!-- 筛选：名称搜索 -->
 <form method="get" class="filter-bar">
-    <div class="filter-field">
-        <label class="form-label" for="countryCode">@Localizer["GeoDivisions.Country"]</label>
-        <select class="form-select" id="countryCode" name="countryCode" data-auto-submit>
-            <option value="all" selected="@(Model.SelectedCountryCode == null)">@Localizer["GeoDivisions.AllCountries"]</option>
-            @foreach (var c in Model.Countries)
-            {
-                <option value="@c.CountryCode" selected="@(Model.SelectedCountryCode == c.CountryCode)">
-                    @c.Name (@c.CountryCode)
-                </option>
-            }
-        </select>
-    </div>
     <div class="filter-field filter-field-grow">
         <label class="form-label" for="q">@Localizer["GeoDivisions.SearchLabel"]</label>
         <div class="search-field">
@@ -54,7 +41,7 @@
         <button type="submit" class="btn btn-primary">@Localizer["Common.Search"]</button>
         @if (!string.IsNullOrEmpty(Model.SearchQuery))
         {
-            <a asp-page="/GeoDivisions/Index" asp-route-countryCode="@Model.SelectedCountryCode"
+            <a asp-page="/GeoDivisions/Index"
                class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
         }
     </div>
@@ -122,8 +109,7 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
             </span>
             <p class="empty-state-title">@Localizer["GeoDivisions.NoMatch", Model.SearchQuery]</p>
             <p class="empty-state-text">@Localizer["GeoDivisions.NoMatchHint"]</p>
-            <a class="btn btn-outline-secondary btn-sm" asp-page="/GeoDivisions/Index"
-               asp-route-countryCode="@Model.SelectedCountryCode">@Localizer["Common.Clear"]</a>
+            <a class="btn btn-outline-secondary btn-sm" asp-page="/GeoDivisions/Index">@Localizer["Common.Clear"]</a>
         </div>
     </div>
 }

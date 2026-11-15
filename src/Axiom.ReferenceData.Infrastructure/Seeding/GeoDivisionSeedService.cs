@@ -240,6 +240,18 @@ public sealed class GeoDivisionSeedService(
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
+        // 清理历史种子遗留：country 仅属于通用域，国别域中的 country 行删除。
+        var staleCountryRows = await dbContext.ReferenceEnums
+            .Where(e => e.Code == GeoDivisionKinds.Country
+                && e.Category != ReferenceEnumCategories.GeoDivisionKind
+                && e.Category.StartsWith(ReferenceEnumCategories.GeoDivisionKind))
+            .ToListAsync(cancellationToken);
+        if (staleCountryRows.Count > 0)
+        {
+            dbContext.ReferenceEnums.RemoveRange(staleCountryRows);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         await EnsureGeoDivisionKindEnglishTranslationsAsync(dbContext, cancellationToken);
     }
 

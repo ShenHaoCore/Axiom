@@ -1302,6 +1302,47 @@ textarea.form-control {
   margin-bottom: 18px;
 }
 
+/* 选填信息折叠区：summary 沿用小节标题视觉，隐藏原生三角，箭头随开合旋转。 */
+.form-section-collapsible > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-radius: 6px;
+}
+
+.form-section-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.form-section-collapsible > summary h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.form-section-collapsible > summary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid var(--axiom-ink-mute);
+  border-bottom: 1.6px solid var(--axiom-ink-mute);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.form-section-collapsible[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.form-section-collapsible > summary + .row {
+  margin-top: 18px;
+}
+
 .form-actions {
   display: flex;
   align-items: center;
@@ -1606,16 +1647,35 @@ textarea.form-control {
 }
 
 .tree-select-toggle {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
   text-align: left;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b7c93' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 12px;
-  padding-right: 28px;
+  padding-right: 34px;
+  /* 覆盖 form-select 自带的箭头贴图，箭头由下方 ::after 绘制。 */
+  background-image: none;
+}
+
+/* 关闭态箭头：CSS 画 chevron，随开合旋转（替代贴图）。 */
+.tree-select-toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.8px solid var(--axiom-ink-mute);
+  border-bottom: 1.8px solid var(--axiom-ink-mute);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+
+.tree-select-toggle[aria-expanded="true"]::after {
+  transform: translateY(-30%) rotate(225deg);
+  border-color: var(--axiom-accent);
 }
 
 .tree-select-toggle .tree-select-label {
@@ -1632,41 +1692,95 @@ textarea.form-control {
 .tree-select-panel {
   position: absolute;
   z-index: 1050;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  max-height: 320px;
+  max-height: 340px;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--axiom-border-strong);
-  border-radius: var(--axiom-radius-sm);
+  border-radius: var(--axiom-radius-md);
   background: var(--axiom-surface);
   box-shadow: var(--axiom-shadow-2);
+  transform-origin: top center;
 }
 
 .tree-select-panel[hidden] {
   display: none;
 }
 
+/* 面板出现动画：轻微下沉淡入。 */
+@keyframes tree-select-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tree-select-panel:not([hidden]) {
+  animation: tree-select-pop 0.14s ease;
+}
+
 .tree-select-search {
-  padding: 8px;
+  padding: 10px;
   border-bottom: 1px solid var(--axiom-divider);
 }
 
 .tree-select-list {
   margin: 0;
-  padding: 4px 0;
+  padding: 6px;
   list-style: none;
   overflow: auto;
-  max-height: 260px;
+  max-height: 280px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--axiom-border-strong) transparent;
 }
 
+.tree-select-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tree-select-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tree-select-list::-webkit-scrollbar-thumb {
+  border-radius: var(--axiom-radius-pill);
+  background: var(--axiom-border-strong);
+}
+
+.tree-select-list::-webkit-scrollbar-thumb:hover {
+  background: var(--axiom-ink-faint);
+}
+
+/* 子级列表不再承担缩进（margin/padding 会使高亮块随层级右移）；
+   缩进改由下方按嵌套深度的行内 padding 实现，高亮始终通铺到面板边缘。 */
 .tree-select-children {
   margin: 0;
-  padding: 0 0 0 14px;
+  padding: 0;
   list-style: none;
-  border-left: 1px solid var(--axiom-border);
-  margin-left: 12px;
+}
+
+/* 层级缩进：每深一级，整行内容右移 27px（高亮背景不受影响）。 */
+.tree-select-children > .tree-select-item > .tree-select-row {
+  padding-left: 27px;
+}
+
+.tree-select-children .tree-select-children > .tree-select-item > .tree-select-row {
+  padding-left: 54px;
+}
+
+.tree-select-children .tree-select-children .tree-select-children > .tree-select-item > .tree-select-row {
+  padding-left: 81px;
+}
+
+.tree-select-children .tree-select-children .tree-select-children .tree-select-children > .tree-select-item > .tree-select-row {
+  padding-left: 108px;
 }
 
 .tree-select-item {
@@ -1684,34 +1798,50 @@ textarea.form-control {
 .tree-select-expand-spacer {
   flex: 0 0 22px;
   width: 22px;
-  height: 22px;
+  height: 24px;
 }
 
+/* 展开按钮：CSS chevron 替代文本 ▶，随展开旋转。 */
 .tree-select-expand {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
   border-radius: var(--axiom-radius-xs);
   background: transparent;
-  color: var(--axiom-ink-faint);
-  font-size: 9px;
+  font-size: 0;
   cursor: pointer;
+}
+
+.tree-select-expand::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.6px solid var(--axiom-ink-faint);
+  border-bottom: 1.6px solid var(--axiom-ink-faint);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .tree-select-expand:hover,
 .tree-select-expand:focus-visible {
-  background: var(--axiom-surface-sunken);
-  color: var(--axiom-accent);
+  background: var(--axiom-surface-hover);
   outline: none;
 }
 
-.tree-select-expand.is-expanded {
-  transform: rotate(90deg);
+.tree-select-expand:hover::before,
+.tree-select-expand:focus-visible::before {
+  border-color: var(--axiom-accent);
+}
+
+.tree-select-expand.is-expanded::before {
+  transform: rotate(45deg);
+  border-color: var(--axiom-ink);
 }
 
 .tree-select-loading {
-  padding: 6px 10px;
+  padding: 8px 10px;
   color: var(--axiom-ink-faint);
   font-size: 12px;
 }
@@ -1719,7 +1849,7 @@ textarea.form-control {
 .tree-select-branch {
   flex: 1;
   min-width: 0;
-  padding: 4px 8px;
+  padding: 6px 10px;
   color: var(--axiom-ink-mute);
   font-size: 12px;
   font-weight: 600;
@@ -1730,27 +1860,55 @@ textarea.form-control {
   min-width: 0;
   display: block;
   width: 100%;
-  padding: 6px 8px;
+  padding: 7px 10px;
   border: 0;
-  border-radius: var(--axiom-radius-xs);
   background: transparent;
   color: var(--axiom-ink);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
 }
 
-.tree-select-option:hover,
-.tree-select-option:focus-visible {
+/* 静态首项（根）无行包装：高亮落在选项自身。 */
+.tree-select-item > .tree-select-option:hover,
+.tree-select-item > .tree-select-option:focus-visible {
   background: var(--axiom-surface-hover);
   color: var(--axiom-accent);
   outline: none;
 }
 
-.tree-select-option.is-selected {
+.tree-select-item > .tree-select-option.is-selected {
   background: var(--axiom-accent-soft);
+  border-radius: var(--axiom-radius-sm);
   color: var(--axiom-accent);
   font-weight: 600;
+}
+
+/* 行内选项：高亮整行（含展开按钮区），避免选中背景从箭头后才开始。 */
+.tree-select-row:hover,
+.tree-select-row:focus-within {
+  background: var(--axiom-surface-hover);
+  border-radius: var(--axiom-radius-sm);
+}
+
+.tree-select-row:hover .tree-select-option:not(.is-selected),
+.tree-select-row:focus-within .tree-select-option:not(.is-selected) {
+  color: var(--axiom-accent);
+  outline: none;
+}
+
+.tree-select-row:has(.tree-select-option.is-selected) {
+  background: var(--axiom-accent-soft);
+}
+
+.tree-select-row:has(.tree-select-option.is-selected) .tree-select-option {
+  color: var(--axiom-accent);
+  font-weight: 600;
+}
+
+.tree-select-row:has(.tree-select-option.is-selected) .tree-select-expand::before {
+  border-color: var(--axiom-accent);
 }
 
 .tree-select-item.is-filtered-out {
@@ -1829,6 +1987,28 @@ textarea.form-control {
   /* 上下留 2px 呼吸空间，同时让引导线贴住父行底边、延伸过最后一行。 */
   padding: 2px 0 2px 12px;
   border-left: 1px solid var(--axiom-border);
+}
+
+/* 子级行向卡片左缘出血：hover 高亮通铺到卡片边缘，不再随层级缩进；
+   文本/箭头位置由补回的 padding-left 保持。每深一级嵌套 30px（margin 18 + padding 12）。 */
+.region-children > .region-node > .region-row {
+  margin-left: -30px;
+  padding-left: 30px;
+}
+
+.region-children .region-children > .region-node > .region-row {
+  margin-left: -60px;
+  padding-left: 60px;
+}
+
+.region-children .region-children .region-children > .region-node > .region-row {
+  margin-left: -90px;
+  padding-left: 90px;
+}
+
+.region-children .region-children .region-children .region-children > .region-node > .region-row {
+  margin-left: -120px;
+  padding-left: 120px;
 }
 
 /* ---------- 惰性加载 ---------- */

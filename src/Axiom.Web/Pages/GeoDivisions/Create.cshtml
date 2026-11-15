@@ -55,7 +55,7 @@
                     {
                         InputId = "region-parent",
                         InputName = "Input.ParentId",
-                        EmptyLabel = Localizer["GeoDivisions.Form.SelectParent"].Value,
+                        EmptyLabel = Localizer["GeoDivisions.Form.RootOption"].Value,
                         SearchPlaceholder = Localizer["GeoDivisions.Form.SearchParent"].Value,
                         LoadErrorText = Localizer["GeoDivisions.LoadChildrenFailed"].Value,
                         SelectedId = Model.Input.ParentId,
@@ -63,24 +63,16 @@
                         NodesUrl = Url.Page("/GeoDivisions/Create", "ParentNodes") ?? string.Empty,
                         CountryCode = Model.Input.CountryCode,
                         MaxParentLevel = Axiom.Web.Pages.GeoDivisions.CreateModel.MaxParentLevel,
-                        CountryInputId = "region-country-code",
                         KindSelectId = "Input_Kind",
-                        KindAutoLabel = Localizer["GeoDivisions.Form.KindAuto"].Value,
                         LevelInputId = "Input_Level",
                         KindOptionsUrl = Url.Page("/GeoDivisions/Create", "KindOptions") ?? string.Empty
                     };
                 }
                 <partial name="_ParentTreeSelect" model="parentSelect" />
-                <div class="form-text">@Localizer["GeoDivisions.Hint.Parent"]</div>
                 @if (Model.Input.Level > 1)
                 {
                     <span asp-validation-for="Input.ParentId" class="text-danger"></span>
                 }
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">@Localizer["Field.GeoDivision.CountryCode"]</label>
-                @* 国家随所选父级带出，只读展示；新建国家（Level 1）时以区划代码兼任国家代码。 *@
-                <input class="form-control" id="region-country-code" value="@Model.Input.CountryCode" readonly />
             </div>
 
             <div class="col-md-6">
@@ -95,13 +87,11 @@
                     @Localizer["Field.GeoDivision.Code"]<span class="required-mark" aria-hidden="true">*</span>
                 </label>
                 <input asp-for="Input.Code" class="form-control" autocomplete="off" />
-                <div class="form-text">@Localizer["GeoDivisions.Hint.Code"]</div>
                 <span asp-validation-for="Input.Code" class="text-danger"></span>
             </div>
             <div class="col-md-6">
                 <label asp-for="Input.Kind" class="form-label"></label>
                 <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
-                <div class="form-text">@Localizer["GeoDivisions.Hint.Kind"]</div>
                 <span asp-validation-for="Input.Kind" class="text-danger"></span>
             </div>
             @if (Model.Input.Level > 1)
@@ -116,11 +106,11 @@
         </div>
     </div>
 
-    <div class="form-section">
-        <div class="section-heading">
-            <h2>@Localizer["GeoDivisions.Section.Names"]</h2>
-            <p>@Localizer["GeoDivisions.Section.NamesHint"]</p>
-        </div>
+    @* 选填信息（别名与地理数据）默认折叠，主表单一屏完成；折叠不影响提交。 *@
+    <details class="form-section form-section-collapsible">
+        <summary>
+            <h2>@Localizer["GeoDivisions.Section.Optional"]</h2>
+        </summary>
         <div class="row g-3">
             <div class="col-md-6">
                 <label asp-for="Input.AsciiName" class="form-label"></label>
@@ -132,32 +122,23 @@
                 <input asp-for="Input.LocalName" class="form-control" />
                 <span asp-validation-for="Input.LocalName" class="text-danger"></span>
             </div>
-        </div>
-    </div>
-
-    <div class="form-section">
-        <div class="section-heading">
-            <h2>@Localizer["GeoDivisions.Section.Geo"]</h2>
-            <p>@Localizer["GeoDivisions.Section.GeoHint"]</p>
-        </div>
-        <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Latitude" class="form-label"></label>
                 <input asp-for="Input.Latitude" class="form-control" step="any" />
                 <span asp-validation-for="Input.Latitude" class="text-danger"></span>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Longitude" class="form-label"></label>
                 <input asp-for="Input.Longitude" class="form-control" step="any" />
                 <span asp-validation-for="Input.Longitude" class="text-danger"></span>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Population" class="form-label"></label>
                 <input asp-for="Input.Population" class="form-control" min="0" />
                 <span asp-validation-for="Input.Population" class="text-danger"></span>
             </div>
         </div>
-    </div>
+    </details>
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>

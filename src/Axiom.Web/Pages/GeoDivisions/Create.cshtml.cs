@@ -400,7 +400,7 @@ public sealed class CreateModel(
     public async Task<IActionResult> OnGetKindOptionsAsync(
         string? countryCode, int level = 2, CancellationToken cancellationToken = default)
     {
-        var (items, loadFailed) = await LoadKindItemsAsync(countryCode, cancellationToken);
+        var (items, loadFailed) = await LoadKindItemsAsync(level == 1 ? null : countryCode, cancellationToken);
         var filtered = loadFailed
             ? []
             : (level == 1
@@ -412,7 +412,8 @@ public sealed class CreateModel(
 
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
-        var (items, loadFailed) = await LoadKindItemsAsync(Input.CountryCode, cancellationToken);
+        // 国家行（L=1）固定读通用域：country 仅在通用域维护。
+        var (items, loadFailed) = await LoadKindItemsAsync(Input.Level == 1 ? null : Input.CountryCode, cancellationToken);
         if (loadFailed)
         {
             ErrorMessage = localizer["Enums.LoadFailed"].Value;
@@ -425,9 +426,8 @@ public sealed class CreateModel(
             ? items.Where(item => item.Code == "country").ToList()
             : items.Where(item => item.Code != "country").ToList();
 
-        // 预置“自动推导”空选项：留空提交时由 API 按国家与层级推导默认 Kind。
-        KindOptions = new[] { new SelectListItem(localizer["GeoDivisions.Form.KindAuto"].Value, "") }
-            .Concat(items.Select(item => new SelectListItem(item.Name, item.Code)))
+        KindOptions = items
+            .Select(item => new SelectListItem(item.Name, item.Code))
             .ToList();
 
         return null;
