@@ -46,25 +46,13 @@ gh pr create --base develop --fill
 
 1. 从 `develop` 切 `release/<版本号>`，只提交版本号与变更说明。
 2. PR 合入 `main`，由 Release Drafter 生成发布说明并打 tag。
-3. 将 `main` 回合 `develop`，保持两边一致：
-
-```powershell
-git switch develop
-git merge --ff-only origin/main
-git push origin develop
-```
+3. 发版后无需强行回合：本仓库统一使用 squash 合并，`main` 与 `develop` 的文件内容一致、提交哈希不同，后续功能继续从 `develop` 切出即可。若需要让两个分支的文件树完全对齐，可由维护者以管理员权限执行 `git reset --hard origin/main` 后强推 `develop`（受保护规则限制，普通人不可执行）。
 
 ## 线上热修流程
 
 1. 从 `main` 切 `hotfix/<简述>`，修复并补充测试。
 2. PR 合入 `main`，发布补丁版本。
-3. 回合 `develop`，避免修复丢失：
-
-```powershell
-git switch develop
-git merge --no-ff origin/main
-git push origin develop
-```
+3. 把修复同步到 `develop`：直接从 `hotfix/*` 分支向 `develop` 再开一个 PR 并 squash 合并；或在 `develop` 的新分支上 cherry-pick 修复提交后再 PR，避免修复在下个版本丢失。
 
 ## 保护规则
 
