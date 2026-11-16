@@ -18,10 +18,13 @@ public sealed class TranslationsModel(
 {
     public AirportResponse? Airport { get; private set; }
 
-    public string? ErrorMessage { get; private set; }
+    /// <summary>默认语言原始数据：译文编辑器的原文参考，不随界面语言本地化。</summary>
+    public AirportResponse? DefaultLanguageAirport { get; private set; }
 
     [TempData]
     public string? StatusMessage { get; set; }
+
+    public string? ErrorMessage { get; private set; }
 
     public IReadOnlyList<string> EditableCultures => localizationOptions.SupportedCultures
         .Where(culture => !string.Equals(culture, localizationOptions.DefaultCulture, StringComparison.OrdinalIgnoreCase))
@@ -38,6 +41,7 @@ public sealed class TranslationsModel(
                 return null;
             }
 
+            var source = DefaultLanguageAirport ?? airport;
             return new TranslationEditorModel(
                 TranslationEditorBuilder.CultureLabel(localizationOptions.DefaultCulture, localizer),
                 EditableCultures.Select(culture =>
@@ -50,13 +54,13 @@ public sealed class TranslationsModel(
                             localizer["Field.Airport.Name"].Value,
                             $"Translations[{culture}].Name",
                             translation?.Name,
-                            airport.Name,
+                            source.Name,
                             MaxLength: 200),
                         new TranslationField(
                             localizer["Field.Airport.City"].Value,
                             $"Translations[{culture}].City",
                             translation?.City,
-                            airport.City,
+                            source.City,
                             MaxLength: 100));
                 }).ToArray());
         }
@@ -84,7 +88,18 @@ public sealed class TranslationsModel(
     {
         if (!TranslationsLoaded)
         {
-            return RedirectToPage("/Index");
+            return RedirectToPage("/Airports/Translations", new { id });
+        }
+
+        var failure = await LoadAirportAsync(id, cancellationToken);
+        if (failure is not null)
+        {
+            return failure;
+        }
+
+        if (Airport is null)
+        {
+            return Page();
         }
 
         var (saved, actionResult) = await SaveTranslationsAsync(id, cancellationToken);
@@ -96,11 +111,10 @@ public sealed class TranslationsModel(
             }
 
             ErrorMessage = localizer["Translations.SaveFailed"].Value;
-            var failure = await LoadAirportAsync(id, cancellationToken);
-            return failure ?? Page();
+            return Page();
         }
 
-        TempData["StatusMessage"] = localizer["Translations.Saved"].Value;
+        StatusMessage = localizer["Translations.Saved"].Value;
         // 保存后留在翻译页，方便继续维护其他语言。
         return RedirectToPage("/Airports/Translations", new { id });
     }
@@ -130,6 +144,14 @@ public sealed class TranslationsModel(
         }
 
         Airport = await response.Content.ReadFromJsonAsync<AirportResponse>(cancellationToken);
+
+        // 默认语言版本：显式以 DefaultCulture 再取一次，供译文原文参考。
+        using var defaultResponse = await referenceDataClient.GetAirportAsync(
+            id, localizationOptions.DefaultCulture, cancellationToken);
+        DefaultLanguageAirport = defaultResponse.IsSuccessStatusCode
+            ? await defaultResponse.Content.ReadFromJsonAsync<AirportResponse>(cancellationToken)
+            : null;
+
         return null;
     }
 

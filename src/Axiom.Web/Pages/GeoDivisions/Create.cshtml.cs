@@ -91,7 +91,7 @@ public sealed class CreateModel(
 
             using var searchResponse = await regionClient.ListAsync(
                 1, 50, level: null, cc, null, keyword, cancellationToken);
-            var searchStatus = HandleStatus(searchResponse.StatusCode);
+            var searchStatus = this.HandleAuthStatus(searchResponse.StatusCode);
             if (searchStatus is not null)
             {
                 return searchStatus;
@@ -126,7 +126,7 @@ public sealed class CreateModel(
         if (parentId is Guid id)
         {
             using var childrenResponse = await regionClient.GetChildrenAsync(id, cancellationToken);
-            var childrenStatus = HandleStatus(childrenResponse.StatusCode);
+            var childrenStatus = this.HandleAuthStatus(childrenResponse.StatusCode);
             if (childrenStatus is not null)
             {
                 return childrenStatus;
@@ -146,7 +146,7 @@ public sealed class CreateModel(
 
         using var rootsResponse = await regionClient.ListAsync(
             1, 50, level: 1, country, null, null, cancellationToken);
-        var rootsStatus = HandleStatus(rootsResponse.StatusCode);
+        var rootsStatus = this.HandleAuthStatus(rootsResponse.StatusCode);
         if (rootsStatus is not null)
         {
             return rootsStatus;
@@ -205,14 +205,10 @@ public sealed class CreateModel(
         }
 
         using var response = await regionClient.CreateAsync(Input, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var authFailure = this.HandleAuthStatus(response.StatusCode);
+        if (authFailure is not null)
         {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return authFailure;
         }
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
@@ -254,7 +250,7 @@ public sealed class CreateModel(
         }
 
         using var response = await regionClient.GetAsync(Input.ParentId.Value, cancellationToken);
-        var statusFailure = HandleStatus(response.StatusCode);
+        var statusFailure = this.HandleAuthStatus(response.StatusCode);
         if (statusFailure is not null)
         {
             return statusFailure;
@@ -287,15 +283,11 @@ public sealed class CreateModel(
 
     private async Task<IActionResult?> LoadOptionsAsync(CancellationToken cancellationToken)
     {
-        var kindFailure = await LoadKindOptionsAsync(cancellationToken);
-        if (kindFailure is not null)
-        {
-            return kindFailure;
-        }
+        await LoadKindOptionsAsync(cancellationToken);
 
         using var countriesResponse = await regionClient.ListAsync(
             1, 250, level: 1, null, null, null, cancellationToken);
-        var statusFailure = HandleStatus(countriesResponse.StatusCode);
+        var statusFailure = this.HandleAuthStatus(countriesResponse.StatusCode);
         if (statusFailure is not null)
         {
             return statusFailure;
@@ -341,96 +333,32 @@ public sealed class CreateModel(
         }
     }
 
-    /// <summary>
-    /// 按国家分域加载 Kind 选项（该国家未维护时回退通用域）。
-    /// 返回 (选项列表, 是否加载失败)。
-    /// </summary>
-    private async Task<(List<ReferenceEnumView> Items, bool LoadFailed)> LoadKindItemsAsync(
-        string? countryCode, CancellationToken cancellationToken)
-    {
-        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
-        using var response = await enumClient.ListAsync(
-            category,
-            pageSize: 200,
-            cancellationToken: cancellationToken);
-        var statusFailure = HandleStatus(response.StatusCode);
-        if (statusFailure is not null)
-        {
-            return ([], true);
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return ([], true);
-        }
-
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-        var items = (page?.Items ?? [])
-            .OrderBy(item => item.SortOrder)
-            .ThenBy(item => item.Code)
-            .ToList();
-
-        if (items.Count == 0
-            && !string.Equals(category, ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal))
-        {
-            using var fallback = await enumClient.ListAsync(
-                ReferenceEnumClient.GeoDivisionKindCategory,
-                pageSize: 200,
-                cancellationToken: cancellationToken);
-            statusFailure = HandleStatus(fallback.StatusCode);
-            if (statusFailure is not null)
-            {
-                return ([], true);
-            }
-
-            if (fallback.IsSuccessStatusCode)
-            {
-                var fallbackPage = await fallback.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-                items = (fallbackPage?.Items ?? [])
-                    .OrderBy(item => item.SortOrder)
-                    .ThenBy(item => item.Code)
-                    .ToList();
-            }
-        }
-
-        return (items, false);
-    }
-
     /// <summary>国家变更时由 site.js 调用：返回该国家分域的 Kind 选项（按层级过滤 country）。</summary>
     public async Task<IActionResult> OnGetKindOptionsAsync(
         string? countryCode, int level = 2, CancellationToken cancellationToken = default)
     {
-        var (items, loadFailed) = await LoadKindItemsAsync(level == 1 ? null : countryCode, cancellationToken);
-        var filtered = loadFailed
-            ? []
-            : (level == 1
-                ? items.Where(item => item.Code == "country").ToList()
-                : items.Where(item => item.Code != "country").ToList());
+        var (items, status) = await enumClient.ListGeoDivisionKindsAsync(
+            level == 1 ? null : countryCode, cancellationToken);
+        var options = status == HttpStatusCode.OK
+            ? GeoDivisionKindOptions.ToSelectList(items, level)
+            : [];
 
-        return new JsonResult(filtered.Select(item => new { value = item.Code, text = item.Name }).ToList());
+        return new JsonResult(options.Select(option => new { value = option.Value, text = option.Text }).ToList());
     }
 
-    private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
+    private async Task LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
         // 国家行（L=1）固定读通用域：country 仅在通用域维护。
-        var (items, loadFailed) = await LoadKindItemsAsync(Input.Level == 1 ? null : Input.CountryCode, cancellationToken);
-        if (loadFailed)
+        var (items, status) = await enumClient.ListGeoDivisionKindsAsync(
+            Input.Level == 1 ? null : Input.CountryCode, cancellationToken);
+        if (status != HttpStatusCode.OK)
         {
             ErrorMessage = localizer["Enums.LoadFailed"].Value;
             KindOptions = [];
-            return null;
+            return;
         }
 
-        // 国家行的 Kind 固定为 country；其余层级不允许选 country。
-        items = Input.Level == 1
-            ? items.Where(item => item.Code == "country").ToList()
-            : items.Where(item => item.Code != "country").ToList();
-
-        KindOptions = items
-            .Select(item => new SelectListItem(item.Name, item.Code))
-            .ToList();
-
-        return null;
+        KindOptions = GeoDivisionKindOptions.ToSelectList(items, Input.Level);
     }
 
     private static IReadOnlyList<ParentTreeSelectItemDto> MapChildren(
@@ -484,11 +412,4 @@ public sealed class CreateModel(
             countryCode,
             subdivisionCode);
     }
-
-    private IActionResult? HandleStatus(HttpStatusCode statusCode) => statusCode switch
-    {
-        HttpStatusCode.Unauthorized => Challenge(),
-        HttpStatusCode.Forbidden => StatusCode(StatusCodes.Status403Forbidden),
-        _ => null
-    };
 }

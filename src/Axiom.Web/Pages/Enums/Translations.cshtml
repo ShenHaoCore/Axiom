@@ -1,0 +1,56 @@
+@page "{id:guid}"
+@model Axiom.Web.Pages.Enums.TranslationsModel
+@{
+    var item = Model.Item;
+    var pageTitle = item?.Name ?? Localizer["Translations.Title"].Value;
+    ViewData["Title"] = pageTitle;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Enums/Index">@Localizer["Enums.Title"]</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@pageTitle</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h1>@pageTitle</h1>
+        <p class="page-description">@Localizer["Translations.Description"]</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-outline-secondary" asp-page="/Enums/Index">@Localizer["Common.BackToList"]</a>
+    </div>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (item is not null && Model.TranslationEditor is { } editor)
+{
+    <form method="post" class="card form-card" asp-route-id="@item.Id">
+        <input type="hidden" asp-for="TranslationsLoaded" />
+
+        <div class="form-section">
+            <div class="section-heading">
+                <h2>@Localizer["Translations.Title"]</h2>
+                <p>@Localizer["Translations.Hint"]</p>
+            </div>
+
+            <partial name="_TranslationEditor" model="editor" />
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
+            <a class="btn btn-outline-secondary" asp-page="/Enums/Index">@Localizer["Common.Cancel"]</a>
+        </div>
+    </form>
+}

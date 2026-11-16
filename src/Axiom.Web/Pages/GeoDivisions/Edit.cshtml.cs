@@ -40,12 +40,7 @@ public sealed class EditModel(
         }
 
         Input = GeoDivisionInput.From(GeoDivision);
-        var kindFailure = await LoadKindOptionsAsync(cancellationToken);
-        if (kindFailure is not null)
-        {
-            return kindFailure;
-        }
-
+        await LoadKindOptionsAsync(cancellationToken);
         await LoadSelectedParentLabelAsync(cancellationToken);
         return Page();
     }
@@ -72,12 +67,7 @@ public sealed class EditModel(
             Input.ParentId = null;
         }
 
-        var kindFailure = await LoadKindOptionsAsync(cancellationToken);
-        if (kindFailure is not null)
-        {
-            return kindFailure;
-        }
-
+        await LoadKindOptionsAsync(cancellationToken);
         await LoadSelectedParentLabelAsync(cancellationToken);
         await ValidateParentAsync(cancellationToken);
         if (!ModelState.IsValid)
@@ -86,14 +76,10 @@ public sealed class EditModel(
         }
 
         using var response = await regionClient.UpdateAsync(id, Input, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var authFailure = this.HandleAuthStatus(response.StatusCode);
+        if (authFailure is not null)
         {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return authFailure;
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -126,14 +112,10 @@ public sealed class EditModel(
     private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
     {
         using var response = await regionClient.GetAsync(id, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var authFailure = this.HandleAuthStatus(response.StatusCode);
+        if (authFailure is not null)
         {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return authFailure;
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -151,6 +133,7 @@ public sealed class EditModel(
         if (GeoDivision is null)
         {
             ErrorMessage = localizer["GeoDivisions.Edit.LoadFailed"].Value;
+            return null;
         }
 
         return null;
@@ -160,63 +143,23 @@ public sealed class EditModel(
     {
         // 与新建页一致：按国家分域字典；该国家未维护时回退通用域。
         // 国家行（L=1）固定读通用域：country 仅在通用域维护。
-        var countryCode = (GeoDivision?.Level ?? Input.Level) == 1
-            ? null
-            : Input.CountryCode ?? GeoDivision?.CountryCode;
-        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
-        using var response = await enumClient.ListAsync(
-            category,
-            pageSize: 200,
-            cancellationToken: cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var level = GeoDivision?.Level ?? Input.Level;
+        var countryCode = level == 1 ? null : Input.CountryCode ?? GeoDivision?.CountryCode;
+        var (items, status) = await enumClient.ListGeoDivisionKindsAsync(countryCode, cancellationToken);
+        var authFailure = this.HandleAuthStatus(status);
+        if (authFailure is not null)
         {
-            return Challenge();
+            return authFailure;
         }
 
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
-
-        if (!response.IsSuccessStatusCode)
+        if (status != HttpStatusCode.OK)
         {
             ErrorMessage = localizer["Enums.LoadFailed"].Value;
             KindOptions = [];
             return null;
         }
 
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-        var items = (page?.Items ?? [])
-            .OrderBy(item => item.SortOrder)
-            .ThenBy(item => item.Code)
-            .ToList();
-
-        // 国别域为空时回退通用域，避免编辑页 Kind 下拉空白。
-        if (items.Count == 0
-            && !string.Equals(category, ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal))
-        {
-            using var fallback = await enumClient.ListAsync(
-                ReferenceEnumClient.GeoDivisionKindCategory,
-                pageSize: 200,
-                cancellationToken: cancellationToken);
-            if (fallback.IsSuccessStatusCode)
-            {
-                var fallbackPage = await fallback.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-                items = (fallbackPage?.Items ?? [])
-                    .OrderBy(item => item.SortOrder)
-                    .ThenBy(item => item.Code)
-                    .ToList();
-            }
-        }
-
-        // 与新建页一致：国家行 Kind 固定为 country；其余层级不允许选 country。
-        items = (GeoDivision?.Level ?? 1) == 1
-            ? items.Where(item => item.Code == "country").ToList()
-            : items.Where(item => item.Code != "country").ToList();
-
-        KindOptions = items
-            .Select(item => new SelectListItem(item.Name, item.Code))
-            .ToList();
+        KindOptions = GeoDivisionKindOptions.ToSelectList(items, level);
 
         if (!string.IsNullOrWhiteSpace(Input.Kind)
             && KindOptions.All(option => !string.Equals(option.Value, Input.Kind, StringComparison.OrdinalIgnoreCase)))

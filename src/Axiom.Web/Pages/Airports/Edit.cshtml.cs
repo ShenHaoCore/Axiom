@@ -39,6 +39,13 @@ public sealed class EditModel(
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AirportId = id;
+        // 保留用户提交值，只加载展示所需数据与译文编辑器。
+        var failure = await LoadAirportAsync(id, cancellationToken, resetInput: false);
+        if (failure is not null)
+        {
+            return failure;
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
@@ -131,7 +138,10 @@ public sealed class EditModel(
         return failure ?? Page();
     }
 
-    private async Task<IActionResult?> LoadAirportAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadAirportAsync(
+        Guid id,
+        CancellationToken cancellationToken,
+        bool resetInput = true)
     {
         using var response = await referenceDataClient.GetAirportAsync(id, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -157,8 +167,12 @@ public sealed class EditModel(
 
         Airport = await response.Content.ReadFromJsonAsync<AirportResponse>(cancellationToken);
         AirportId = id;
-        ETag = response.Headers.ETag?.Tag;
-        Input = AirportInput.From(Airport);
+        if (resetInput)
+        {
+            ETag = response.Headers.ETag?.Tag;
+            Input = AirportInput.From(Airport);
+        }
+
         return null;
     }
 }

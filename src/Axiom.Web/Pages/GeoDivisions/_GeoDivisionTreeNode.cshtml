@@ -25,6 +25,7 @@
                    asp-route-parentId="@Model.Id">@Localizer["GeoDivisions.AddChild"]</a>
             }
             <a class="btn btn-ghost" asp-page="/GeoDivisions/Edit" asp-route-id="@Model.Id">@Localizer["Common.Edit"]</a>
+            <a class="btn btn-ghost" asp-page="/GeoDivisions/Translations" asp-route-id="@Model.Id">@Localizer["Translations.Manage"]</a>
         </div>
     </div>
     @if (Model.HasChildren)

@@ -26,7 +26,6 @@
     </div>
     <div class="page-actions">
         <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.BackToList"]</a>
-        <a class="btn btn-outline-primary" asp-page="/Airports/Translations" asp-route-id="@Model.AirportId">@Localizer["Translations.Manage"]</a>
     </div>
 </div>
 
@@ -51,7 +50,7 @@
                 </div>
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label asp-for="Input.Code" class="form-label">
                             @Localizer["Field.Airport.Code"]<span class="required-mark" aria-hidden="true">*</span>
                         </label>
@@ -59,14 +58,14 @@
                         <div class="form-text">@Localizer["Airports.Hint.Code"]</div>
                         <span asp-validation-for="Input.Code" class="text-danger"></span>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <label asp-for="Input.Name" class="form-label">
                             @Localizer["Field.Airport.Name"]<span class="required-mark" aria-hidden="true">*</span>
                         </label>
                         <input asp-for="Input.Name" class="form-control">
                         <span asp-validation-for="Input.Name" class="text-danger"></span>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label asp-for="Input.CountryCode" class="form-label">
                             @Localizer["Field.Airport.CountryCode"]<span class="required-mark" aria-hidden="true">*</span>
                         </label>
@@ -74,7 +73,7 @@
                         <div class="form-text">@Localizer["Airports.Hint.CountryCode"]</div>
                         <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <label asp-for="Input.City" class="form-label"></label>
                         <input asp-for="Input.City" class="form-control">
                         <span asp-validation-for="Input.City" class="text-danger"></span>
@@ -88,12 +87,12 @@
                     <p>@Localizer["Airports.Hint.Location"]</p>
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label asp-for="Input.Latitude" class="form-label"></label>
                         <input asp-for="Input.Latitude" class="form-control" step="any">
                         <span asp-validation-for="Input.Latitude" class="text-danger"></span>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label asp-for="Input.Longitude" class="form-label"></label>
                         <input asp-for="Input.Longitude" class="form-control" step="any">
                         <span asp-validation-for="Input.Longitude" class="text-danger"></span>

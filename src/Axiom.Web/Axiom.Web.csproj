@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="..\Axiom.News.Domain\Axiom.News.Domain.csproj" />
     <ProjectReference Include="..\Axiom.Observability\Axiom.Observability.csproj" />
+    <ProjectReference Include="..\Axiom.ReferenceData.Domain\Axiom.ReferenceData.Domain.csproj" />
     <ProjectReference Include="..\Axiom.SharedKernel\Axiom.SharedKernel.csproj" />
   </ItemGroup>
 

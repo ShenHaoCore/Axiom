@@ -111,29 +111,6 @@
                     </dl>
                 </div>
             </div>
-
-            @if (Model.TranslationsLoaded && Model.TranslationEditor is { } editor)
-            {
-                <div class="card">
-                    <div class="card-header">@Localizer["Translations.Title"]</div>
-                    <div class="card-body">
-                        <form method="post" asp-page-handler="Translations" asp-route-id="@r.Id">
-                            <input type="hidden" asp-for="TranslationsLoaded" />
-                            <p class="text-muted">@Localizer["Translations.Hint"]</p>
-
-                            <partial name="_TranslationEditor" model="editor" />
-
-                            <div class="mt-4">
-                                <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-warning" role="alert">@Localizer["Translations.LoadFailed"]</div>
-            }
         </div>
 
         <aside class="detail-side">
