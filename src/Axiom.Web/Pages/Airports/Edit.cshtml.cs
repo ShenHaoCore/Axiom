@@ -167,9 +167,9 @@ public sealed class EditModel(
 
         Airport = await response.Content.ReadFromJsonAsync<AirportResponse>(cancellationToken);
         AirportId = id;
-        ETag = response.Headers.ETag?.Tag;
         if (resetInput)
         {
+            ETag = response.Headers.ETag?.Tag;
             Input = AirportInput.From(Airport);
         }
 
