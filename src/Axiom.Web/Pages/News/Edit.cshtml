@@ -35,28 +35,28 @@
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
         <div class="row g-3">
-            <div class="col-md-8">
+            <div class="col-md-6">
                 <label asp-for="Input.Title" class="form-label">
                     @Localizer["Field.News.Title"]<span class="required-mark" aria-hidden="true">*</span>
                 </label>
                 <input asp-for="Input.Title" class="form-control" />
                 <span asp-validation-for="Input.Title" class="text-danger"></span>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Category" class="form-label">
                     @Localizer["Field.News.Category"]<span class="required-mark" aria-hidden="true">*</span>
                 </label>
                 <input asp-for="Input.Category" class="form-control" />
                 <span asp-validation-for="Input.Category" class="text-danger"></span>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Author" class="form-label">
                     @Localizer["Field.News.Author"]<span class="required-mark" aria-hidden="true">*</span>
                 </label>
                 <input asp-for="Input.Author" class="form-control" />
                 <span asp-validation-for="Input.Author" class="text-danger"></span>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="Input.Status" class="form-label"></label>
                 <select asp-for="Input.Status" class="form-select">
                     <option value="Draft">@Localizer["News.Status.Draft"]</option>
@@ -85,23 +85,6 @@
         <textarea asp-for="Input.Content" class="form-control" rows="12"></textarea>
         <span asp-validation-for="Input.Content" class="text-danger"></span>
     </div>
-
-    @if (Model.IsEdit)
-    {
-        <input type="hidden" asp-for="TranslationsLoaded" />
-
-        @if (Model.TranslationsLoaded)
-        {
-            <div class="form-section">
-                <div class="section-heading">
-                    <h2>@Localizer["Translations.Title"]</h2>
-                    <p>@Localizer["Translations.Hint"]</p>
-                </div>
-
-                <partial name="_TranslationEditor" model="Model.TranslationEditor" />
-            </div>
-        }
-    }
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">@Localizer["Common.Save"]</button>

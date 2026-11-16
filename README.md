@@ -9,38 +9,12 @@
 
 基于 .NET 10 的微服务练习项目，覆盖统一网关、OIDC 单点登录、REST 与 gRPC、Transactional Outbox/Inbox、乐观并发与 Docker Compose 本地运行。
 
-## 架构总览
+## 架构
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ 浏览器                                                   │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Razor Pages (:3000)     Cookie Auth                 │ │
-│ └─────────────────────────┬───────────────────────────┘ │
-└───────────────────────────┼─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│              Axiom.Web (:3000)                           │
-│        OIDC 授权码 + PKCE → Cookie 会话                  │
-│        服务端持有访问令牌，浏览器不接触 JWT              │
-└───────────────────────────┬─────────────────────────────┘
-                            │ Bearer JWT (scope 映射 audience)
-┌───────────────────────────▼─────────────────────────────┐
-│           Axiom.ApiGateway (:5100)                       │
-│     YARP 反向代理 + JWT Bearer 验证                      │
-│     gRPC 直连 ReferenceData                              │
-└───┬──────────────┬──────────────────┬──────────────────┘
-    │              │                  │
-┌───▼───┐     ┌────▼─────┐    ┌──────▼──────┐
-│News   │     │Reference  │    │ Reference   │
-│Api    │     │Data REST │    │ Data gRPC   │
-│:5104  │     │:5102      │    │ :5103       │
-└───┬───┘     └────┬─────┘    └──────────────┘
-    │              │
-┌───▼──────────────▼──────────────────────────────────────┐
-│     PostgreSQL（每服务独立数据库）  +  RabbitMQ            │
-│     Outbox / Inbox 事务性消息                              │
-└──────────────────────────────────────────────────────────┘
+浏览器 → Axiom.Web (:3000) → Axiom.ApiGateway (:5100) → News.Api / ReferenceData (REST + gRPC)
+              OIDC 授权码 + PKCE        YARP + JWT Bearer         ↓
+              → Cookie 会话，浏览器不接触 JWT        PostgreSQL（每服务独立库） + RabbitMQ（Outbox/Inbox）
 ```
 
 ## 服务划分
@@ -92,15 +66,11 @@ Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-默认端口：Postgres `5432`、RabbitMQ `5672`、管理台 `15672`、Gateway `5100`、AuthHub `5101`、News.Api `5104`、Web `3000`。端口被占用时通过 `POSTGRES_PORT`、`RABBITMQ_PORT`、`RABBITMQ_MANAGEMENT_PORT`、`AUTHHUB_PORT`、`GATEWAY_PORT`、`NEWS_PORT`、`WEB_PORT` 覆盖。
-
-浏览器访问 `http://localhost:3000`，使用 `.env` 中配置的演示账号登录。
-
-会话 Cookie 由 `Axiom.Web` 服务端签发并持有访问令牌，浏览器不接触 JWT；写操作走 ASP.NET Core 内建的防伪令牌校验。
+浏览器访问 `http://localhost:3000`，使用 `.env` 中配置的演示账号登录。端口被占用时通过 `POSTGRES_PORT`、`GATEWAY_PORT`、`WEB_PORT` 等 `<服务>_PORT` 环境变量覆盖。
 
 ## 多环境启动
 
-服务通过 `ASPNETCORE_ENVIRONMENT` 选择配置：`appsettings.json` 提供公共默认值，`appsettings.{Environment}.json` 覆盖该环境的日志级别；连接串、对外地址、证书等敏感或环境相关的值一律由环境变量注入，不写入配置文件。
+服务通过 `ASPNETCORE_ENVIRONMENT` 选择配置：`appsettings.json` 提供公共默认值，`appsettings.{Environment}.json` 覆盖日志级别；连接串、对外地址、证书等敏感值一律由环境变量注入，不写入配置文件。
 
 | 环境 | 应用配置 | 编排与变量 | 启动方式 |
 | --- | --- | --- | --- |
@@ -110,14 +80,11 @@ docker compose up -d --build
 
 ```powershell
 Copy-Item .env.staging.example .env.staging
-# 填写数据库、RabbitMQ、证书密码与对外域名
-New-Item -ItemType Directory -Force deploy/certs
-# 将 signing.pfx 与 encryption.pfx 放入 deploy/certs
+# 填写数据库、RabbitMQ、证书密码与对外域名；将 signing.pfx 与 encryption.pfx 放入 deploy/certs
 ```
 
-- 非开发环境启动时 AuthHub 从 `OpenIddict:Certificates:{Signing|Encryption}:Path` 加载 PFX 证书，密码由 `OPENIDDICT_CERT_PASSWORD` 注入；缺少证书会直接启动失败。
-- 对外地址：`PUBLIC_AUTH_ISSUER`（AuthHub issuer、Web 授权地址）与 `PUBLIC_WEB_CALLBACK_URL`（回调地址）；内部调用使用 `INTERNAL_AUTH_URL`、`INTERNAL_GATEWAY_URL`。
-- 内部链路走 HTTP 时保持 `AUTH_REQUIRE_HTTPS_METADATA=false`；启用内部 TLS 后改为 `true`。
+- 非开发环境 AuthHub 从 `OpenIddict:Certificates:{Signing|Encryption}:Path` 加载 PFX 证书，密码由 `OPENIDDICT_CERT_PASSWORD` 注入；缺少证书直接启动失败。
+- 对外地址用 `PUBLIC_AUTH_ISSUER`、`PUBLIC_WEB_CALLBACK_URL`；内部调用用 `INTERNAL_AUTH_URL`、`INTERNAL_GATEWAY_URL`，内部走 HTTP 时保持 `AUTH_REQUIRE_HTTPS_METADATA=false`。
 - `.env.staging`、`.env.production` 与 `deploy/certs/` 已被忽略，证书和密码不入库。
 
 ## 构建与测试
@@ -128,7 +95,7 @@ dotnet test Axiom.slnx -c Release
 dotnet format Axiom.slnx --verify-no-changes
 ```
 
-- 集成测试默认使用 EF Core 内存库；设置 `AXIOM_TEST_POSTGRES` 指向可用 PostgreSQL 后，每个测试会创建并清理独立数据库，走真实 PostgreSQL（CI 已内置该服务容器）。本机可用 compose 实例：`Host=localhost;Port=5433;Database=postgres;Username=axiom;Password=<POSTGRES_PASSWORD>`。
+集成测试默认使用 EF Core 内存库；设置 `AXIOM_TEST_POSTGRES` 指向可用 PostgreSQL 后每个测试创建并清理独立数据库，走真实 PostgreSQL（CI 已内置该服务容器）。
 
 ## 分支与合并
 
@@ -141,18 +108,15 @@ dotnet format Axiom.slnx --verify-no-changes
 | `release/*` | 发版准备 | PR → `main`，并回合 `develop` |
 | `hotfix/*` | 线上紧急修复 | PR → `main`，并回合 `develop` |
 
-- 分支命名使用 `feature/<简述>`、`bugfix/<简述>`、`release/<版本号>`、`hotfix/<简述>`、`chore/<简述>` 等，由 `branch-naming` 检查强制校验。
-- `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强制推送，必须通过 PR，仅允许线性历史（squash 或 rebase）。
-- 提交信息遵循 Conventional Commits：`feat:`、`fix:`、`chore:`、`docs:` 等。
-- PR 会自动执行 `.github/workflows/ci.yml`：restore、build、test、format 检查。
-- PR 合并或关闭后自动删除 head 分支，每周定时巡检无主分支，规则详见 [docs/branching.md](docs/branching.md)。
+- 分支命名（`feature/<简述>`、`release/<版本号>` 等）由 `branch-naming` 检查强制校验；提交信息遵循 Conventional Commits。
+- `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强推，必须通过 PR，仅允许线性历史（squash 或 rebase）。
+- PR 自动执行 CI（restore、build、test、format 检查），合并或关闭后自动删除 head 分支；规则详见 [docs/branching.md](docs/branching.md)。
 
 ## 接口约定
 
-- 统一分页响应 `PagedResponse<T>`，列表按稳定排序返回。
+- 统一分页响应 `PagedResponse<T>`，列表按稳定排序返回；错误统一返回 ProblemDetails。
 - 详情返回强 ETag `"{{guid:N}}"`；更新与删除要求 `If-Match`，缺失 428、格式错误 400、版本冲突 409。
-- 错误统一返回 ProblemDetails。
-- 权限：`referencedata.read`、`referencedata.manage`、`news.read`、`news.manage`；令牌 audience 按申请 scope 映射到 `axiom-reference-data` / `axiom-news`。
+- 权限：`referencedata.read`、`referencedata.manage`、`news.read`、`news.manage`；令牌 audience 按 scope 映射到 `axiom-reference-data` / `axiom-news`。
 
 ## 文档
 
