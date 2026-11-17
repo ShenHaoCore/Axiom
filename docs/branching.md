@@ -45,7 +45,7 @@ gh pr create --base develop --fill
 ## 发布流程
 
 1. 从 `develop` 切 `release/<版本号>`，把 [Directory.Build.props](../Directory.Build.props) 的 `<Version>` 更新为本次版本号（变更说明由 Release Drafter 汇总 PR 生成，无需手写）。
-2. PR 合入 `main`，由 Release Drafter 生成发布说明并打 tag。
+2. PR 合入 `main`，Release Drafter 读取 [Directory.Build.props](../Directory.Build.props) 的 `<Version>` 生成 v 前缀 tag 与发布说明（`version` 入参覆盖标签推导，两者不会分叉）。
 3. 发版后无需强行回合：本仓库统一使用 squash 合并，`main` 与 `develop` 的文件内容一致、提交哈希不同，后续功能继续从 `develop` 切出即可。若需要让两个分支的文件树完全对齐，可由维护者以管理员权限执行 `git reset --hard origin/main` 后强推 `develop`（受保护规则限制，普通人不可执行）。
 
 ## 线上热修流程
