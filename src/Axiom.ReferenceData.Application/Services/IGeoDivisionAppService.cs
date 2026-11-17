@@ -18,13 +18,22 @@ public interface IGeoDivisionAppService
         string? culture = null,
         CancellationToken ct = default);
 
-    Task<GeoDivisionDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default);
+    /// <summary>按 ID 读取；同时返回并发令牌，供接口层写入 ETag 响应头。</summary>
+    Task<(GeoDivisionDto? Dto, Guid? ETag)> GetAsync(Guid id, string? culture = null, CancellationToken ct = default);
 
-    Task<(GeoDivisionDto Dto, Uri LocationUri)> CreateAsync(CreateGeoDivisionInput input, CancellationToken ct = default);
+    Task<(GeoDivisionDto Dto, Uri LocationUri, Guid ETag)> CreateAsync(
+        CreateGeoDivisionInput input,
+        CancellationToken ct = default);
 
-    Task<GeoDivisionDto> UpdateAsync(Guid id, UpdateGeoDivisionInput input, CancellationToken ct = default);
+    /// <summary>按期望令牌更新；令牌与库中不一致时抛出并发冲突。</summary>
+    Task<(GeoDivisionDto Dto, Guid ETag)> UpdateAsync(
+        Guid id,
+        UpdateGeoDivisionInput input,
+        Guid expectedToken,
+        CancellationToken ct = default);
 
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    /// <summary>按期望令牌删除；令牌与库中不一致时抛出并发冲突。</summary>
+    Task DeleteAsync(Guid id, Guid expectedToken, CancellationToken ct = default);
 
     /// <summary>读取单个行政区在指定语言下的原始译文；不存在时返回 null。</summary>
     Task<TranslationDto?> GetTranslationsAsync(Guid id, string culture, CancellationToken ct = default);

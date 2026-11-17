@@ -126,22 +126,25 @@ public sealed class GeoDivisionAppService(
             .ToList();
     }
 
-    public async Task<GeoDivisionDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default)
+    public async Task<(GeoDivisionDto? Dto, Guid? ETag)> GetAsync(
+        Guid id,
+        string? culture = null,
+        CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsNoTrackingAsync(id, ct);
         if (entity is null)
         {
-            return null;
+            return (null, null);
         }
 
         var chain = localization.CultureChain(culture);
         var translations = await repository.ListTranslationsAsync([id], chain, ct);
         var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
 
-        return GeoDivisionMapper.ToDto(entity, lookup);
+        return (GeoDivisionMapper.ToDto(entity, lookup), entity.ConcurrencyToken);
     }
 
-    public async Task<(GeoDivisionDto Dto, Uri LocationUri)> CreateAsync(
+    public async Task<(GeoDivisionDto Dto, Uri LocationUri, Guid ETag)> CreateAsync(
         CreateGeoDivisionInput input,
         CancellationToken ct = default)
     {
@@ -178,10 +181,14 @@ public sealed class GeoDivisionAppService(
 
         var dto = GeoDivisionMapper.ToDto(entity);
         var location = new Uri($"/api/geo-divisions/{entity.Id}", UriKind.Relative);
-        return (dto, location);
+        return (dto, location, entity.ConcurrencyToken);
     }
 
-    public async Task<GeoDivisionDto> UpdateAsync(Guid id, UpdateGeoDivisionInput input, CancellationToken ct = default)
+    public async Task<(GeoDivisionDto Dto, Guid ETag)> UpdateAsync(
+        Guid id,
+        UpdateGeoDivisionInput input,
+        Guid expectedToken,
+        CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new GeoDivisionNotFoundException(id);
@@ -202,11 +209,11 @@ public sealed class GeoDivisionAppService(
             input.ParentId,
             kind: input.Kind);
 
-        await repository.UpdateAsync(entity, ct);
-        return GeoDivisionMapper.ToDto(entity);
+        await repository.UpdateWithETagAsync(entity, expectedToken, ct);
+        return (GeoDivisionMapper.ToDto(entity), entity.ConcurrencyToken);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, Guid expectedToken, CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new GeoDivisionNotFoundException(id);
@@ -216,7 +223,7 @@ public sealed class GeoDivisionAppService(
             throw new GeoDivisionHasChildrenException(id);
         }
 
-        await repository.RemoveAsync(entity, ct);
+        await repository.RemoveWithETagAsync(entity, expectedToken, ct);
     }
 
     public async Task<TranslationDto?> GetTranslationsAsync(

@@ -108,13 +108,44 @@ internal static class MockHttp
         return response;
     }
 
-    internal static HttpResponseMessage Problem(HttpStatusCode statusCode, string title)
+    internal static HttpResponseMessage Problem(HttpStatusCode statusCode, string title, string? errorCode = null)
     {
-        var response = Json(
-            new ProblemDetails { Status = (int)statusCode, Title = title },
-            statusCode);
+        var problem = new ProblemDetails { Status = (int)statusCode, Title = title };
+        if (errorCode is not null)
+        {
+            // 与真实端点一致：让客户端能区分同为 409 的唯一键冲突与并发冲突。
+            problem.Extensions["errorCode"] = errorCode;
+        }
+
+        var response = Json(problem, statusCode);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/problem+json");
         return response;
+    }
+
+    // 解析 If-Match：缺失 428，格式错误 400；与真实端点一致，只接受带引号的 N 格式 GUID。
+    internal static bool TryParseIfMatch(
+        HttpRequestMessage request, out Guid expectedETag, out HttpResponseMessage? error)
+    {
+        expectedETag = default;
+        error = null;
+        var etag = request.Headers.TryGetValues(ApiClientHeaders.IfMatch, out var values)
+            ? string.Join(",", values).Trim()
+            : string.Empty;
+
+        if (etag.Length == 0)
+        {
+            error = Problem(HttpStatusCode.PreconditionRequired, "请求缺少 If-Match 头。");
+            return false;
+        }
+
+        if (etag.Length < 3 || etag[0] != '"' || etag[^1] != '"'
+            || !Guid.TryParseExact(etag[1..^1], "N", out expectedETag))
+        {
+            error = Problem(HttpStatusCode.BadRequest, "If-Match 头格式无效。");
+            return false;
+        }
+
+        return true;
     }
 
     internal static HttpResponseMessage Empty(HttpStatusCode statusCode) => new(statusCode);

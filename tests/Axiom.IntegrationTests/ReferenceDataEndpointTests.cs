@@ -6,6 +6,7 @@ using Axiom.ReferenceData.Infrastructure.Messaging;
 using Axiom.ReferenceData.Application.Dtos;
 using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Infrastructure.EfCore;
+using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
 using Axiom.SharedKernel.Security;
 using FluentAssertions;
@@ -153,11 +154,12 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             countryCode,
             Code: countryCode,
             Name: $"回归国家 {suffix}");
-        var country = await CreateRegion(countryInput);
+        var (country, countryETag) = await CreateRegion(countryInput);
         country.Level.Should().Be(1);
         country.Kind.Should().Be("country", "未提供 Kind 时按国家与层级推导");
         country.CountryCode.Should().Be(countryCode);
         country.ParentId.Should().BeNull();
+        countryETag.Should().NotBeNullOrWhiteSpace();
 
         var admin1Input = new CreateGeoDivisionInput(
             2,
@@ -166,7 +168,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             Code: subdivisionCode,
             Name: $"回归省州 {suffix}",
             ParentId: country.Id);
-        var admin1 = await CreateRegion(admin1Input with { Kind = "province" });
+        var (admin1, admin1ETag) = await CreateRegion(admin1Input with { Kind = "province" });
         admin1.Level.Should().Be(2);
         admin1.Kind.Should().Be("province");
         admin1.ParentId.Should().Be(country.Id);
@@ -183,7 +185,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             Longitude: 121.5,
             Population: 1234,
             ParentId: admin1.Id);
-        var city = await CreateRegion(cityInput);
+        var (city, cityETag) = await CreateRegion(cityInput);
         city.Level.Should().Be(3);
         city.ParentId.Should().Be(admin1.Id);
         city.GeoNameId.Should().BeNull();
@@ -211,6 +213,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var detail = await detailResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
         detail.Should().NotBeNull(detailContent);
         detail!.Should().BeEquivalentTo(city);
+        detailResponse.Headers.ETag?.ToString().Should().Be(cityETag);
 
         using var listRequest = CreateRequest(
             HttpMethod.Get,
@@ -233,7 +236,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
                 Code: $"{cityCode}-UPDATED",
                 Latitude: 30.2,
                 Longitude: 120.5,
-                Population: 5678));
+                Population: 5678),
+            cityETag);
         var updateResponse = await _client.SendAsync(updateRequest);
         var updateContent = await updateResponse.Content.ReadAsStringAsync();
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK, updateContent);
@@ -248,6 +252,9 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         updated.CountryCode.Should().Be(countryCode);
         updated.SubdivisionCode.Should().Be(subdivisionCode);
         updated.ParentId.Should().Be(admin1.Id);
+        var updatedETag = updateResponse.Headers.ETag?.ToString();
+        updatedETag.Should().NotBeNullOrWhiteSpace();
+        updatedETag.Should().NotBe(cityETag);
 
         using var treeRequest = CreateRequest(
             HttpMethod.Get,
@@ -300,7 +307,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         using var protectedDeleteRequest = CreateRequest(
             HttpMethod.Delete,
             $"/api/geo-divisions/{admin1.Id}",
-            ManagePermissions);
+            ManagePermissions,
+            admin1ETag);
         var protectedDeleteResponse = await _client.SendAsync(protectedDeleteRequest);
         var protectedDeleteContent = await protectedDeleteResponse.Content.ReadAsStringAsync();
         protectedDeleteResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, protectedDeleteContent);
@@ -309,9 +317,9 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         protectedDeleteProblem!.Status.Should().Be((int)HttpStatusCode.BadRequest);
         protectedDeleteProblem.Title.Should().NotBeNullOrWhiteSpace();
 
-        await DeleteRegion(city.Id);
-        await DeleteRegion(admin1.Id);
-        await DeleteRegion(country.Id);
+        await DeleteRegion(city.Id, updatedETag!);
+        await DeleteRegion(admin1.Id, admin1ETag);
+        await DeleteRegion(country.Id, countryETag);
 
         foreach (var id in new[] { city.Id, admin1.Id, country.Id })
         {
@@ -324,7 +332,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound, notFoundContent);
         }
 
-        async Task<GeoDivisionDto> CreateRegion(CreateGeoDivisionInput input)
+        async Task<(GeoDivisionDto Dto, string ETag)> CreateRegion(CreateGeoDivisionInput input)
         {
             using var request = CreateJsonRequest(HttpMethod.Post, "/api/geo-divisions", ManagePermissions, input);
             var response = await _client.SendAsync(request);
@@ -332,12 +340,14 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             response.StatusCode.Should().Be(HttpStatusCode.Created, content);
             var created = await response.Content.ReadFromJsonAsync<GeoDivisionDto>();
             created.Should().NotBeNull(content);
-            return created!;
+            var etag = response.Headers.ETag?.ToString();
+            etag.Should().NotBeNullOrWhiteSpace(content);
+            return (created!, etag!);
         }
 
-        async Task DeleteRegion(Guid id)
+        async Task DeleteRegion(Guid id, string eTag)
         {
-            using var request = CreateRequest(HttpMethod.Delete, $"/api/geo-divisions/{id}", ManagePermissions);
+            using var request = CreateRequest(HttpMethod.Delete, $"/api/geo-divisions/{id}", ManagePermissions, eTag);
             var response = await _client.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             response.StatusCode.Should().Be(HttpStatusCode.NoContent, content);
@@ -499,6 +509,56 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     }
 
     [Fact]
+    public async Task Region_write_requires_current_strong_etag()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var countryCode = $"Y{(char)('A' + suffix[0] % 26)}";
+        using var createRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/geo-divisions",
+            ManagePermissions,
+            new CreateGeoDivisionInput(1, countryCode, Code: countryCode, Name: $"并发测试国家 {suffix[..8]}"));
+        var createResponse = await _client.SendAsync(createRequest);
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created, createContent);
+        var location = createResponse.Headers.Location!.OriginalString;
+        var etag = createResponse.Headers.ETag!.ToString();
+        var update = new UpdateGeoDivisionInput(
+            Name: $"并发测试国家（更新）{suffix[..8]}",
+            Code: countryCode,
+            Latitude: null,
+            Longitude: null,
+            Population: null);
+
+        using var missingRequest = CreateJsonRequest(HttpMethod.Put, location, ManagePermissions, update);
+        (await _client.SendAsync(missingRequest)).StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
+
+        var staleETag = $"\"{Guid.NewGuid():N}\"";
+        using var staleUpdateRequest = CreateJsonRequest(
+            HttpMethod.Put,
+            location,
+            ManagePermissions,
+            update,
+            staleETag);
+        var staleUpdateResponse = await _client.SendAsync(staleUpdateRequest);
+        staleUpdateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var updateProblem = await staleUpdateResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        updateProblem!.Extensions["errorCode"]?.ToString()
+            .Should().Be(ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT);
+
+        using var staleDeleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, staleETag);
+        (await _client.SendAsync(staleDeleteRequest)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var getResponse = await _client.SendAsync(CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
+        getResponse.Headers.ETag?.ToString().Should().Be(etag);
+        var unchanged = await getResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
+        unchanged!.Name.Should().StartWith("并发测试国家");
+
+        using var deleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, etag);
+        (await _client.SendAsync(deleteRequest)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
     public async Task Post_with_invalid_airport_code_returns_400()
     {
         using var request = CreateJsonRequest(
@@ -617,6 +677,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var countryContent = await countryResponse.Content.ReadAsStringAsync();
         countryResponse.StatusCode.Should().Be(HttpStatusCode.Created, countryContent);
         var country = await countryResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
+        var countryETag = countryResponse.Headers.ETag?.ToString();
+        countryETag.Should().NotBeNullOrWhiteSpace(countryContent);
 
         using var listKinds = CreateRequest(
             HttpMethod.Get,
@@ -637,7 +699,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         using var deleteCountry = CreateRequest(
             HttpMethod.Delete,
             $"/api/geo-divisions/{country!.Id}",
-            ManagePermissions);
+            ManagePermissions,
+            countryETag);
         (await _client.SendAsync(deleteCountry)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using var deleteEnumRequest = CreateRequest(

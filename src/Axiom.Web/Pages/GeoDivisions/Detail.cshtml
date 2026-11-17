@@ -149,6 +149,7 @@
                     <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id"
                           data-confirm="@deleteConfirm">
                         <input type="hidden" name="CountryCode" value="@r.CountryCode" />
+                        <input type="hidden" name="ETag" value="@Model.ETag" />
                         <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
                     </form>
                 </div>
