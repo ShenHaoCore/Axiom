@@ -63,7 +63,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
         private readonly Dictionary<Guid, GeoDivisionView> _geoDivisions = new();
 
         // 行政区的并发令牌独立维护，与真实端点一样通过 ETag 头往返。
-        private readonly Dictionary<Guid, Guid> _geoTokens = new();
+        private readonly Dictionary<Guid, Guid> _geoTokens;
         private readonly Dictionary<Guid, NewsState> _news = new();
 
         public GatewayStubHandler()
@@ -78,10 +78,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             _geoDivisions.Add(GeoDivisionCityId, new GeoDivisionView(
                 GeoDivisionCityId, GeoDivisionAdmin1Id, 3, "prefecture_city", "CN", "JS", "SZ", "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
 
-            foreach (var regionId in _geoDivisions.Keys)
-            {
-                _geoTokens[regionId] = Guid.NewGuid();
-            }
+            _geoTokens = _geoDivisions.Keys.ToDictionary(regionId => regionId, _ => Guid.NewGuid());
 
             _news.Add(NewsArticleId, new NewsState(
                 new NewsArticleView(

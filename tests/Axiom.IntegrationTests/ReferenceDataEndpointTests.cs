@@ -252,8 +252,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         updated.CountryCode.Should().Be(countryCode);
         updated.SubdivisionCode.Should().Be(subdivisionCode);
         updated.ParentId.Should().Be(admin1.Id);
-        var updatedETag = updateResponse.Headers.ETag?.ToString();
-        updatedETag.Should().NotBeNullOrWhiteSpace();
+        var updatedETag = updateResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException($"更新响应缺少 ETag：{updateContent}");
         updatedETag.Should().NotBe(cityETag);
 
         using var treeRequest = CreateRequest(
@@ -317,7 +317,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         protectedDeleteProblem!.Status.Should().Be((int)HttpStatusCode.BadRequest);
         protectedDeleteProblem.Title.Should().NotBeNullOrWhiteSpace();
 
-        await DeleteRegion(city.Id, updatedETag!);
+        await DeleteRegion(city.Id, updatedETag);
         await DeleteRegion(admin1.Id, admin1ETag);
         await DeleteRegion(country.Id, countryETag);
 
@@ -522,7 +522,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var createContent = await createResponse.Content.ReadAsStringAsync();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created, createContent);
         var location = createResponse.Headers.Location!.OriginalString;
-        var etag = createResponse.Headers.ETag!.ToString();
+        var etag = createResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException($"创建响应缺少 ETag：{createContent}");
         var update = new UpdateGeoDivisionInput(
             Name: $"并发测试国家（更新）{suffix[..8]}",
             Code: countryCode,
@@ -677,8 +678,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var countryContent = await countryResponse.Content.ReadAsStringAsync();
         countryResponse.StatusCode.Should().Be(HttpStatusCode.Created, countryContent);
         var country = await countryResponse.Content.ReadFromJsonAsync<GeoDivisionDto>();
-        var countryETag = countryResponse.Headers.ETag?.ToString();
-        countryETag.Should().NotBeNullOrWhiteSpace(countryContent);
+        var countryETag = countryResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException($"创建国家响应缺少 ETag：{countryContent}");
 
         using var listKinds = CreateRequest(
             HttpMethod.Get,
