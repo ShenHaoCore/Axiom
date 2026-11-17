@@ -11,11 +11,43 @@
 
 ## 架构
 
+```mermaid
+flowchart LR
+    browser["浏览器"]
+
+    subgraph edge["入口层"]
+        web["Axiom.Web<br/>:3000 · Razor Pages"]
+        auth["Axiom.AuthHub<br/>:5101 · OpenIddict"]
+    end
+
+    subgraph services["服务层"]
+        gateway["Axiom.ApiGateway<br/>:5100 · YARP + JWT"]
+        reference["Axiom.ReferenceData.Api<br/>:5102 REST · 5103 gRPC"]
+        news["Axiom.News.Api<br/>:5104"]
+    end
+
+    subgraph infra["基础设施"]
+        postgres[("PostgreSQL<br/>每服务独立库")]
+        rabbit[("RabbitMQ<br/>Outbox / Inbox")]
+    end
+
+    browser -->|"授权码 + PKCE"| auth
+    auth -->|"id_token"| browser
+    browser -->|"Cookie 会话"| web
+    web -->|"Bearer JWT"| gateway
+    gateway -->|"机场列表 gRPC"| reference
+    gateway -->|"其他请求 REST"| news
+    reference --> postgres
+    news --> postgres
+    reference -.->|"地点事件"| rabbit
+    rabbit -.->|"自消费幂等"| reference
 ```
-浏览器 → Axiom.Web (:3000) → Axiom.ApiGateway (:5100) → News.Api / ReferenceData (REST + gRPC)
-              OIDC 授权码 + PKCE        YARP + JWT Bearer         ↓
-              → Cookie 会话，浏览器不接触 JWT        PostgreSQL（每服务独立库） + RabbitMQ（Outbox/Inbox）
-```
+
+三条关键边界：
+
+- **浏览器不接触 JWT**：登录走 OIDC 授权码 + PKCE 换回 `id_token`，Web 随后转为 Cookie 会话；调用网关时再从会话取出 Bearer 令牌。
+- **网关不信任内网身份**：转发时保留原始 Bearer，ReferenceData 的 gRPC 端点仍独立校验 JWT 与 `referencedata.read` 权限。
+- **写操作与事件同事务**：业务变更与 Outbox 记录在同一次 `SaveChangesAsync` 提交，Broker 不参与业务事务；消费者按事件 ID 幂等去重。
 
 ## 服务划分
 
