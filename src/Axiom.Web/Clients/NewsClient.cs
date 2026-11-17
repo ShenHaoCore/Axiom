@@ -9,6 +9,8 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
 {
     internal const string ARTICLES_PATH = "/api/news/articles";
 
+    protected override string EntityPath => ARTICLES_PATH;
+
     public Task<HttpResponseMessage> ListAsync(
         string? status,
         int page,
@@ -22,16 +24,6 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
 
         return SendAsync(HttpMethod.Get, $"{ARTICLES_PATH}?{string.Join('&', query)}", null, cancellationToken);
     }
-
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetAsync(id, culture: null, cancellationToken);
-
-    /// <summary>读取新闻；culture 非空时覆盖 Accept-Language，用于取默认语言原文。</summary>
-    public Task<HttpResponseMessage> GetAsync(
-        Guid id,
-        string? culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{ARTICLES_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
 
     public Task<HttpResponseMessage> CreateAsync(NewsInput input, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Post, ARTICLES_PATH, JsonContent.Create(ToPayload(input)), cancellationToken);
@@ -53,32 +45,6 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
         string eTag,
         CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{ARTICLES_PATH}/{id}", null, cancellationToken, eTag);
-
-    public Task<HttpResponseMessage> GetTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
-
-    public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
-        string culture,
-        IReadOnlyDictionary<string, string> values,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(
-            HttpMethod.Put,
-            TranslationPath(id, culture),
-            JsonContent.Create(new { values }),
-            cancellationToken);
-
-    public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
-
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{ARTICLES_PATH}/{id}/{GatewayFields.TRANSLATIONS}/{Uri.EscapeDataString(culture)}";
 
     private static object ToPayload(NewsInput input) => new
     {

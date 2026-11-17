@@ -9,6 +9,8 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
 {
     internal const string GEO_DIVISIONS_PATH = "/api/geo-divisions";
 
+    protected override string EntityPath => GEO_DIVISIONS_PATH;
+
     public Task<HttpResponseMessage> ListAsync(
         int page,
         int pageSize,
@@ -38,13 +40,6 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
 
     public Task<HttpResponseMessage> GetChildrenAsync(Guid parentId, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{parentId}/{GatewayFields.CHILDREN}", null, cancellationToken);
-
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetAsync(id, culture: null, cancellationToken);
-
-    /// <summary>读取行政区；culture 非空时覆盖 Accept-Language，用于取默认语言原文（绕开界面语言本地化）。</summary>
-    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
 
     public Task<HttpResponseMessage> CreateAsync(GeoDivisionInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -90,30 +85,4 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
 
     public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken);
-
-    public Task<HttpResponseMessage> GetTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
-
-    public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
-        string culture,
-        IReadOnlyDictionary<string, string> values,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(
-            HttpMethod.Put,
-            TranslationPath(id, culture),
-            JsonContent.Create(new { values }),
-            cancellationToken);
-
-    public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
-
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{GEO_DIVISIONS_PATH}/{id}/{GatewayFields.TRANSLATIONS}/{Uri.EscapeDataString(culture)}";
 }
