@@ -1,6 +1,7 @@
 // GeoDivision 仓储 EF Core 实现（Infrastructure 层）。
 using Axiom.ReferenceData.Domain.Constants;
 using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Domain.Exceptions;
 using Axiom.ReferenceData.Domain.Repositories;
 using Axiom.SharedKernel.Models;
 using Microsoft.EntityFrameworkCore;
@@ -90,15 +91,33 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateAsync(GeoDivision region, CancellationToken ct = default)
+    public async Task UpdateWithETagAsync(GeoDivision region, Guid expectedToken, CancellationToken ct = default)
     {
-        await dbContext.SaveChangesAsync(ct);
+        dbContext.Entry(region).Property(r => r.ConcurrencyToken).OriginalValue = expectedToken;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new GeoDivisionConcurrencyConflictException(region.Id);
+        }
     }
 
-    public async Task RemoveAsync(GeoDivision region, CancellationToken ct = default)
+    public async Task RemoveWithETagAsync(GeoDivision region, Guid expectedToken, CancellationToken ct = default)
     {
-        dbContext.GeoDivisions.Remove(region);
-        await dbContext.SaveChangesAsync(ct);
+        dbContext.Entry(region).Property(r => r.ConcurrencyToken).OriginalValue = expectedToken;
+
+        try
+        {
+            dbContext.GeoDivisions.Remove(region);
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new GeoDivisionConcurrencyConflictException(region.Id);
+        }
     }
 
     public async Task<List<GeoDivisionTranslation>> ListTranslationsAsync(

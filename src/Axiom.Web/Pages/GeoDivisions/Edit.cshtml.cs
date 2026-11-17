@@ -1,6 +1,7 @@
 // 编辑行政区名称、代码、地理信息和父级；层级与国家等标识字段保持只读。
 using System.Net;
 using System.Net.Http.Json;
+using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
@@ -19,6 +20,10 @@ public sealed class EditModel(
 {
     [BindProperty]
     public GeoDivisionInput Input { get; set; } = new();
+
+    /// <summary>GET 时从响应头取得的并发令牌，提交时原样回传为 If-Match。</summary>
+    [BindProperty]
+    public string? ETag { get; set; }
 
     public GeoDivisionView? GeoDivision { get; private set; }
 
@@ -47,7 +52,8 @@ public sealed class EditModel(
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        // 保留用户提交值与提交的 ETag，只加载展示所需数据。
+        var failure = await LoadRegionAsync(id, cancellationToken, resetInput: false);
         if (failure is not null)
         {
             return failure;
@@ -75,7 +81,7 @@ public sealed class EditModel(
             return Page();
         }
 
-        using var response = await regionClient.UpdateAsync(id, Input, cancellationToken);
+        using var response = await regionClient.UpdateAsync(id, Input, ETag, cancellationToken);
         var authFailure = this.HandleAuthStatus(response.StatusCode);
         if (authFailure is not null)
         {
@@ -93,9 +99,18 @@ public sealed class EditModel(
             return Page();
         }
 
+        if (response.StatusCode == HttpStatusCode.PreconditionRequired)
+        {
+            ErrorMessage = localizer["Common.MissingETag"].Value;
+            return Page();
+        }
+
         if (response.StatusCode == HttpStatusCode.Conflict)
         {
-            ErrorMessage = localizer["GeoDivisions.Form.UniqueConflict"].Value;
+            // 409 有两个来源：并发令牌过期与唯一键冲突，靠问题详情里的 errorCode 区分。
+            ErrorMessage = await IsConcurrencyConflictAsync(response, cancellationToken)
+                ? localizer["Common.ConcurrencyConflict"].Value
+                : localizer["GeoDivisions.Form.UniqueConflict"].Value;
             return Page();
         }
 
@@ -109,7 +124,10 @@ public sealed class EditModel(
         return RedirectToPage("/GeoDivisions/Detail", new { id });
     }
 
-    private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadRegionAsync(
+        Guid id,
+        CancellationToken cancellationToken,
+        bool resetInput = true)
     {
         using var response = await regionClient.GetAsync(id, cancellationToken);
         var authFailure = this.HandleAuthStatus(response.StatusCode);
@@ -136,7 +154,25 @@ public sealed class EditModel(
             return null;
         }
 
+        if (resetInput)
+        {
+            ETag = response.Headers.ETag?.Tag;
+        }
+
         return null;
+    }
+
+    /// <summary>并发冲突与唯一键冲突同为 409，用问题详情的 errorCode 扩展区分。</summary>
+    private static async Task<bool> IsConcurrencyConflictAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken);
+        return problem?.Extensions.TryGetValue("errorCode", out var code) == true
+            && string.Equals(
+                code?.ToString(),
+                ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT,
+                StringComparison.Ordinal);
     }
 
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)

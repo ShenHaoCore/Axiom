@@ -47,6 +47,10 @@ public sealed class DetailModel(
     [BindProperty]
     public string? CountryCode { get; set; }
 
+    /// <summary>详情页渲染时取得的并发令牌，删除时回传为 If-Match。</summary>
+    [BindProperty]
+    public string? ETag { get; set; }
+
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         KindNames = await enumClient.LoadGeoDivisionKindNamesAsync(cancellationToken);
@@ -56,7 +60,13 @@ public sealed class DetailModel(
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        using var response = await regionClient.DeleteAsync(id, cancellationToken);
+        if (string.IsNullOrWhiteSpace(ETag))
+        {
+            ErrorMessage = localizer["Common.MissingETag"].Value;
+            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+        }
+
+        using var response = await regionClient.DeleteAsync(id, ETag, cancellationToken);
         var authFailure = this.HandleAuthStatus(response.StatusCode);
         if (authFailure is not null)
         {
@@ -71,6 +81,13 @@ public sealed class DetailModel(
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
             ErrorMessage = localizer["GeoDivisions.Detail.DeleteHasChildren"].Value;
+            return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
+        }
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            // 删除时的 409 只可能是并发令牌过期：记录已被他人改过。
+            ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
             return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
         }
 
@@ -111,6 +128,7 @@ public sealed class DetailModel(
         }
 
         GeoDivision = await response.Content.ReadFromJsonAsync<GeoDivisionView>(cancellationToken);
+        ETag = response.Headers.ETag?.Tag;
         return null;
     }
 }

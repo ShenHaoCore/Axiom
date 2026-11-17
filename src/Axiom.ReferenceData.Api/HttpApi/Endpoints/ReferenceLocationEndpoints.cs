@@ -185,7 +185,7 @@ public static class ReferenceLocationEndpoints
         var errors = ReferenceLocationInputValidator.Validate(type, input, isCreate: false);
         if (errors.Count > 0) return Results.ValidationProblem(errors.ToMessages(localizer));
 
-        if (!TryParseIfMatch(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedETag, out var error))
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedETag, out var error))
             return error!;
 
         try
@@ -224,7 +224,7 @@ public static class ReferenceLocationEndpoints
         IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken ct)
     {
-        if (!TryParseIfMatch(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedETag, out var error))
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedETag, out var error))
             return error!;
 
         try
@@ -358,30 +358,4 @@ public static class ReferenceLocationEndpoints
         Results.Problem(
             statusCode: StatusCodes.Status400BadRequest,
             title: localizer[exception.ErrorCode, exception.Args].Value);
-
-    private static bool TryParseIfMatch(
-        string etag,
-        IStringLocalizer<ApiErrorMessages> localizer,
-        out Guid expectedETag,
-        out IResult? error)
-    {
-        expectedETag = default;
-        error = null;
-        if (string.IsNullOrWhiteSpace(etag))
-        {
-            error = Results.Problem(
-                statusCode: StatusCodes.Status428PreconditionRequired,
-                title: localizer[ApiErrorCodes.REQUEST_MISSING_IF_MATCH].Value);
-            return false;
-        }
-        if (etag.Length < 3 || etag[0] != '"' || etag[^1] != '"' ||
-            !Guid.TryParseExact(etag[1..^1], "N", out expectedETag))
-        {
-            error = Results.Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: localizer[ApiErrorCodes.REQUEST_INVALID_IF_MATCH].Value);
-            return false;
-        }
-        return true;
-    }
 }

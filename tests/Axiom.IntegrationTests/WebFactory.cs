@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
 using Axiom.Web;
 using Axiom.Web.Clients;
@@ -9,6 +10,7 @@ using Axiom.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
@@ -24,6 +26,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
     internal static readonly Guid GeoDivisionCountryId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     internal static readonly Guid GeoDivisionAdmin1Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
     internal static readonly Guid GeoDivisionCityId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    internal static readonly Guid NewsArticleId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    // 只读新闻不参与写入用例，供列表/详情断言在任意执行顺序下保持稳定。
+    internal static readonly Guid NewsReadOnlyArticleId = Guid.Parse("66666666-6666-6666-6666-666666666666");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -45,6 +50,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 .ConfigurePrimaryHttpMessageHandler(() => new GatewayStubHandler());
             services.AddHttpClient<ReferenceEnumClient>()
                 .ConfigurePrimaryHttpMessageHandler(() => new GatewayStubHandler());
+            services.AddHttpClient<NewsClient>()
+                .ConfigurePrimaryHttpMessageHandler(() => new GatewayStubHandler());
         });
     }
 
@@ -54,6 +61,10 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
         private const string ReadToken = "test-read-access-token";
         private readonly Dictionary<Guid, AirportState> _airports = new();
         private readonly Dictionary<Guid, GeoDivisionView> _geoDivisions = new();
+
+        // 行政区的并发令牌独立维护，与真实端点一样通过 ETag 头往返。
+        private readonly Dictionary<Guid, Guid> _geoTokens;
+        private readonly Dictionary<Guid, NewsState> _news = new();
 
         public GatewayStubHandler()
         {
@@ -66,6 +77,36 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 GeoDivisionAdmin1Id, GeoDivisionCountryId, 2, "province", "CN", "JS", "JS", "江苏", "Jiangsu", "江苏", null, null, 85000000, null));
             _geoDivisions.Add(GeoDivisionCityId, new GeoDivisionView(
                 GeoDivisionCityId, GeoDivisionAdmin1Id, 3, "prefecture_city", "CN", "JS", "SZ", "苏州", "Suzhou", "苏州", 31.3, 120.6, 12000000, null));
+
+            _geoTokens = _geoDivisions.Keys.ToDictionary(regionId => regionId, _ => Guid.NewGuid());
+
+            _news.Add(NewsArticleId, new NewsState(
+                new NewsArticleView(
+                    NewsArticleId,
+                    "参考数据平台上线",
+                    "机场、行政区与枚举数据统一到单一入口。",
+                    "Axiom 参考数据平台已完成首轮集成。",
+                    "Platform",
+                    "Published",
+                    "shenhao",
+                    new DateTimeOffset(2026, 3, 1, 8, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 28, 8, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 3, 1, 8, 0, 0, TimeSpan.Zero)),
+                1));
+
+            _news.Add(NewsReadOnlyArticleId, new NewsState(
+                new NewsArticleView(
+                    NewsReadOnlyArticleId,
+                    "枚举字典完成迁移",
+                    "行政区类型已切换到统一枚举存储。",
+                    "枚举字典迁移已全部完成并通过校验。",
+                    "Platform",
+                    "Published",
+                    "shenhao",
+                    new DateTimeOffset(2026, 2, 20, 8, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 19, 8, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 20, 8, 0, 0, TimeSpan.Zero)),
+                1));
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -121,6 +162,16 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             if (path.StartsWith("/api/geo-divisions/", StringComparison.Ordinal))
             {
                 return await RegionItemAsync(request, path, canManage, cancellationToken);
+            }
+
+            if (path == "/api/news/articles")
+            {
+                return await NewsCollectionAsync(request, canManage, cancellationToken);
+            }
+
+            if (path.StartsWith("/api/news/articles/", StringComparison.Ordinal))
+            {
+                return await NewsItemAsync(request, path, canManage, cancellationToken);
             }
 
             return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -440,7 +491,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 input.Population,
                 null);
             _geoDivisions.Add(id, region);
-            var response = Json(HttpStatusCode.Created, region);
+            _geoTokens[id] = Guid.NewGuid();
+            var response = Json(HttpStatusCode.Created, region, RegionETag(id));
             response.Headers.Location = new Uri($"/api/geo-divisions/{id}", UriKind.Relative);
             return response;
         }
@@ -528,12 +580,25 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (request.Method == HttpMethod.Get)
             {
-                return Json(HttpStatusCode.OK, Localize(region, ResolveCulture(request)));
+                return Json(HttpStatusCode.OK, Localize(region, ResolveCulture(request)), RegionETag(id));
             }
 
             if (!canManage)
             {
                 return new HttpResponseMessage(HttpStatusCode.Forbidden);
+            }
+
+            if (!request.Headers.TryGetValues("If-Match", out var values))
+            {
+                return new HttpResponseMessage((HttpStatusCode)428);
+            }
+
+            if (values.SingleOrDefault() != RegionETag(id))
+            {
+                return Problem(
+                    HttpStatusCode.Conflict,
+                    "行政区已被其他请求修改。",
+                    ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT);
             }
 
             if (request.Method == HttpMethod.Delete)
@@ -544,6 +609,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 }
 
                 _geoDivisions.Remove(id);
+                _geoTokens.Remove(id);
                 return new HttpResponseMessage(HttpStatusCode.NoContent);
             }
 
@@ -563,7 +629,7 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                     other.Id != id && other.CountryCode == region.CountryCode &&
                     other.Level == region.Level && other.Code == code))
             {
-                return new HttpResponseMessage(HttpStatusCode.Conflict);
+                return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
             }
 
             var updated = region with
@@ -579,7 +645,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
                 Kind = string.IsNullOrWhiteSpace(input.Kind) ? region.Kind : input.Kind.Trim().ToLowerInvariant()
             };
             _geoDivisions[id] = updated;
-            return Json(HttpStatusCode.OK, updated);
+            _geoTokens[id] = Guid.NewGuid();
+            return Json(HttpStatusCode.OK, updated, RegionETag(id));
         }
 
         // 测试桩：按 Accept-Language 用 AsciiName 模拟英文译文（与 Mock 行为对齐）。
@@ -614,6 +681,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
         private string AirportETag(Guid id) => $"\"{id:N}-{_airports[id].Version}\"";
 
+        private string RegionETag(Guid id) => $"\"{_geoTokens[id]:N}\"";
+
         private static HttpResponseMessage Json<T>(HttpStatusCode statusCode, T body, string? eTag = null)
         {
             var response = new HttpResponseMessage(statusCode) { Content = JsonContent.Create(body) };
@@ -625,7 +694,171 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
             return response;
         }
 
+        // 与真实端点一致：409 的响应体是 problem+json，并发冲突额外带 errorCode 以便客户端判别。
+        private static HttpResponseMessage Problem(HttpStatusCode statusCode, string title, string? errorCode = null)
+        {
+            var problem = new ProblemDetails { Status = (int)statusCode, Title = title };
+            if (errorCode is not null)
+            {
+                problem.Extensions["errorCode"] = errorCode;
+            }
+
+            var response = new HttpResponseMessage(statusCode) { Content = JsonContent.Create(problem) };
+            response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/problem+json");
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> NewsCollectionAsync(
+            HttpRequestMessage request, bool canManage, CancellationToken cancellationToken)
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                var status = QueryValue(request.RequestUri, "status");
+                var articles = _news.Values
+                    .Select(state => state.Article)
+                    .Where(article => string.IsNullOrWhiteSpace(status)
+                        || string.Equals(article.Status, status, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(article => article.CreatedAt)
+                    .ToList();
+
+                return Json(HttpStatusCode.OK, new PagedResponse<NewsArticleView>(articles, articles.Count, 1, 20));
+            }
+
+            if (request.Method != HttpMethod.Post)
+            {
+                return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
+            }
+
+            if (!canManage)
+            {
+                return new HttpResponseMessage(HttpStatusCode.Forbidden);
+            }
+
+            var input = await request.Content!.ReadFromJsonAsync<NewsInput>(cancellationToken);
+            if (!IsValid(input))
+            {
+                return new HttpResponseMessage(HttpStatusCode.BadRequest);
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var article = new NewsArticleView(
+                Guid.NewGuid(),
+                input!.Title!,
+                input.Summary,
+                input.Content!,
+                input.Category!,
+                input.Status,
+                input.Author!,
+                null,
+                now,
+                now);
+            _news.Add(article.Id, new NewsState(article, 1));
+
+            var response = Json(HttpStatusCode.Created, article, NewsETag(article.Id));
+            response.Headers.Location = new Uri($"/api/news/articles/{article.Id}", UriKind.Relative);
+            return response;
+        }
+
+        private async Task<HttpResponseMessage> NewsItemAsync(
+            HttpRequestMessage request, string path, bool canManage, CancellationToken cancellationToken)
+        {
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 4 || !Guid.TryParse(segments[3], out var id) || !_news.TryGetValue(id, out var state))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+
+            // 译文子资源：列表页的翻译入口会读取它，返回空值即可。
+            if (segments.Length > 4 && segments[4] == "translations")
+            {
+                var culture = segments.Length > 5 ? Uri.UnescapeDataString(segments[5]) : "en";
+                return Json(HttpStatusCode.OK, new TranslationView(culture, new Dictionary<string, string>()));
+            }
+
+            if (request.Method == HttpMethod.Get)
+            {
+                return Json(HttpStatusCode.OK, state.Article, NewsETag(id));
+            }
+
+            if (!canManage)
+            {
+                return new HttpResponseMessage(HttpStatusCode.Forbidden);
+            }
+
+            if (!request.Headers.TryGetValues("If-Match", out var values))
+            {
+                return new HttpResponseMessage((HttpStatusCode)428);
+            }
+
+            if (values.SingleOrDefault() != NewsETag(id))
+            {
+                return new HttpResponseMessage(HttpStatusCode.Conflict);
+            }
+
+            if (request.Method == HttpMethod.Delete)
+            {
+                _news.Remove(id);
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            }
+
+            if (request.Method != HttpMethod.Put)
+            {
+                return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
+            }
+
+            var input = await request.Content!.ReadFromJsonAsync<NewsInput>(cancellationToken);
+            if (!IsValid(input))
+            {
+                return new HttpResponseMessage(HttpStatusCode.BadRequest);
+            }
+
+            var updated = state.Article with
+            {
+                Title = input!.Title!,
+                Summary = input.Summary,
+                Content = input.Content!,
+                Category = input.Category!,
+                Author = input.Author!,
+                Status = input.Status,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            _news[id] = state with { Article = updated, Version = state.Version + 1 };
+            return Json(HttpStatusCode.OK, updated, NewsETag(id));
+        }
+
+        private static bool IsValid(NewsInput? input) =>
+            input is not null
+            && !string.IsNullOrWhiteSpace(input.Title)
+            && !string.IsNullOrWhiteSpace(input.Content)
+            && !string.IsNullOrWhiteSpace(input.Category)
+            && !string.IsNullOrWhiteSpace(input.Author);
+
+        private string NewsETag(Guid id) => $"\"{id:N}-{_news[id].Version}\"";
+
+        private static string? QueryValue(Uri? uri, string key)
+        {
+            if (uri?.Query is not { Length: > 1 } query)
+            {
+                return null;
+            }
+
+            foreach (var pair in query[1..].Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split('=', 2);
+                if (Uri.UnescapeDataString(parts[0]) == key)
+                {
+                    return parts.Length > 1
+                        ? Uri.UnescapeDataString(parts[1].Replace('+', ' '))
+                        : string.Empty;
+                }
+            }
+
+            return null;
+        }
+
         private sealed record AirportState(AirportResponse Airport, int Version);
+
+        private sealed record NewsState(NewsArticleView Article, int Version);
 
         private sealed class GeoDivisionCreatePayload
         {

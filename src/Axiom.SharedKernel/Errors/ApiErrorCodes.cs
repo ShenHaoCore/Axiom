@@ -35,6 +35,7 @@ public static class ApiErrorCodes
     public const string GEO_DIVISION_UNIQUE_KEY_CONFLICT = "ReferenceData.GeoDivision.UniqueKeyConflict";
     public const string GEO_DIVISION_HAS_CHILDREN = "ReferenceData.GeoDivision.HasChildren";
     public const string GEO_DIVISION_COUNTRY_NOT_FOUND = "ReferenceData.GeoDivision.CountryNotFound";
+    public const string GEO_DIVISION_CONCURRENCY_CONFLICT = "ReferenceData.GeoDivision.ConcurrencyConflict";
     public const string GEO_DIVISION_INVALID_LEVEL = "ReferenceData.GeoDivision.Validation.InvalidLevel";
     public const string GEO_DIVISION_INVALID_KIND = "ReferenceData.GeoDivision.Validation.InvalidKind";
     public const string GEO_DIVISION_INVALID_COUNTRY_CODE = "ReferenceData.GeoDivision.Validation.InvalidCountryCode";

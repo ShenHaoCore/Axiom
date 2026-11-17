@@ -102,6 +102,10 @@ internal static class MockDataStore
 
     internal static readonly List<GeoDivisionView> GeoDivisions = LoadGeoDivisions();
 
+    // 行政区响应模型同样不含并发令牌，与主数据分开维护。
+    internal static readonly Dictionary<Guid, Guid> GeoDivisionETags =
+        GeoDivisions.ToDictionary(region => region.Id, _ => Guid.NewGuid());
+
     // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region | enum。
     internal static readonly Dictionary<string, Dictionary<string, string>> Translations = new();
 

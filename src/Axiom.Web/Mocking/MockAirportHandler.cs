@@ -138,30 +138,4 @@ internal sealed class MockAirportHandler(MockLocalizer localizer)
         // 机场写请求全部由 Mock 接管，未知路径也不回落真实网关。
         return Empty(HttpStatusCode.NotFound);
     }
-
-    private static bool TryParseIfMatch(
-        HttpRequestMessage request, out Guid expectedETag, out HttpResponseMessage? error)
-    {
-        expectedETag = default;
-        error = null;
-        var etag = request.Headers.TryGetValues(ApiClientHeaders.IfMatch, out var values)
-            ? string.Join(",", values).Trim()
-            : string.Empty;
-
-        if (etag.Length == 0)
-        {
-            error = Problem(HttpStatusCode.PreconditionRequired, "请求缺少 If-Match 头。");
-            return false;
-        }
-
-        // 与真实端点一致，只接受带引号的 N 格式 GUID。
-        if (etag.Length < 3 || etag[0] != '"' || etag[^1] != '"'
-            || !Guid.TryParseExact(etag[1..^1], "N", out expectedETag))
-        {
-            error = Problem(HttpStatusCode.BadRequest, "If-Match 头格式无效。");
-            return false;
-        }
-
-        return true;
-    }
 }

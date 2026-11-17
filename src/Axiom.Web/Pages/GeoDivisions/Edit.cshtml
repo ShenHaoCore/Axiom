@@ -46,6 +46,7 @@
 @if (Model.GeoDivision is not null)
 {
     <form method="post" asp-route-id="@Model.GeoDivision.Id" class="card form-card mb-4" id="region-edit-form">
+        <input type="hidden" name="ETag" value="@Model.ETag" />
         <input type="hidden" asp-for="Input.Level" />
         <input type="hidden" asp-for="Input.CountryCode" />
         <input type="hidden" asp-for="Input.SubdivisionCode" />

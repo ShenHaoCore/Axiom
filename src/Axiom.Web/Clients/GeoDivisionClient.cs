@@ -65,6 +65,7 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
     public Task<HttpResponseMessage> UpdateAsync(
         Guid id,
         GeoDivisionInput input,
+        string? eTag,
         CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Put,
@@ -81,8 +82,12 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
                 parentId = input.ParentId,
                 kind = input.Kind
             }),
-            cancellationToken);
+            cancellationToken,
+            eTag);
 
-    public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken);
+    public Task<HttpResponseMessage> DeleteAsync(
+        Guid id,
+        string? eTag,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken, eTag);
 }

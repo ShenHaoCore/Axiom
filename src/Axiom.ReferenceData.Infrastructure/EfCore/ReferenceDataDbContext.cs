@@ -40,6 +40,7 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
         {
             entity.ToTable("geo_divisions");
             entity.HasKey(region => region.Id);
+            entity.Property(region => region.ConcurrencyToken).IsConcurrencyToken().IsRequired();
             entity.Property(region => region.Kind).HasMaxLength(GeoDivisionKinds.MaxLength).IsRequired();
             entity.Property(region => region.CountryCode).HasMaxLength(2).IsRequired();
             entity.Property(region => region.SubdivisionCode).HasMaxLength(GeoDivision.MaxSubdivisionCodeLength);

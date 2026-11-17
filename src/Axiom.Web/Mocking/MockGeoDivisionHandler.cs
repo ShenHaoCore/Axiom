@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text.Json;
 using Axiom.ReferenceData.Domain.Constants;
+using Axiom.SharedKernel.Errors;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
 using static Axiom.Web.Mocking.MockHttp;
@@ -93,7 +94,8 @@ internal sealed class MockGeoDivisionHandler(MockLocalizer localizer)
                     }
 
                     MockDataStore.GeoDivisions.Add(created);
-                    return Json(created, HttpStatusCode.Created);
+                    MockDataStore.GeoDivisionETags[created.Id] = Guid.NewGuid();
+                    return Json(created, HttpStatusCode.Created, MockDataStore.GeoDivisionETags[created.Id].ToString("N"));
                 }
             }
         }
@@ -158,17 +160,21 @@ internal sealed class MockGeoDivisionHandler(MockLocalizer localizer)
                     var region = MockDataStore.GeoDivisions.FirstOrDefault(r => r.Id == id);
                     return region is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定行政区。")
-                        : Json(localizer.Localize(region, requestCulture), HttpStatusCode.OK);
+                        : Json(localizer.Localize(region, requestCulture), HttpStatusCode.OK, MockDataStore.GeoDivisionETags[id].ToString("N"));
                 }
             }
 
-            if (request.Method == HttpMethod.Put)
+            if (request.Method == HttpMethod.Put || request.Method == HttpMethod.Delete)
             {
-                using var body = await ReadJsonAsync(request, cancellationToken);
-                if (!TryReadParentId(body, out var parentId))
+                if (!TryParseIfMatch(request, out var expectedETag, out var error))
                 {
-                    return Problem(HttpStatusCode.BadRequest, "行政区更新请求无效。");
+                    return error!;
                 }
+
+                // 请求体需在 lock 外读取，避免在 lock 语句体内 await。
+                using var writeBody = request.Method == HttpMethod.Put
+                    ? await ReadJsonAsync(request, cancellationToken)
+                    : null;
 
                 lock (MockDataStore.Gate)
                 {
@@ -178,53 +184,58 @@ internal sealed class MockGeoDivisionHandler(MockLocalizer localizer)
                         return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
                     }
 
-                    var original = MockDataStore.GeoDivisions[index];
-                    var kind = original.Kind;
-                    if (body.RootElement.TryGetProperty(GatewayFields.KIND, out _))
+                    if (MockDataStore.GeoDivisionETags[id] != expectedETag)
                     {
-                        var parsed = ParseGeoDivisionKind(Text(body, GatewayFields.KIND), original.CountryCode, original.Level);
-                        if (parsed is null)
+                        return Problem(
+                            HttpStatusCode.Conflict,
+                            "行政区已被其他操作修改，请刷新后重试。",
+                            ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT);
+                    }
+
+                    if (request.Method == HttpMethod.Put)
+                    {
+                        if (!TryReadParentId(writeBody!, out var parentId))
                         {
-                            return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
+                            return Problem(HttpStatusCode.BadRequest, "行政区更新请求无效。");
                         }
 
-                        kind = parsed;
-                    }
+                        var original = MockDataStore.GeoDivisions[index];
+                        var kind = original.Kind;
+                        if (writeBody!.RootElement.TryGetProperty(GatewayFields.KIND, out _))
+                        {
+                            var parsed = ParseGeoDivisionKind(Text(writeBody, GatewayFields.KIND), original.CountryCode, original.Level);
+                            if (parsed is null)
+                            {
+                                return Problem(HttpStatusCode.BadRequest, "kind 必须是已维护的 geo_division.kind 枚举值。");
+                            }
 
-                    var updated = new GeoDivisionView(
-                        id,
-                        original.Level == 1 ? null : parentId ?? original.ParentId,
-                        original.Level,
-                        kind,
-                        original.CountryCode,
-                        original.SubdivisionCode,
-                        Text(body, GatewayFields.CODE)?.ToUpperInvariant() ?? original.Code,
-                        Text(body, GatewayFields.NAME) ?? original.Name,
-                        Text(body, GatewayFields.ASCII_NAME) ?? original.AsciiName,
-                        Text(body, GatewayFields.LOCAL_NAME) ?? original.LocalName,
-                        Number(body, GatewayFields.LATITUDE) ?? original.Latitude,
-                        Number(body, GatewayFields.LONGITUDE) ?? original.Longitude,
-                        Integer(body, GatewayFields.POPULATION) ?? original.Population,
-                        original.GeoNameId);
+                            kind = parsed;
+                        }
 
-                    if (GeoDivisionKeyExists(id, updated.Level, updated.CountryCode, updated.Code))
-                    {
-                        return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
-                    }
+                        var updated = new GeoDivisionView(
+                            id,
+                            original.Level == 1 ? null : parentId ?? original.ParentId,
+                            original.Level,
+                            kind,
+                            original.CountryCode,
+                            original.SubdivisionCode,
+                            Text(writeBody, GatewayFields.CODE)?.ToUpperInvariant() ?? original.Code,
+                            Text(writeBody, GatewayFields.NAME) ?? original.Name,
+                            Text(writeBody, GatewayFields.ASCII_NAME) ?? original.AsciiName,
+                            Text(writeBody, GatewayFields.LOCAL_NAME) ?? original.LocalName,
+                            Number(writeBody, GatewayFields.LATITUDE) ?? original.Latitude,
+                            Number(writeBody, GatewayFields.LONGITUDE) ?? original.Longitude,
+                            Integer(writeBody, GatewayFields.POPULATION) ?? original.Population,
+                            original.GeoNameId);
 
-                    MockDataStore.GeoDivisions[index] = updated;
-                    return Json(updated, HttpStatusCode.OK);
-                }
-            }
+                        if (GeoDivisionKeyExists(id, updated.Level, updated.CountryCode, updated.Code))
+                        {
+                            return Problem(HttpStatusCode.Conflict, "行政区唯一键已存在。");
+                        }
 
-            if (request.Method == HttpMethod.Delete)
-            {
-                lock (MockDataStore.Gate)
-                {
-                    var index = MockDataStore.GeoDivisions.FindIndex(r => r.Id == id);
-                    if (index < 0)
-                    {
-                        return Problem(HttpStatusCode.NotFound, "未找到指定行政区。");
+                        MockDataStore.GeoDivisions[index] = updated;
+                        MockDataStore.GeoDivisionETags[id] = Guid.NewGuid();
+                        return Json(updated, HttpStatusCode.OK, MockDataStore.GeoDivisionETags[id].ToString("N"));
                     }
 
                     if (MockDataStore.GeoDivisions.Any(r => r.ParentId == id))
@@ -233,6 +244,7 @@ internal sealed class MockGeoDivisionHandler(MockLocalizer localizer)
                     }
 
                     MockDataStore.GeoDivisions.RemoveAt(index);
+                    MockDataStore.GeoDivisionETags.Remove(id);
                     MockDataStore.RemoveTranslations("region", id);
                     return Empty(HttpStatusCode.NoContent);
                 }
