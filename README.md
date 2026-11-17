@@ -140,9 +140,11 @@ dotnet format Axiom.slnx --verify-no-changes
 | `release/*` | 发版准备 | PR → `main`，并回合 `develop` |
 | `hotfix/*` | 线上紧急修复 | PR → `main`，并回合 `develop` |
 
-- 分支命名（`feature/<简述>`、`release/<版本号>` 等）由 `branch-naming` 检查强制校验；提交信息遵循 Conventional Commits。
-- `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强推，必须通过 PR，仅允许线性历史（squash 或 rebase）。
-- PR 自动执行 CI（restore、build、test、format 检查），合并或关闭后自动删除 head 分支；规则详见 [docs/branching.md](docs/branching.md)。
+- 分支命名使用 `feature/<简述>`、`bugfix/<简述>`、`release/<版本号>`、`hotfix/<简述>`、`chore/<简述>` 等，由 `branch-naming` 检查强制校验。
+- `main`、`develop`、`release/*`、`hotfix/*` 受保护：禁止删除与强制推送，必须通过 PR，仅允许线性历史（squash 或 rebase）。
+- 提交信息遵循 Conventional Commits：`feat:`、`fix:`、`chore:`、`docs:` 等。
+- PR 会自动执行 `.github/workflows/ci.yml`：restore、build、test、format 检查。
+- PR 合并或关闭后自动删除 head 分支，每周定时巡检无主分支，规则详见 [docs/branching.md](docs/branching.md)。
 
 ## 接口约定
 
