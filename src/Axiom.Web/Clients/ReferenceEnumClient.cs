@@ -12,6 +12,8 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
 {
     internal const string ENUMS_PATH = "/api/reference-data/enums";
 
+    protected override string EntityPath => ENUMS_PATH;
+
     // 行政区 Kind 枚举字典的 Category 标识，由 Domain 层统一定义，消除 Web/Mock/API 三层硬编码。
     public static string GeoDivisionKindCategory => ReferenceEnumCategories.GeoDivisionKind;
     public static string GeoDivisionKindCategoryPrefix => $"{ReferenceEnumCategories.GeoDivisionKind}.";
@@ -90,13 +92,6 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
         item.Category.Equals(GeoDivisionKindCategory, StringComparison.Ordinal)
         || item.Category.StartsWith(GeoDivisionKindCategoryPrefix, StringComparison.Ordinal);
 
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetAsync(id, culture: null, cancellationToken);
-
-    /// <summary>读取枚举项；culture 非空时覆盖 Accept-Language，用于取默认语言原文。</summary>
-    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{ENUMS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
-
     public Task<HttpResponseMessage> CreateAsync(ReferenceEnumInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Post,
@@ -127,29 +122,6 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
     public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{ENUMS_PATH}/{id}", null, cancellationToken);
 
-    public Task<HttpResponseMessage> GetTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
-
-    public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
-        string culture,
-        IReadOnlyDictionary<string, string> values,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(
-            HttpMethod.Put,
-            TranslationPath(id, culture),
-            JsonContent.Create(new { values }),
-            cancellationToken);
-
-    public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
-
     private async Task<(List<ReferenceEnumView>? Items, HttpStatusCode StatusCode)> ReadKindItemsAsync(
         string category,
         CancellationToken cancellationToken)
@@ -166,7 +138,4 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
             .ThenBy(item => item.Code)
             .ToList(), response.StatusCode);
     }
-
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{ENUMS_PATH}/{id}/{GatewayFields.TRANSLATIONS}/{Uri.EscapeDataString(culture)}";
 }

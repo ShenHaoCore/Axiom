@@ -33,7 +33,7 @@ public sealed class IndexModel(
 
     private async Task<IActionResult?> LoadAirportsAsync(CancellationToken cancellationToken)
     {
-        using var response = await referenceDataClient.GetAirportsAsync(cancellationToken);
+        using var response = await referenceDataClient.ListAsync(cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();

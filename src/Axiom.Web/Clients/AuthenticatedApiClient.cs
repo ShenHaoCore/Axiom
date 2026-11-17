@@ -1,6 +1,8 @@
-// 网关 API 客户端基类：统一注入 SSO 访问令牌、语言协商头与 If-Match 并发令牌。
+// 网关 API 客户端基类：统一注入 SSO 访问令牌、语言协商头与 If-Match 并发令牌，
+// 并提供 GetAsync 重载、翻译子资源的标准路径与读写方法——子类只需声明 EntityPath 和差异化方法。
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Axiom.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 
@@ -8,6 +10,11 @@ namespace Axiom.Web.Clients;
 
 public abstract class AuthenticatedApiClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
 {
+    /// <summary>子类提供的实体根路径，如 "/api/reference-data/airports"。</summary>
+    protected abstract string EntityPath { get; }
+
+    // ---------- 统一的 HTTP 发送 ----------
+
     protected async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,
         string path,
@@ -34,4 +41,42 @@ public abstract class AuthenticatedApiClient(HttpClient httpClient, IHttpContext
         request.Content = content;
         return await httpClient.SendAsync(request, cancellationToken);
     }
+
+    // ---------- 统一的实体读取 ----------
+
+    /// <summary>读取实体；覆盖 Accept-Language 时用于取默认语言原文（绕开界面语言本地化）。</summary>
+    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
+        GetAsync(id, culture: null, cancellationToken);
+
+    /// <summary>读取实体；culture 非空时覆盖 Accept-Language，用于取默认语言原文。</summary>
+    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, $"{EntityPath}/{id}", null, cancellationToken, acceptLanguage: culture);
+
+    // ---------- 统一的翻译子资源 ----------
+
+    protected static string BuildTranslationPath(string entityPath, Guid id, string culture) =>
+        $"{entityPath}/{id}/{GatewayFields.TRANSLATIONS}/{Uri.EscapeDataString(culture)}";
+
+    public Task<HttpResponseMessage> GetTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Get, BuildTranslationPath(EntityPath, id, culture), null, cancellationToken);
+
+    public Task<HttpResponseMessage> SaveTranslationsAsync(
+        Guid id,
+        string culture,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Put,
+            BuildTranslationPath(EntityPath, id, culture),
+            JsonContent.Create(new { values }),
+            cancellationToken);
+
+    public Task<HttpResponseMessage> DeleteTranslationsAsync(
+        Guid id,
+        string culture,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, BuildTranslationPath(EntityPath, id, culture), null, cancellationToken);
 }

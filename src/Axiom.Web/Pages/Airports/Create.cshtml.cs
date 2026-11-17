@@ -30,7 +30,7 @@ public sealed class CreateModel(
             return Page();
         }
 
-        using var response = await referenceDataClient.CreateAirportAsync(Input, cancellationToken);
+        using var response = await referenceDataClient.CreateAsync(Input, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();

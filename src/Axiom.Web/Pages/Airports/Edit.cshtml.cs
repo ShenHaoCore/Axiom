@@ -57,7 +57,7 @@ public sealed class EditModel(
             return Page();
         }
 
-        using var response = await referenceDataClient.UpdateAirportAsync(id, ETag, Input, cancellationToken);
+        using var response = await referenceDataClient.UpdateAsync(id, ETag, Input, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -98,7 +98,7 @@ public sealed class EditModel(
             return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
         }
 
-        using var response = await referenceDataClient.DeleteAirportAsync(id, ETag, cancellationToken);
+        using var response = await referenceDataClient.DeleteAsync(id, ETag, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -143,7 +143,7 @@ public sealed class EditModel(
         CancellationToken cancellationToken,
         bool resetInput = true)
     {
-        using var response = await referenceDataClient.GetAirportAsync(id, cancellationToken);
+        using var response = await referenceDataClient.GetAsync(id, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
