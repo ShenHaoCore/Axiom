@@ -52,7 +52,7 @@ public sealed class IndexModel(
         string? q,
         CancellationToken cancellationToken = default)
     {
-        await LoadKindNamesAsync(cancellationToken);
+        KindNames = await enumClient.LoadGeoDivisionKindNamesAsync(cancellationToken);
         // 总是拉国家列表：树的根节点。
         var countriesResponse = await regionClient.ListAsync(1, 250, level: 1, null, null, null, cancellationToken);
         if (!countriesResponse.IsSuccessStatusCode)
@@ -60,7 +60,7 @@ public sealed class IndexModel(
             ErrorMessage = countriesResponse.StatusCode == HttpStatusCode.Unauthorized
                 ? null
                 : localizer["GeoDivisions.LoadCountriesFailed"].Value;
-            return HandleStatus(countriesResponse.StatusCode);
+            return this.HandleAuthStatus(countriesResponse.StatusCode) ?? Page();
         }
 
         var countriesPage = await countriesResponse.Content.ReadFromJsonAsync<PagedResponse<GeoDivisionView>>(cancellationToken);
@@ -78,7 +78,7 @@ public sealed class IndexModel(
                 ErrorMessage = searchResponse.StatusCode == HttpStatusCode.Unauthorized
                     ? null
                     : localizer["GeoDivisions.SearchFailed"].Value;
-                return HandleStatus(searchResponse.StatusCode);
+                return this.HandleAuthStatus(searchResponse.StatusCode) ?? Page();
             }
 
             var page = await searchResponse.Content.ReadFromJsonAsync<PagedResponse<GeoDivisionView>>(cancellationToken);
@@ -92,7 +92,7 @@ public sealed class IndexModel(
     // 惰性加载：返回某节点子级的局部视图（含直辖市合并与展开箭头判断）。
     public async Task<IActionResult> OnGetChildrenAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await LoadKindNamesAsync(cancellationToken);
+        KindNames = await enumClient.LoadGeoDivisionKindNamesAsync(cancellationToken);
         var response = await regionClient.GetChildrenAsync(id, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -106,39 +106,4 @@ public sealed class IndexModel(
             GeoDivisionNodeViewModel.FromChild(child, KindNameFor(child.Kind, child.Level))).ToList());
     }
 
-    private async Task LoadKindNamesAsync(CancellationToken cancellationToken)
-    {
-        // 不带 category 过滤：取全部枚举后按 geo_division.kind* 分域合并（含各国专属类型）。
-        using var response = await enumClient.ListAsync(
-            category: null,
-            pageSize: 200,
-            cancellationToken: cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-        if (page is null)
-        {
-            return;
-        }
-
-        KindNames = page.Items
-            .Where(IsGeoDivisionKindCategory)
-            .GroupBy(item => item.Code, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
-    }
-
-    private static bool IsGeoDivisionKindCategory(ReferenceEnumView item) =>
-        item.Category.Equals(ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal)
-        || item.Category.StartsWith(ReferenceEnumClient.GeoDivisionKindCategoryPrefix, StringComparison.Ordinal);
-
-    private IActionResult HandleStatus(HttpStatusCode statusCode) =>
-        statusCode switch
-        {
-            HttpStatusCode.Unauthorized => Challenge(),
-            HttpStatusCode.Forbidden => StatusCode(StatusCodes.Status403Forbidden),
-            _ => Page()
-        };
 }

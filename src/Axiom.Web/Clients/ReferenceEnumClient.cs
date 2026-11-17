@@ -1,26 +1,26 @@
 // 使用当前 SSO 会话的访问令牌调用枚举字典网关。
-using System.Globalization;
-using System.Net.Http.Headers;
+using System.Net;
 using System.Net.Http.Json;
+using Axiom.ReferenceData.Domain.Constants;
+using Axiom.SharedKernel.Models;
 using Axiom.Web.Models;
-using Microsoft.AspNetCore.Authentication;
 
 namespace Axiom.Web.Clients;
 
 public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
+    : AuthenticatedApiClient(httpClient, httpContextAccessor)
 {
     internal const string ENUMS_PATH = "/api/reference-data/enums";
-    public const string GeoDivisionKindCategory = "geo_division.kind";
-    public const string GeoDivisionKindCategoryPrefix = "geo_division.kind.";
+
+    protected override string EntityPath => ENUMS_PATH;
+
+    // 行政区 Kind 枚举字典的 Category 标识，由 Domain 层统一定义，消除 Web/Mock/API 三层硬编码。
+    public static string GeoDivisionKindCategory => ReferenceEnumCategories.GeoDivisionKind;
+    public static string GeoDivisionKindCategoryPrefix => $"{ReferenceEnumCategories.GeoDivisionKind}.";
 
     /// <summary>Kind 字典按国家分域：geo_division.kind.{country}；国家代码无效时回退通用域。</summary>
-    public static string GeoDivisionKindCategoryFor(string? countryCode)
-    {
-        var normalized = (countryCode ?? string.Empty).Trim();
-        return normalized.Length == 2 && normalized.All(char.IsAsciiLetter)
-            ? $"{GeoDivisionKindCategory}.{normalized.ToLowerInvariant()}"
-            : GeoDivisionKindCategory;
-    }
+    public static string GeoDivisionKindCategoryFor(string? countryCode) =>
+        GeoDivisionKinds.CategoryFor(countryCode);
 
     public Task<HttpResponseMessage> ListAsync(
         string? category,
@@ -28,21 +28,69 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
         int pageSize = 100,
         CancellationToken cancellationToken = default)
     {
-        var query = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+        var query = new List<string> { $"{GatewayFields.PAGE}={page}", $"{GatewayFields.PAGE_SIZE}={pageSize}" };
         if (!string.IsNullOrWhiteSpace(category))
         {
-            query.Add($"category={Uri.EscapeDataString(category)}");
+            query.Add($"{GatewayFields.CATEGORY}={Uri.EscapeDataString(category)}");
         }
 
         return SendAsync(HttpMethod.Get, $"{ENUMS_PATH}/?{string.Join('&', query)}", null, cancellationToken);
     }
 
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetAsync(id, culture: null, cancellationToken);
+    /// <summary>
+    /// 读取行政区 Kind 字典：优先按国家分域，该国未维护时回退通用域。
+    /// 返回空列表且状态码非 2xx 表示加载失败。
+    /// </summary>
+    public async Task<(IReadOnlyList<ReferenceEnumView> Items, HttpStatusCode StatusCode)> ListGeoDivisionKindsAsync(
+        string? countryCode,
+        CancellationToken cancellationToken = default)
+    {
+        var category = GeoDivisionKindCategoryFor(countryCode);
+        var (items, status) = await ReadKindItemsAsync(category, cancellationToken);
+        if (items is null)
+        {
+            return ([], status);
+        }
 
-    /// <summary>读取枚举项；culture 非空时覆盖 Accept-Language，用于取默认语言原文。</summary>
-    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{ENUMS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
+        if (items.Count == 0 && !string.Equals(category, GeoDivisionKindCategory, StringComparison.Ordinal))
+        {
+            var (fallbackItems, fallbackStatus) = await ReadKindItemsAsync(GeoDivisionKindCategory, cancellationToken);
+            if (fallbackItems is null)
+            {
+                return ([], fallbackStatus);
+            }
+
+            items = fallbackItems;
+        }
+
+        return (items, HttpStatusCode.OK);
+    }
+
+    /// <summary>Kind 显示名字典：取全部枚举后按 geo_division.kind* 分域合并（含各国专属类型）；失败时返回空字典。</summary>
+    public async Task<Dictionary<string, string>> LoadGeoDivisionKindNamesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await ListAsync(category: null, pageSize: 200, cancellationToken: cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return [];
+        }
+
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
+        if (page is null)
+        {
+            return [];
+        }
+
+        return page.Items
+            .Where(IsGeoDivisionKindCategory)
+            .GroupBy(item => item.Code, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Name, StringComparer.Ordinal);
+    }
+
+    private static bool IsGeoDivisionKindCategory(ReferenceEnumView item) =>
+        item.Category.Equals(GeoDivisionKindCategory, StringComparison.Ordinal)
+        || item.Category.StartsWith(GeoDivisionKindCategoryPrefix, StringComparison.Ordinal);
 
     public Task<HttpResponseMessage> CreateAsync(ReferenceEnumInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -74,50 +122,20 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
     public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Delete, $"{ENUMS_PATH}/{id}", null, cancellationToken);
 
-    public Task<HttpResponseMessage> GetTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
-
-    public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
-        string culture,
-        IReadOnlyDictionary<string, string> values,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(
-            HttpMethod.Put,
-            TranslationPath(id, culture),
-            JsonContent.Create(new { values }),
-            cancellationToken);
-
-    public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
-
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{ENUMS_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
-
-    private async Task<HttpResponseMessage> SendAsync(
-        HttpMethod method,
-        string path,
-        HttpContent? content,
-        CancellationToken cancellationToken,
-        string? acceptLanguage = null)
+    private async Task<(List<ReferenceEnumView>? Items, HttpStatusCode StatusCode)> ReadKindItemsAsync(
+        string category,
+        CancellationToken cancellationToken)
     {
-        var httpContext = httpContextAccessor.HttpContext
-            ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
-        var accessToken = await httpContext.GetTokenAsync(ApiClientHeaders.AccessToken)
-            ?? throw new InvalidOperationException("当前登录会话不包含访问令牌。");
+        using var response = await ListAsync(category, pageSize: 200, cancellationToken: cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return (null, response.StatusCode);
+        }
 
-        using var request = new HttpRequestMessage(method, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
-        request.Headers.TryAddWithoutValidation(
-            ApiClientHeaders.AcceptLanguage,
-            acceptLanguage ?? CultureInfo.CurrentUICulture.Name);
-        request.Content = content;
-        return await httpClient.SendAsync(request, cancellationToken);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
+        return ((page?.Items ?? [])
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.Code)
+            .ToList(), response.StatusCode);
     }
 }

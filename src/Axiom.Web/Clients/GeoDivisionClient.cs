@@ -1,15 +1,15 @@
 // 使用当前 SSO 会话的访问令牌调用行政区网关。
-using System.Globalization;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Authentication;
 using Axiom.Web.Models;
 
 namespace Axiom.Web.Clients;
 
 public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
+    : AuthenticatedApiClient(httpClient, httpContextAccessor)
 {
     internal const string GEO_DIVISIONS_PATH = "/api/geo-divisions";
+
+    protected override string EntityPath => GEO_DIVISIONS_PATH;
 
     public Task<HttpResponseMessage> ListAsync(
         int page,
@@ -20,11 +20,11 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
         string? q,
         CancellationToken cancellationToken = default)
     {
-        var query = new List<string> { $"page={page}", $"pageSize={pageSize}" };
-        if (level.HasValue) query.Add($"level={level}");
-        if (!string.IsNullOrWhiteSpace(countryCode)) query.Add($"countryCode={Uri.EscapeDataString(countryCode)}");
-        if (!string.IsNullOrWhiteSpace(subdivisionCode)) query.Add($"subdivisionCode={Uri.EscapeDataString(subdivisionCode)}");
-        if (!string.IsNullOrWhiteSpace(q)) query.Add($"q={Uri.EscapeDataString(q)}");
+        var query = new List<string> { $"{GatewayFields.PAGE}={page}", $"{GatewayFields.PAGE_SIZE}={pageSize}" };
+        if (level.HasValue) query.Add($"{GatewayFields.LEVEL}={level}");
+        if (!string.IsNullOrWhiteSpace(countryCode)) query.Add($"{GatewayFields.COUNTRY_CODE}={Uri.EscapeDataString(countryCode)}");
+        if (!string.IsNullOrWhiteSpace(subdivisionCode)) query.Add($"{GatewayFields.SUBDIVISION_CODE}={Uri.EscapeDataString(subdivisionCode)}");
+        if (!string.IsNullOrWhiteSpace(q)) query.Add($"{GatewayFields.KEYWORD}={Uri.EscapeDataString(q)}");
         return SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/?{string.Join('&', query)}", null, cancellationToken);
     }
 
@@ -34,19 +34,12 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
         CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Get,
-            $"{GEO_DIVISIONS_PATH}/tree?countryCode={Uri.EscapeDataString(countryCode)}&depth={depth}",
+            $"{GEO_DIVISIONS_PATH}/{GatewayFields.TREE}?{GatewayFields.COUNTRY_CODE}={Uri.EscapeDataString(countryCode)}&depth={depth}",
             null,
             cancellationToken);
 
     public Task<HttpResponseMessage> GetChildrenAsync(Guid parentId, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{parentId}/children", null, cancellationToken);
-
-    public Task<HttpResponseMessage> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
-        GetAsync(id, culture: null, cancellationToken);
-
-    /// <summary>读取行政区；culture 非空时覆盖 Accept-Language，用于取默认语言原文（绕开界面语言本地化）。</summary>
-    public Task<HttpResponseMessage> GetAsync(Guid id, string? culture, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken, acceptLanguage: culture);
+        SendAsync(HttpMethod.Get, $"{GEO_DIVISIONS_PATH}/{parentId}/{GatewayFields.CHILDREN}", null, cancellationToken);
 
     public Task<HttpResponseMessage> CreateAsync(GeoDivisionInput input, CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -72,6 +65,7 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
     public Task<HttpResponseMessage> UpdateAsync(
         Guid id,
         GeoDivisionInput input,
+        string? eTag,
         CancellationToken cancellationToken = default) =>
         SendAsync(
             HttpMethod.Put,
@@ -88,55 +82,12 @@ public sealed class GeoDivisionClient(HttpClient httpClient, IHttpContextAccesso
                 parentId = input.ParentId,
                 kind = input.Kind
             }),
-            cancellationToken);
+            cancellationToken,
+            eTag);
 
-    public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken);
-
-    public Task<HttpResponseMessage> GetTranslationsAsync(
+    public Task<HttpResponseMessage> DeleteAsync(
         Guid id,
-        string culture,
+        string? eTag,
         CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Get, TranslationPath(id, culture), null, cancellationToken);
-
-    public Task<HttpResponseMessage> SaveTranslationsAsync(
-        Guid id,
-        string culture,
-        IReadOnlyDictionary<string, string> values,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(
-            HttpMethod.Put,
-            TranslationPath(id, culture),
-            JsonContent.Create(new { values }),
-            cancellationToken);
-
-    public Task<HttpResponseMessage> DeleteTranslationsAsync(
-        Guid id,
-        string culture,
-        CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, TranslationPath(id, culture), null, cancellationToken);
-
-    private static string TranslationPath(Guid id, string culture) =>
-        $"{GEO_DIVISIONS_PATH}/{id}/translations/{Uri.EscapeDataString(culture)}";
-
-    private async Task<HttpResponseMessage> SendAsync(
-        HttpMethod method,
-        string path,
-        HttpContent? content,
-        CancellationToken cancellationToken,
-        string? acceptLanguage = null)
-    {
-        var httpContext = httpContextAccessor.HttpContext
-            ?? throw new InvalidOperationException("当前请求缺少 HTTP 上下文。");
-        var accessToken = await httpContext.GetTokenAsync(ApiClientHeaders.AccessToken)
-            ?? throw new InvalidOperationException("当前登录会话不包含访问令牌。");
-
-        using var request = new HttpRequestMessage(method, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue(ApiClientHeaders.BearerScheme, accessToken);
-        request.Headers.TryAddWithoutValidation(
-            ApiClientHeaders.AcceptLanguage,
-            acceptLanguage ?? CultureInfo.CurrentUICulture.Name);
-        request.Content = content;
-        return await httpClient.SendAsync(request, cancellationToken);
-    }
+        SendAsync(HttpMethod.Delete, $"{GEO_DIVISIONS_PATH}/{id}", null, cancellationToken, eTag);
 }

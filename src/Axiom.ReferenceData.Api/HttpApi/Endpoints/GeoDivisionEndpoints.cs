@@ -136,16 +136,24 @@ public static class GeoDivisionEndpoints
 
     private static async Task<IResult> HandleGet(
         Guid id,
+        HttpContext ctx,
         IGeoDivisionAppService app,
         IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken ct = default)
     {
-        var dto = await app.GetAsync(id, CultureInfo.CurrentUICulture.Name, ct);
-        return dto is null ? RegionNotFound(localizer, id) : Results.Ok(dto);
+        var (dto, etag) = await app.GetAsync(id, CultureInfo.CurrentUICulture.Name, ct);
+        if (dto is null)
+        {
+            return RegionNotFound(localizer, id);
+        }
+
+        if (etag.HasValue) ctx.Response.Headers.ETag = $"\"{etag.Value:N}\"";
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> HandleCreate(
         CreateGeoDivisionInput? input,
+        HttpContext ctx,
         IGeoDivisionAppService app,
         IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken ct = default)
@@ -171,7 +179,8 @@ public static class GeoDivisionEndpoints
 
         try
         {
-            var (dto, location) = await app.CreateAsync(input, ct);
+            var (dto, location, etag) = await app.CreateAsync(input, ct);
+            ctx.Response.Headers.ETag = $"\"{etag:N}\"";
             return Results.Created(location.ToString(), dto);
         }
         catch (GeoDivisionValidationException ex)
@@ -187,7 +196,8 @@ public static class GeoDivisionEndpoints
     }
 
     private static async Task<IResult> HandleUpdate(
-        Guid id, UpdateGeoDivisionInput? input, IGeoDivisionAppService app,
+        Guid id, UpdateGeoDivisionInput? input, HttpContext ctx,
+        IGeoDivisionAppService app,
         IStringLocalizer<ApiErrorMessages> localizer, CancellationToken ct = default)
     {
         if (input is null)
@@ -195,9 +205,16 @@ public static class GeoDivisionEndpoints
             return BodyRequired(localizer);
         }
 
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedToken, out var error))
+        {
+            return error!;
+        }
+
         try
         {
-            return Results.Ok(await app.UpdateAsync(id, input, ct));
+            var (dto, etag) = await app.UpdateAsync(id, input, expectedToken, ct);
+            ctx.Response.Headers.ETag = $"\"{etag:N}\"";
+            return Results.Ok(dto);
         }
         catch (GeoDivisionNotFoundException)
         {
@@ -207,15 +224,24 @@ public static class GeoDivisionEndpoints
         {
             return ValidationFailure(localizer, ex);
         }
+        catch (GeoDivisionConcurrencyConflictException)
+        {
+            return ConcurrencyConflict(localizer);
+        }
     }
 
     private static async Task<IResult> HandleDelete(
-        Guid id, IGeoDivisionAppService app,
+        Guid id, HttpContext ctx, IGeoDivisionAppService app,
         IStringLocalizer<ApiErrorMessages> localizer, CancellationToken ct = default)
     {
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedToken, out var error))
+        {
+            return error!;
+        }
+
         try
         {
-            await app.DeleteAsync(id, ct);
+            await app.DeleteAsync(id, expectedToken, ct);
             return Results.NoContent();
         }
         catch (GeoDivisionNotFoundException)
@@ -227,6 +253,10 @@ public static class GeoDivisionEndpoints
             return Results.Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: localizer[ApiErrorCodes.GEO_DIVISION_HAS_CHILDREN, id].Value);
+        }
+        catch (GeoDivisionConcurrencyConflictException)
+        {
+            return ConcurrencyConflict(localizer);
         }
     }
 
@@ -319,6 +349,16 @@ public static class GeoDivisionEndpoints
         Results.Problem(
             statusCode: StatusCodes.Status404NotFound,
             title: localizer[ApiErrorCodes.GEO_DIVISION_COUNTRY_NOT_FOUND, countryCode].Value);
+
+    private static IResult ConcurrencyConflict(IStringLocalizer<ApiErrorMessages> localizer) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: localizer[ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT].Value,
+            // 409 同时用于唯一键冲突，客户端需要可判别的机器码。
+            extensions: new Dictionary<string, object?>
+            {
+                ["errorCode"] = ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT
+            });
 
     private static IResult InvalidCulture(IStringLocalizer<ApiErrorMessages> localizer, string culture) =>
         Results.Problem(

@@ -33,8 +33,12 @@ public interface IGeoDivisionRepository
     Task<bool> HasChildrenAsync(Guid parentId, CancellationToken ct = default);
 
     Task AddAsync(GeoDivision region, CancellationToken ct = default);
-    Task UpdateAsync(GeoDivision region, CancellationToken ct = default);
-    Task RemoveAsync(GeoDivision region, CancellationToken ct = default);
+
+    /// <summary>按 If-Match 期望令牌更新；令牌不一致时抛出并发冲突。</summary>
+    Task UpdateWithETagAsync(GeoDivision region, Guid expectedToken, CancellationToken ct = default);
+
+    /// <summary>按 If-Match 期望令牌删除；令牌不一致时抛出并发冲突。</summary>
+    Task RemoveWithETagAsync(GeoDivision region, Guid expectedToken, CancellationToken ct = default);
 
     /// <summary>批量读取指定行政区在若干语言下的翻译，供列表/层级树一次性合并。</summary>
     Task<List<GeoDivisionTranslation>> ListTranslationsAsync(

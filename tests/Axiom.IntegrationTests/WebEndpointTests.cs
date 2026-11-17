@@ -242,10 +242,12 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         var admin1Id = await CreateRegionAsync(2, "XZ", countryId, "XA", "XA", "测试省");
         var cityId = await CreateRegionAsync(3, "XZ", admin1Id, "XA", "XC", "测试市");
         var editUri = $"/GeoDivisions/Edit/{cityId}";
+        var editForm = await GetFormAsync(editUri);
+        var eTag = ExtractInput(editForm.Html, "ETag");
 
         using var updateResponse = await PostFormAsync(
             editUri,
-            RegionFields(3, "XZ", admin1Id, "XA", "XC", "测试市（更新）"),
+            RegionFields(3, "XZ", admin1Id, "XA", "XC", "测试市（更新）").Append(new("ETag", eTag)),
             Manage,
             editUri);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
@@ -283,10 +285,11 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     public async Task Region_delete_with_children_shows_validation_error()
     {
         var uri = $"/GeoDivisions/Detail/{WebFactory.GeoDivisionAdmin1Id}";
+        var form = await GetFormAsync(uri);
 
         using var response = await PostFormAsync(
             $"{uri}?handler=Delete",
-            [new("CountryCode", "CN")],
+            [new("CountryCode", "CN"), new("ETag", ExtractInput(form.Html, "ETag"))],
             Manage,
             uri);
 
@@ -422,6 +425,117 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Region_update_with_missing_etag_shows_local_validation()
+    {
+        var uri = $"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}";
+
+        using var response = await PostFormAsync(
+            uri,
+            RegionFields(3, "CN", WebFactory.GeoDivisionAdmin1Id, "JS", "SZ", "苏州（无令牌）"),
+            Manage,
+            uri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()).Should().Contain("缺少并发令牌");
+    }
+
+    [Fact]
+    public async Task Region_update_with_stale_etag_shows_conflict()
+    {
+        var uri = $"/GeoDivisions/Edit/{WebFactory.GeoDivisionCityId}";
+        var staleETag = $"\"{Guid.NewGuid():N}\"";
+
+        using var response = await PostFormAsync(
+            uri,
+            RegionFields(3, "CN", WebFactory.GeoDivisionAdmin1Id, "JS", "SZ", "苏州（过期）")
+                .Append(new("ETag", staleETag)),
+            Manage,
+            uri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()).Should().Contain("内容已被其他请求修改");
+    }
+
+    [Fact]
+    public async Task News_index_lists_articles()
+    {
+        using var request = CreateRequest(HttpMethod.Get, "/News");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.Should().Contain("参考数据平台上线")
+            .And.Contain($"/News/Detail?id={WebFactory.NewsArticleId}");
+    }
+
+    [Fact]
+    public async Task News_detail_renders_article()
+    {
+        // 只读文章不被写入用例修改，断言不受测试执行顺序影响。
+        using var request = CreateRequest(HttpMethod.Get, $"/News/Detail?id={WebFactory.NewsReadOnlyArticleId}");
+
+        using var response = await _client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        html.Should().Contain("枚举字典完成迁移").And.Contain("枚举字典迁移已全部完成并通过校验。");
+    }
+
+    [Fact]
+    public async Task News_edit_roundtrip_updates_article()
+    {
+        var uri = $"/News/Edit?id={WebFactory.NewsArticleId}";
+        var form = await GetFormAsync(uri);
+        var eTag = ExtractInput(form.Html, "ETag");
+        eTag.Should().NotBeNullOrWhiteSpace();
+
+        using var response = await PostFormAsync(
+            uri,
+            NewsFields("参考数据平台上线（更新）")
+                .Append(new("ArticleId", WebFactory.NewsArticleId.ToString()))
+                .Append(new("ETag", eTag)),
+            Manage,
+            uri);
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+
+        var updated = await GetFormAsync(uri);
+        WebUtility.HtmlDecode(updated.Html).Should().Contain("参考数据平台上线（更新）");
+    }
+
+    [Fact]
+    public async Task News_update_with_missing_etag_shows_local_validation()
+    {
+        var uri = $"/News/Edit?id={WebFactory.NewsArticleId}";
+
+        using var response = await PostFormAsync(
+            uri,
+            NewsFields("缺少令牌").Append(new("ArticleId", WebFactory.NewsArticleId.ToString())),
+            Manage,
+            uri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()).Should().Contain("缺少并发令牌");
+    }
+
+    [Fact]
+    public async Task News_update_with_stale_etag_shows_conflict()
+    {
+        var uri = $"/News/Edit?id={WebFactory.NewsArticleId}";
+
+        using var response = await PostFormAsync(
+            uri,
+            NewsFields("过期令牌")
+                .Append(new("ArticleId", WebFactory.NewsArticleId.ToString()))
+                .Append(new("ETag", $"\"{Guid.NewGuid():N}\"")),
+            Manage,
+            uri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()).Should().Contain("内容已被其他请求修改");
+    }
+
     private async Task<Guid> CreateAirportAsync(string code, string name)
     {
         using var response = await PostFormAsync("/Airports/Create", AirportFields(code, name), Manage);
@@ -462,9 +576,10 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
     private async Task DeleteRegionAsync(Guid id, string countryCode)
     {
         var uri = $"/GeoDivisions/Detail/{id}";
+        var form = await GetFormAsync(uri);
         using var response = await PostFormAsync(
             $"{uri}?handler=Delete",
-            [new("CountryCode", countryCode)],
+            [new("CountryCode", countryCode), new("ETag", ExtractInput(form.Html, "ETag"))],
             Manage,
             uri);
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
@@ -501,6 +616,16 @@ public sealed class WebEndpointTests(WebFactory factory) : IClassFixture<WebFact
         new("Input.City", "上海"),
         new("Input.Latitude", "31.1443"),
         new("Input.Longitude", "121.8083")
+    ];
+
+    private static KeyValuePair<string, string>[] NewsFields(string title) =>
+    [
+        new("Input.Title", title),
+        new("Input.Summary", "摘要"),
+        new("Input.Content", "正文内容"),
+        new("Input.Category", "Platform"),
+        new("Input.Author", "shenhao"),
+        new("Input.Status", "Draft")
     ];
 
     private static KeyValuePair<string, string>[] RegionFields(

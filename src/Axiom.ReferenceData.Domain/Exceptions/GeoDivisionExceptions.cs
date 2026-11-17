@@ -19,6 +19,13 @@ public sealed class GeoDivisionHasChildrenException(Guid id)
 public sealed class GeoDivisionCountryNotFoundException(string countryCode)
     : AxiomException(ApiErrorCodes.GEO_DIVISION_COUNTRY_NOT_FOUND, $"国家 {countryCode} 不存在。", countryCode);
 
+/// <summary>If-Match 的 ETag 与库中并发令牌不一致，说明记录已被其他请求修改。</summary>
+public sealed class GeoDivisionConcurrencyConflictException(Guid id)
+    : AxiomException(
+        ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT,
+        $"行政区 {id:N} 已被其他请求修改。",
+        id);
+
 /// <summary>行政区的领域不变量被破坏（国家代码、名称、坐标范围等）。</summary>
 public sealed class GeoDivisionValidationException : AxiomException
 {

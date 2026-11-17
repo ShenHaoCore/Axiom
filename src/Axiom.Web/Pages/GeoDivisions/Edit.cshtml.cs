@@ -1,6 +1,7 @@
 // 编辑行政区名称、代码、地理信息和父级；层级与国家等标识字段保持只读。
 using System.Net;
 using System.Net.Http.Json;
+using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
 using Axiom.Web.Clients;
 using Axiom.Web.Models;
@@ -19,6 +20,10 @@ public sealed class EditModel(
 {
     [BindProperty]
     public GeoDivisionInput Input { get; set; } = new();
+
+    /// <summary>GET 时从响应头取得的并发令牌，提交时原样回传为 If-Match。</summary>
+    [BindProperty]
+    public string? ETag { get; set; }
 
     public GeoDivisionView? GeoDivision { get; private set; }
 
@@ -40,19 +45,15 @@ public sealed class EditModel(
         }
 
         Input = GeoDivisionInput.From(GeoDivision);
-        var kindFailure = await LoadKindOptionsAsync(cancellationToken);
-        if (kindFailure is not null)
-        {
-            return kindFailure;
-        }
-
+        await LoadKindOptionsAsync(cancellationToken);
         await LoadSelectedParentLabelAsync(cancellationToken);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var failure = await LoadRegionAsync(id, cancellationToken);
+        // 保留用户提交值与提交的 ETag，只加载展示所需数据。
+        var failure = await LoadRegionAsync(id, cancellationToken, resetInput: false);
         if (failure is not null)
         {
             return failure;
@@ -72,12 +73,7 @@ public sealed class EditModel(
             Input.ParentId = null;
         }
 
-        var kindFailure = await LoadKindOptionsAsync(cancellationToken);
-        if (kindFailure is not null)
-        {
-            return kindFailure;
-        }
-
+        await LoadKindOptionsAsync(cancellationToken);
         await LoadSelectedParentLabelAsync(cancellationToken);
         await ValidateParentAsync(cancellationToken);
         if (!ModelState.IsValid)
@@ -85,15 +81,11 @@ public sealed class EditModel(
             return Page();
         }
 
-        using var response = await regionClient.UpdateAsync(id, Input, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        using var response = await regionClient.UpdateAsync(id, Input, ETag, cancellationToken);
+        var authFailure = this.HandleAuthStatus(response.StatusCode);
+        if (authFailure is not null)
         {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return authFailure;
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -107,9 +99,18 @@ public sealed class EditModel(
             return Page();
         }
 
+        if (response.StatusCode == HttpStatusCode.PreconditionRequired)
+        {
+            ErrorMessage = localizer["Common.MissingETag"].Value;
+            return Page();
+        }
+
         if (response.StatusCode == HttpStatusCode.Conflict)
         {
-            ErrorMessage = localizer["GeoDivisions.Form.UniqueConflict"].Value;
+            // 409 有两个来源：并发令牌过期与唯一键冲突，靠问题详情里的 errorCode 区分。
+            ErrorMessage = await IsConcurrencyConflictAsync(response, cancellationToken)
+                ? localizer["Common.ConcurrencyConflict"].Value
+                : localizer["GeoDivisions.Form.UniqueConflict"].Value;
             return Page();
         }
 
@@ -123,17 +124,16 @@ public sealed class EditModel(
         return RedirectToPage("/GeoDivisions/Detail", new { id });
     }
 
-    private async Task<IActionResult?> LoadRegionAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<IActionResult?> LoadRegionAsync(
+        Guid id,
+        CancellationToken cancellationToken,
+        bool resetInput = true)
     {
         using var response = await regionClient.GetAsync(id, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var authFailure = this.HandleAuthStatus(response.StatusCode);
+        if (authFailure is not null)
         {
-            return Challenge();
-        }
-
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
+            return authFailure;
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -151,72 +151,51 @@ public sealed class EditModel(
         if (GeoDivision is null)
         {
             ErrorMessage = localizer["GeoDivisions.Edit.LoadFailed"].Value;
+            return null;
+        }
+
+        if (resetInput)
+        {
+            ETag = response.Headers.ETag?.Tag;
         }
 
         return null;
+    }
+
+    /// <summary>并发冲突与唯一键冲突同为 409，用问题详情的 errorCode 扩展区分。</summary>
+    private static async Task<bool> IsConcurrencyConflictAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken);
+        return problem?.Extensions.TryGetValue("errorCode", out var code) == true
+            && string.Equals(
+                code?.ToString(),
+                ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT,
+                StringComparison.Ordinal);
     }
 
     private async Task<IActionResult?> LoadKindOptionsAsync(CancellationToken cancellationToken)
     {
         // 与新建页一致：按国家分域字典；该国家未维护时回退通用域。
         // 国家行（L=1）固定读通用域：country 仅在通用域维护。
-        var countryCode = (GeoDivision?.Level ?? Input.Level) == 1
-            ? null
-            : Input.CountryCode ?? GeoDivision?.CountryCode;
-        var category = ReferenceEnumClient.GeoDivisionKindCategoryFor(countryCode);
-        using var response = await enumClient.ListAsync(
-            category,
-            pageSize: 200,
-            cancellationToken: cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        var level = GeoDivision?.Level ?? Input.Level;
+        var countryCode = level == 1 ? null : Input.CountryCode ?? GeoDivision?.CountryCode;
+        var (items, status) = await enumClient.ListGeoDivisionKindsAsync(countryCode, cancellationToken);
+        var authFailure = this.HandleAuthStatus(status);
+        if (authFailure is not null)
         {
-            return Challenge();
+            return authFailure;
         }
 
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
-
-        if (!response.IsSuccessStatusCode)
+        if (status != HttpStatusCode.OK)
         {
             ErrorMessage = localizer["Enums.LoadFailed"].Value;
             KindOptions = [];
             return null;
         }
 
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-        var items = (page?.Items ?? [])
-            .OrderBy(item => item.SortOrder)
-            .ThenBy(item => item.Code)
-            .ToList();
-
-        // 国别域为空时回退通用域，避免编辑页 Kind 下拉空白。
-        if (items.Count == 0
-            && !string.Equals(category, ReferenceEnumClient.GeoDivisionKindCategory, StringComparison.Ordinal))
-        {
-            using var fallback = await enumClient.ListAsync(
-                ReferenceEnumClient.GeoDivisionKindCategory,
-                pageSize: 200,
-                cancellationToken: cancellationToken);
-            if (fallback.IsSuccessStatusCode)
-            {
-                var fallbackPage = await fallback.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumView>>(cancellationToken);
-                items = (fallbackPage?.Items ?? [])
-                    .OrderBy(item => item.SortOrder)
-                    .ThenBy(item => item.Code)
-                    .ToList();
-            }
-        }
-
-        // 与新建页一致：国家行 Kind 固定为 country；其余层级不允许选 country。
-        items = (GeoDivision?.Level ?? 1) == 1
-            ? items.Where(item => item.Code == "country").ToList()
-            : items.Where(item => item.Code != "country").ToList();
-
-        KindOptions = items
-            .Select(item => new SelectListItem(item.Name, item.Code))
-            .ToList();
+        KindOptions = GeoDivisionKindOptions.ToSelectList(items, level);
 
         if (!string.IsNullOrWhiteSpace(Input.Kind)
             && KindOptions.All(option => !string.Equals(option.Value, Input.Kind, StringComparison.OrdinalIgnoreCase)))
