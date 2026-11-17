@@ -11,9 +11,25 @@ jobs:
   draft:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      # 版本号唯一来源是 Directory.Build.props，显式传给 Release Drafter，
+      # 避免「props 里写着 0.1.1、tag 却按 patch 推导成 0.1.2」的分叉。
+      - id: version
+        shell: bash
+        run: |
+          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -n1 | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "::error::Directory.Build.props 中未找到 <Version>"
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "发布版本号：$version"
+
       - uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
           disable-autolabeler: true
+          version: ${{ steps.version.outputs.value }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

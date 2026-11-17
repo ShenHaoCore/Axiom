@@ -1,5 +1,7 @@
 name-template: 'v$RESOLVED_VERSION 发布'
 tag-template: 'v$RESOLVED_VERSION'
+# 兜底格式：workflow 会传入 Directory.Build.props 的版本号覆盖计算值，通常不走这里。
+version-template: '$MAJOR.$MINOR.$PATCH'
 categories:
   - title: '✨ 新功能 (feat)'
     labels:
