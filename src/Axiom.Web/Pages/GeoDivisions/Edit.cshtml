@@ -102,14 +102,25 @@
                     <input asp-for="Input.Code" class="form-control" autocomplete="off" />
                     <span asp-validation-for="Input.Code" class="text-danger"></span>
                 </div>
-                <div class="col-md-6">
-                    <label asp-for="Input.Kind" class="form-label"></label>
-                    <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
-                    <span asp-validation-for="Input.Kind" class="text-danger"></span>
-                </div>
-                @if (Model.GeoDivision.Level > 1)
+                @if (Model.GeoDivision.Level == 1)
+                {
+                    @* 国家行类型固定为 country，无选择余地，只读展示。 *@
+                    <div class="col-md-12">
+                        <label class="form-label">@Localizer["Field.GeoDivision.Kind"]</label>
+                        <input class="form-control" value="@Model.SelectedKindLabel" readonly />
+                    </div>
+                }
+                else
                 {
                     <div class="col-md-6">
+                        <label asp-for="Input.Kind" class="form-label"></label>
+                        <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
+                        <span asp-validation-for="Input.Kind" class="text-danger"></span>
+                    </div>
+                }
+                @if (Model.GeoDivision.Level > 1)
+                {
+                    <div class="col-md-12">
                         <label class="form-label">@Localizer["Field.GeoDivision.SubdivisionCode"]</label>
                         <input class="form-control" value="@Model.GeoDivision.SubdivisionCode" readonly />
                     </div>

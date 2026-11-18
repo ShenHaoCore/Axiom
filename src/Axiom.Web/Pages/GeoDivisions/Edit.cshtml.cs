@@ -29,6 +29,9 @@ public sealed class EditModel(
 
     public string SelectedParentLabel { get; private set; } = string.Empty;
 
+    /// <summary>当前类型的显示名；选项缺失时回退原始编码（国家行只读展示用）。</summary>
+    public string SelectedKindLabel { get; private set; } = string.Empty;
+
     public IReadOnlyList<SelectListItem> KindOptions { get; private set; } = [];
 
     [TempData]
@@ -71,6 +74,8 @@ public sealed class EditModel(
         if (Input.Level == 1)
         {
             Input.ParentId = null;
+            // 国家行不再渲染类型表单项（只读展示），类型以实体为准。
+            Input.Kind = GeoDivision.Kind;
         }
 
         await LoadKindOptionsAsync(cancellationToken);
@@ -204,6 +209,11 @@ public sealed class EditModel(
                 .Append(new SelectListItem(Input.Kind, Input.Kind))
                 .ToList();
         }
+
+        // 国家行只读展示当前类型名。
+        SelectedKindLabel = KindOptions
+            .FirstOrDefault(option => string.Equals(option.Value, Input.Kind, StringComparison.OrdinalIgnoreCase))?.Text
+            ?? Input.Kind ?? string.Empty;
 
         return null;
     }
