@@ -197,6 +197,16 @@
     </div>
 </div>
 
+<!-- 通用确认对话框：危险操作与未保存离开提示共用，文本由 site.js 动态填入 -->
+<dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-dialog-title">
+    <h2 id="confirm-dialog-title">@Localizer["Common.ConfirmTitle"]</h2>
+    <p id="confirm-dialog-text"></p>
+    <form method="dialog" class="confirm-dialog-actions">
+        <button value="cancel" class="btn btn-outline-secondary" autofocus>@Localizer["Common.Cancel"]</button>
+        <button value="confirm" class="btn btn-outline-danger">@Localizer["Common.Confirm"]</button>
+    </form>
+</dialog>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
