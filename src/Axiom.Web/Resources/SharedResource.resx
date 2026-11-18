@@ -65,6 +65,8 @@
   <data name="Common.SignOut" xml:space="preserve"><value>退出登录</value></data>
   <data name="Common.DangerZone" xml:space="preserve"><value>危险操作</value></data>
   <data name="Common.DeleteWarning" xml:space="preserve"><value>删除后不可恢复，请谨慎操作。</value></data>
+  <data name="Common.ConfirmTitle" xml:space="preserve"><value>确认操作</value></data>
+  <data name="Common.Confirm" xml:space="preserve"><value>确认</value></data>
 
   <!-- 翻译维护 -->
   <data name="Translations.Title" xml:space="preserve"><value>多语言翻译</value></data>

@@ -126,11 +126,7 @@ hr {
   opacity: 1;
 }
 
-/* 统一键盘焦点：品牌色双层光环，不使用浏览器默认描边 */
-:focus-visible {
-  outline: none;
-}
-
+/* 统一键盘焦点：品牌色双层光环；未列出的控件保留浏览器默认描边 */
 .btn:focus-visible,
 .btn-link.nav-link:focus-visible,
 .form-control:focus-visible,
@@ -144,7 +140,9 @@ hr {
 .topbar-toggler:focus-visible,
 .dropdown-item:focus-visible,
 .region-toggle:focus-visible,
-.segmented a:focus-visible {
+.segmented a:focus-visible,
+a:focus-visible,
+summary:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--axiom-accent-ring);
 }
@@ -1626,6 +1624,56 @@ textarea.form-control {
 }
 
 /* =========================================================
+   确认对话框（原生 <dialog>）
+   ========================================================= */
+
+/* 焦点留在对话框内时，滚动手势不再传导到页面底层。 */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.confirm-dialog {
+  width: min(400px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--axiom-border);
+  border-radius: var(--axiom-radius-lg);
+  background: var(--axiom-surface);
+  color: var(--axiom-ink);
+  box-shadow: var(--axiom-shadow-2);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(13, 37, 61, 0.45);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.confirm-dialog p {
+  margin: 0 0 20px;
+  color: var(--axiom-ink-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+}
+
+/* =========================================================
    新闻正文
    ========================================================= */
 
@@ -2173,6 +2221,26 @@ textarea.form-control {
 
   .footer {
     padding: 12px 16px;
+  }
+}
+
+/* 触控设备：输入框 ≥16px 避免 iOS 聚焦自动放大，触控目标提到 48px。 */
+@media (pointer: coarse) {
+  .form-control,
+  .form-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .topbar-language-select {
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .btn,
+  .btn-sm,
+  .btn-ghost {
+    min-height: 48px;
   }
 }
 

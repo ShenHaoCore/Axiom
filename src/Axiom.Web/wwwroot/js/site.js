@@ -2,16 +2,58 @@
 (function () {
     'use strict';
 
-    // 带 data-confirm 的表单：提交前弹出确认框。
+    // ---------- 通用确认对话框 ----------
+
+    var confirmDialog = document.getElementById('confirm-dialog');
+    var confirmText = document.getElementById('confirm-dialog-text');
+    var confirmResolve = null;
+
+    // 弹出确认对话框并返回 Promise；对话框不可用时回退 window.confirm。
+    function showConfirm(message) {
+        if (!confirmDialog || typeof confirmDialog.showModal !== 'function') {
+            return Promise.resolve(window.confirm(message));
+        }
+
+        if (confirmText) {
+            confirmText.textContent = message;
+        }
+
+        confirmDialog.returnValue = '';
+        confirmDialog.showModal();
+        return new Promise(function (resolve) {
+            confirmResolve = resolve;
+        });
+    }
+
+    if (confirmDialog) {
+        confirmDialog.addEventListener('close', function () {
+            if (confirmResolve) {
+                confirmResolve(confirmDialog.returnValue === 'confirm');
+                confirmResolve = null;
+            }
+        });
+    }
+
+    // 带 data-confirm 的表单：提交前弹确认框，确认后标记并重新提交。
     document.addEventListener('submit', function (event) {
         var form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) {
+        if (!(form instanceof HTMLFormElement)
+            || !form.hasAttribute('data-confirm')
+            || form.dataset.confirmed === '1') {
             return;
         }
 
-        if (!window.confirm(form.getAttribute('data-confirm'))) {
-            event.preventDefault();
-        }
+        event.preventDefault();
+        showConfirm(form.getAttribute('data-confirm')).then(function (confirmed) {
+            if (!confirmed) {
+                return;
+            }
+
+            // 标记已确认后重新提交，避免确认框二次弹出。
+            form.dataset.confirmed = '1';
+            form.requestSubmit();
+            form.removeAttribute('data-confirmed');
+        });
     }, true);
 
     // 表单提交后禁用提交按钮，避免重复提交（延迟一拍以确保提交事件已触发）。
@@ -456,9 +498,16 @@
 
             var dirtyForm = document.querySelector('form[method="post"][data-dirty="1"]');
             var message = languageSelect.getAttribute('data-unsaved-message');
-            if (dirtyForm && message && !window.confirm(message)) {
-                // 取消切换：恢复原语言，避免界面与服务端状态不一致。
-                languageSelect.value = initialCulture;
+            if (dirtyForm && message) {
+                showConfirm(message).then(function (confirmed) {
+                    if (!confirmed) {
+                        // 取消切换：恢复原语言，避免界面与服务端状态不一致。
+                        languageSelect.value = initialCulture;
+                        return;
+                    }
+
+                    languageForm.requestSubmit();
+                });
                 return;
             }
 
