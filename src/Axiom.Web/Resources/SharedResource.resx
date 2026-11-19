@@ -232,7 +232,7 @@
   <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>类型、所属国家/父级与代码。</value></data>
   <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>地理与人口</value></data>
   <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>可选信息，用于地图展示与统计。</value></data>
-  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>一级区划代码，最多 20 个字符。</value></data>
+  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>一级区划代码（ISO 3166-2 后缀），二级行需手工填写，三级及以下随父级自动带出。</value></data>
   <data name="GeoDivisions.Edit.LoadFailed" xml:space="preserve"><value>无法加载行政区内容。</value></data>
   <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>保存行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>行政区已更新。</value></data>

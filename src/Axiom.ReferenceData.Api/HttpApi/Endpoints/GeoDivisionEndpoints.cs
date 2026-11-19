@@ -375,5 +375,10 @@ public static class GeoDivisionEndpoints
         AxiomException exception) =>
         Results.Problem(
             statusCode: StatusCodes.Status400BadRequest,
-            title: localizer[exception.ErrorCode, exception.Args].Value);
+            title: localizer[exception.ErrorCode, exception.Args].Value,
+            extensions: new Dictionary<string, object?>
+            {
+                // 与 GlobalExceptionHandler 的校验响应保持一致：附带触发字段。
+                ["field"] = exception is GeoDivisionValidationException region ? region.Field : null
+            });
 }

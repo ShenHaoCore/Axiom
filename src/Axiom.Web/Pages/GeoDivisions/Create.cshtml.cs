@@ -277,6 +277,10 @@ public sealed class CreateModel(
 
         Input.Level = parent.Level + 1;
         Input.CountryCode = parent.CountryCode;
+        // 一级区划码：二级行由用户填写；三级及以下与父级链一致（API 侧按 L2 祖先最终校验）。
+        Input.SubdivisionCode = parent.Level == 1
+            ? Input.SubdivisionCode?.Trim()
+            : parent.SubdivisionCode;
         SelectedParentLabel = $"{parent.Name} ({parent.Code})";
         return null;
     }

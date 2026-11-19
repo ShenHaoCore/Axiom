@@ -175,7 +175,19 @@
             if (subdivisionInputId) {
                 var subdivisionInput = document.getElementById(subdivisionInputId);
                 if (subdivisionInput) {
-                    subdivisionInput.value = nodeSubdivision;
+                    // 二级行（父级是国家）需手工填写区划码；三级及以下随父级带出并只读；
+                    // 根（新建国家）没有一级区划码，整块隐藏。
+                    if (nodeLevel === 1) {
+                        subdivisionInput.value = '';
+                        subdivisionInput.readOnly = false;
+                    } else if (nodeLevel >= 2) {
+                        subdivisionInput.value = nodeSubdivision;
+                        subdivisionInput.readOnly = true;
+                    }
+                    var subdivisionField = subdivisionInput.closest('[data-subdivision-field]');
+                    if (subdivisionField) {
+                        subdivisionField.hidden = nodeLevel === 0;
+                    }
                 }
             }
 

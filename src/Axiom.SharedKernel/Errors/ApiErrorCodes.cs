@@ -41,6 +41,10 @@ public static class ApiErrorCodes
     public const string GEO_DIVISION_INVALID_COUNTRY_CODE = "ReferenceData.GeoDivision.Validation.InvalidCountryCode";
     public const string GEO_DIVISION_LATITUDE_OUT_OF_RANGE = "ReferenceData.GeoDivision.Validation.LatitudeOutOfRange";
     public const string GEO_DIVISION_LONGITUDE_OUT_OF_RANGE = "ReferenceData.GeoDivision.Validation.LongitudeOutOfRange";
+    public const string GEO_DIVISION_PARENT_REQUIRED = "ReferenceData.GeoDivision.Validation.ParentRequired";
+    public const string GEO_DIVISION_PARENT_NOT_FOUND = "ReferenceData.GeoDivision.Validation.ParentNotFound";
+    public const string GEO_DIVISION_PARENT_INVALID = "ReferenceData.GeoDivision.Validation.ParentInvalid";
+    public const string GEO_DIVISION_SUBDIVISION_MISMATCH = "ReferenceData.GeoDivision.Validation.SubdivisionMismatch";
 
     // ---------- 枚举字典 ----------
     public const string REFERENCE_ENUM_NOT_FOUND = "ReferenceData.Enum.NotFound";

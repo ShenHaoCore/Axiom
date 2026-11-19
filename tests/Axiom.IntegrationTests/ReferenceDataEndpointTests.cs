@@ -142,6 +142,98 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
     }
 
     [Fact]
+    public async Task Create_region_resolves_subdivision_code_from_first_level_ancestor()
+    {
+        var testId = Guid.NewGuid();
+        var suffix = testId.ToString("N")[..8].ToUpperInvariant();
+        var countryCode = $"Y{(char)('A' + testId.ToByteArray()[0] % 26)}";
+        var subdivisionCode = $"B{suffix[..4]}";
+
+        async Task<(GeoDivisionDto Dto, string ETag)> CreateAsync(CreateGeoDivisionInput input)
+        {
+            using var request = CreateJsonRequest(HttpMethod.Post, "/api/geo-divisions", ManagePermissions, input);
+            var response = await _client.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            response.StatusCode.Should().Be(HttpStatusCode.Created, content);
+            var created = await response.Content.ReadFromJsonAsync<GeoDivisionDto>();
+            created.Should().NotBeNull(content);
+            return (created!, response.Headers.ETag?.ToString() ?? throw new InvalidOperationException($"创建响应缺少 ETag：{content}"));
+        }
+
+        async Task DeleteAsync(Guid id, string eTag)
+        {
+            using var request = CreateRequest(HttpMethod.Delete, $"/api/geo-divisions/{id}", ManagePermissions, eTag);
+            var response = await _client.SendAsync(request);
+            response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        var (country, countryETag) = await CreateAsync(new CreateGeoDivisionInput(
+            1,
+            countryCode,
+            Code: countryCode,
+            Name: $"区划码推导国家 {suffix}"));
+        country.SubdivisionCode.Should().BeNull("国家行没有一级区划代码");
+
+        var (admin1, admin1ETag) = await CreateAsync(new CreateGeoDivisionInput(
+            2,
+            countryCode,
+            SubdivisionCode: subdivisionCode,
+            Code: subdivisionCode,
+            Name: $"区划码推导省 {suffix}",
+            ParentId: country.Id));
+
+        // 三级行留空区划码：应从父级链上的一级行政区（Level 2 祖先）自动带出。
+        var (city, cityETag) = await CreateAsync(new CreateGeoDivisionInput(
+            3,
+            countryCode,
+            Code: $"SUB-{suffix}",
+            Name: $"区划码推导市 {suffix}",
+            ParentId: admin1.Id));
+        city.SubdivisionCode.Should().Be(subdivisionCode, "三级及以下随父级链带出一级行政区的区划码");
+
+        // 提供与一级行政区不一致的区划码：400 + SubdivisionCode 校验错误。
+        using var mismatchRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/geo-divisions",
+            ManagePermissions,
+            new CreateGeoDivisionInput(
+                4,
+                countryCode,
+                SubdivisionCode: "XX",
+                Code: $"SUB-{suffix}-2",
+                Name: $"区划码冲突区 {suffix}",
+                ParentId: city.Id));
+        var mismatchResponse = await _client.SendAsync(mismatchRequest);
+        var mismatchContent = await mismatchResponse.Content.ReadAsStringAsync();
+        mismatchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, mismatchContent);
+        var mismatchProblem = await mismatchResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        mismatchProblem.Should().NotBeNull(mismatchContent);
+        mismatchProblem!.Title.Should().NotBeNullOrWhiteSpace();
+        ((JsonElement)mismatchProblem.Extensions["field"]).GetString().Should().Be("SubdivisionCode");
+
+        // 二级行缺父级：400 + ParentId 校验错误。
+        using var noParentRequest = CreateJsonRequest(
+            HttpMethod.Post,
+            "/api/geo-divisions",
+            ManagePermissions,
+            new CreateGeoDivisionInput(
+                2,
+                countryCode,
+                Code: $"SUB-{suffix}-3",
+                Name: $"缺父级省 {suffix}"));
+        var noParentResponse = await _client.SendAsync(noParentRequest);
+        var noParentContent = await noParentResponse.Content.ReadAsStringAsync();
+        noParentResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, noParentContent);
+        var noParentProblem = await noParentResponse.Content.ReadFromJsonAsync<ProblemDetails>();
+        noParentProblem.Should().NotBeNull(noParentContent);
+        ((JsonElement)noParentProblem!.Extensions["field"]).GetString().Should().Be("ParentId");
+
+        await DeleteAsync(city.Id, cityETag);
+        await DeleteAsync(admin1.Id, admin1ETag);
+        await DeleteAsync(country.Id, countryETag);
+    }
+
+    [Fact]
     public async Task Manage_permission_supports_complete_region_crud()
     {
         var testId = Guid.NewGuid();

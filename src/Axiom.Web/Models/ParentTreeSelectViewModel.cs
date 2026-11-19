@@ -45,6 +45,9 @@ public sealed class ParentTreeSelectViewModel
     /// <summary>层级隐藏域的元素 id：选择父级后由 JS 更新为 所选节点 Level + 1。</summary>
     public string? LevelInputId { get; init; }
 
+    /// <summary>一级区划码输入框的元素 id：选择父级后由 JS 写入所选节点的区划码（Create 页用）。</summary>
+    public string? SubdivisionInputId { get; init; }
+
     /// <summary>按国家分域拉取 Kind 选项的 JSON 端点（Create?handler=KindOptions）。</summary>
     public string KindOptionsUrl { get; init; } = string.Empty;
 }

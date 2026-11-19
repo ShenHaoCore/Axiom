@@ -152,9 +152,13 @@ public sealed class GeoDivisionAppService(
         var countryCode = NormalizeCountryCode(input.CountryCode)
             ?? (input.Level == 1 ? NormalizeCountryCode(input.Code) : null);
 
+        // 一级区划代码口径：国家行没有；二级行取输入；三级及以下必须与所属一级行政区
+        // （Level 2 祖先）一致，留空时自动带出。需先于 Kind 推导完成（推导要使用该值）。
+        var subdivisionCode = await ResolveSubdivisionCodeAsync(input, countryCode, ct);
+
         // Kind 留空时按国家与深度推导默认类型；非空则按字典强校验。
         var kind = string.IsNullOrWhiteSpace(input.Kind)
-            ? GeoDivisionKinds.DeriveDefault(countryCode ?? string.Empty, input.Level, input.SubdivisionCode)
+            ? GeoDivisionKinds.DeriveDefault(countryCode ?? string.Empty, input.Level, subdivisionCode)
             : GeoDivisionKinds.Normalize(input.Kind);
         await EnsureKindExistsAsync(kind, countryCode, ct);
 
@@ -162,7 +166,7 @@ public sealed class GeoDivisionAppService(
             input.Level,
             input.CountryCode,
             input.Name,
-            subdivisionCode: input.SubdivisionCode,
+            subdivisionCode: subdivisionCode,
             code: input.Code,
             asciiName: input.AsciiName,
             localName: input.LocalName,
@@ -182,6 +186,80 @@ public sealed class GeoDivisionAppService(
         var dto = GeoDivisionMapper.ToDto(entity);
         var location = new Uri($"/api/geo-divisions/{entity.Id}", UriKind.Relative);
         return (dto, location, entity.ConcurrencyToken);
+    }
+
+    /// <summary>
+    /// 解析新建行政区的一级区划代码：顺带校验父级链（存在、层级相邻、同国家），
+    /// 国家行返回 null，二级行取输入（ISO 3166-2 后缀，无法由父级推导），
+    /// 三级及以下取所属一级行政区（Level 2 祖先）的代码，输入值与之不符时报错。
+    /// </summary>
+    private async Task<string?> ResolveSubdivisionCodeAsync(
+        CreateGeoDivisionInput input,
+        string? countryCode,
+        CancellationToken ct)
+    {
+        if (input.Level == 1)
+        {
+            return null;
+        }
+
+        if (input.ParentId is not { } parentId)
+        {
+            throw GeoDivisionValidationException.ParentRequired();
+        }
+
+        if (countryCode is null)
+        {
+            // 国家代码非法时跳过链校验，交由实体的国家代码校验统一报错。
+            return input.SubdivisionCode;
+        }
+
+        GeoDivision? firstLevel = null; // 所属一级行政区（Level 2）。
+        var currentId = parentId;
+        for (var expectedLevel = input.Level - 1; expectedLevel >= 1; expectedLevel--)
+        {
+            var node = await repository.GetByIdAsNoTrackingAsync(currentId, ct)
+                ?? throw GeoDivisionValidationException.ParentNotFound(currentId);
+
+            if (node.Level != expectedLevel
+                || !string.Equals(node.CountryCode, countryCode, StringComparison.OrdinalIgnoreCase))
+            {
+                throw GeoDivisionValidationException.ParentInvalid();
+            }
+
+            if (node.Level == 2)
+            {
+                firstLevel = node;
+                break;
+            }
+
+            if (node.Level == 1)
+            {
+                // 链到国家行为止：一级行政区自身的区划码保持输入值（仅二级行走此路径）。
+                break;
+            }
+
+            // 链上的中间节点必须有父级，否则层级链中断。
+            currentId = node.ParentId ?? throw GeoDivisionValidationException.ParentInvalid();
+        }
+
+        if (input.Level == 2)
+        {
+            return input.SubdivisionCode;
+        }
+
+        if (string.IsNullOrWhiteSpace(input.SubdivisionCode))
+        {
+            return firstLevel?.SubdivisionCode;
+        }
+
+        return string.Equals(
+                   input.SubdivisionCode.Trim(),
+                   firstLevel?.SubdivisionCode,
+                   StringComparison.OrdinalIgnoreCase)
+            ? firstLevel?.SubdivisionCode
+            : throw GeoDivisionValidationException.SubdivisionMismatch(
+                firstLevel?.SubdivisionCode, input.SubdivisionCode.Trim());
     }
 
     public async Task<(GeoDivisionDto Dto, Guid ETag)> UpdateAsync(

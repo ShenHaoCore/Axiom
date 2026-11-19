@@ -60,6 +60,20 @@ public sealed class GeoDivisionValidationException : AxiomException
         new("Kind", ApiErrorCodes.GEO_DIVISION_INVALID_KIND,
             "kind 必须是已维护的 geo_division.kind 枚举值。");
 
+    public static GeoDivisionValidationException ParentRequired() =>
+        new("ParentId", ApiErrorCodes.GEO_DIVISION_PARENT_REQUIRED, "非国家行必须指定父级行政区。");
+
+    public static GeoDivisionValidationException ParentNotFound(Guid parentId) =>
+        new("ParentId", ApiErrorCodes.GEO_DIVISION_PARENT_NOT_FOUND, $"父级行政区不存在：{parentId:N}。", parentId);
+
+    public static GeoDivisionValidationException ParentInvalid() =>
+        new("ParentId", ApiErrorCodes.GEO_DIVISION_PARENT_INVALID, "父级行政区与当前行政区的层级或国家不匹配。");
+
+    public static GeoDivisionValidationException SubdivisionMismatch(string? expected, string actual) =>
+        new("SubdivisionCode", ApiErrorCodes.GEO_DIVISION_SUBDIVISION_MISMATCH,
+            $"一级区划代码必须与所属一级行政区一致（应为 {expected ?? "空"}，实际为 {actual}）。",
+            expected ?? string.Empty, actual);
+
     public static GeoDivisionValidationException UnknownTranslatableField(string field) =>
         new(field, ApiErrorCodes.LOCALIZATION_UNSUPPORTED_FIELD, $"不支持翻译该字段：{field}。", field);
 }
