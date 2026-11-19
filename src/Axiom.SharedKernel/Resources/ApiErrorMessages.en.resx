@@ -34,6 +34,10 @@
   <data name="ReferenceData.GeoDivision.Validation.InvalidCountryCode" xml:space="preserve"><value>Country code must be two letters.</value></data>
   <data name="ReferenceData.GeoDivision.Validation.LatitudeOutOfRange" xml:space="preserve"><value>Latitude must be between -90 and 90.</value></data>
   <data name="ReferenceData.GeoDivision.Validation.LongitudeOutOfRange" xml:space="preserve"><value>Longitude must be between -180 and 180.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.ParentRequired" xml:space="preserve"><value>A parent division is required for non-country rows.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.ParentNotFound" xml:space="preserve"><value>The parent division does not exist: {0:N}.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.ParentInvalid" xml:space="preserve"><value>The parent division does not match the current division's level or country.</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.SubdivisionMismatch" xml:space="preserve"><value>The subdivision code must match its first-level subdivision (expected {0}, got {1}).</value></data>
   <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>Location not found: {0}.</value></data>
   <data name="ReferenceData.Location.CodeConflict" xml:space="preserve"><value>A location of the same type with code {0} already exists.</value></data>
   <data name="ReferenceData.Location.ConcurrencyConflict" xml:space="preserve"><value>The location was modified by another request. Reload and try again.</value></data>

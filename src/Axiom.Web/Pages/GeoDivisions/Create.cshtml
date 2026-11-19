@@ -65,6 +65,7 @@
                         MaxParentLevel = Axiom.Web.Pages.GeoDivisions.CreateModel.MaxParentLevel,
                         KindSelectId = "Input_Kind",
                         LevelInputId = "Input_Level",
+                        SubdivisionInputId = "Input_SubdivisionCode",
                         KindOptionsUrl = Url.Page("/GeoDivisions/Create", "KindOptions") ?? string.Empty
                     };
                 }
@@ -94,15 +95,15 @@
                 <select asp-for="Input.Kind" class="form-select" asp-items="Model.KindOptions"></select>
                 <span asp-validation-for="Input.Kind" class="text-danger"></span>
             </div>
-            @if (Model.Input.Level > 1)
-            {
-                <div class="col-md-6">
-                    <label asp-for="Input.SubdivisionCode" class="form-label"></label>
-                    <input asp-for="Input.SubdivisionCode" class="form-control" autocomplete="off" />
-                    <div class="form-text">@Localizer["GeoDivisions.Hint.SubdivisionCode"]</div>
-                    <span asp-validation-for="Input.SubdivisionCode" class="text-danger"></span>
-                </div>
-            }
+            @* 一级区划码：初始（新建国家）隐藏；选父级后由 JS 显示/带出/只读切换；
+               校验失败重渲染时按已推导的 Level 直接呈现正确状态。 *@
+            <div class="col-md-6" data-subdivision-field hidden="@(Model.Input.Level <= 1 ? "hidden" : null)">
+                <label asp-for="Input.SubdivisionCode" class="form-label"></label>
+                <input asp-for="Input.SubdivisionCode" class="form-control" autocomplete="off"
+                       readonly="@(Model.Input.Level > 2 ? "readonly" : null)" />
+                <div class="form-text">@Localizer["GeoDivisions.Hint.SubdivisionCode"]</div>
+                <span asp-validation-for="Input.SubdivisionCode" class="text-danger"></span>
+            </div>
         </div>
     </div>
 

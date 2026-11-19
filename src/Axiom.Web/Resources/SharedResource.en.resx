@@ -232,7 +232,7 @@
   <data name="GeoDivisions.Section.IdentityHint" xml:space="preserve"><value>Kind, country/parent, and codes.</value></data>
   <data name="GeoDivisions.Section.Geo" xml:space="preserve"><value>Geography and population</value></data>
   <data name="GeoDivisions.Section.GeoHint" xml:space="preserve"><value>Optional data used for maps and statistics.</value></data>
-  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>Subdivision code, up to 20 characters.</value></data>
+  <data name="GeoDivisions.Hint.SubdivisionCode" xml:space="preserve"><value>ISO 3166-2 suffix, typed manually for level-2 rows and auto-filled from the parent for level 3+.</value></data>
   <data name="GeoDivisions.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the division.</value></data>
   <data name="GeoDivisions.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the division. Please try again later.</value></data>
   <data name="GeoDivisions.Edit.Updated" xml:space="preserve"><value>The division has been updated.</value></data>
