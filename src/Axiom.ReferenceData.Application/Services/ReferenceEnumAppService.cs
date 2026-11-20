@@ -44,21 +44,21 @@ public sealed class ReferenceEnumAppService(
             paged.PageSize);
     }
 
-    public async Task<ReferenceEnumDto?> GetAsync(Guid id, string? culture = null, CancellationToken ct = default)
+    public async Task<(ReferenceEnumDto? Dto, Guid? ETag)> GetAsync(Guid id, string? culture = null, CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsync(id, ct);
         if (entity is null)
         {
-            return null;
+            return (null, null);
         }
 
         var chain = localization.CultureChain(culture);
         var translations = await repository.ListTranslationsAsync([id], chain, ct);
         var lookup = TranslationLookup.Create(translations.Select(ToTranslationValue), chain);
-        return ReferenceEnumMapper.ToDto(entity, lookup);
+        return (ReferenceEnumMapper.ToDto(entity, lookup), entity.ConcurrencyToken);
     }
 
-    public async Task<(ReferenceEnumDto Dto, Uri LocationUri)> CreateAsync(
+    public async Task<(ReferenceEnumDto Dto, Uri LocationUri, Guid ETag)> CreateAsync(
         CreateReferenceEnumInput input,
         CancellationToken ct = default)
     {
@@ -70,23 +70,24 @@ public sealed class ReferenceEnumAppService(
 
         await repository.AddAsync(entity, ct);
         var location = new Uri($"/api/reference-data/enums/{entity.Id}", UriKind.Relative);
-        return (ReferenceEnumMapper.ToDto(entity), location);
+        return (ReferenceEnumMapper.ToDto(entity), location, entity.ConcurrencyToken);
     }
 
-    public async Task<ReferenceEnumDto> UpdateAsync(
+    public async Task<(ReferenceEnumDto Dto, Guid ETag)> UpdateAsync(
         Guid id,
         UpdateReferenceEnumInput input,
+        Guid expectedToken,
         CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new ReferenceEnumNotFoundException(id);
 
         entity.Update(input.Name, input.SortOrder);
-        await repository.UpdateAsync(entity, ct);
-        return ReferenceEnumMapper.ToDto(entity);
+        await repository.UpdateWithETagAsync(entity, expectedToken, ct);
+        return (ReferenceEnumMapper.ToDto(entity), entity.ConcurrencyToken);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, Guid expectedToken, CancellationToken ct = default)
     {
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new ReferenceEnumNotFoundException(id);
@@ -97,7 +98,7 @@ public sealed class ReferenceEnumAppService(
             throw new ReferenceEnumInUseException(entity.Category, entity.Code);
         }
 
-        await repository.RemoveAsync(entity, ct);
+        await repository.RemoveWithETagAsync(entity, expectedToken, ct);
     }
 
     public async Task<TranslationDto?> GetTranslationsAsync(

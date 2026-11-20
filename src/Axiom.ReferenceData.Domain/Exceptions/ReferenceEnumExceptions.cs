@@ -12,6 +12,13 @@ public sealed class ReferenceEnumCodeConflictException(string category, string c
         $"相同分类+代码的枚举项已存在：{category}/{code}。",
         category, code);
 
+/// <summary>If-Match 的 ETag 与库中并发令牌不一致，说明记录已被其他请求修改。</summary>
+public sealed class ReferenceEnumConcurrencyConflictException(Guid id)
+    : AxiomException(
+        ApiErrorCodes.REFERENCE_ENUM_CONCURRENCY_CONFLICT,
+        $"枚举项 {id:N} 已被其他请求修改。",
+        id);
+
 public sealed class ReferenceEnumInUseException(string category, string code)
     : AxiomException(
         ApiErrorCodes.REFERENCE_ENUM_IN_USE,

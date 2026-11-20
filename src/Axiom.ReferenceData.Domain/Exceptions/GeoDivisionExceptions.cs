@@ -69,6 +69,9 @@ public sealed class GeoDivisionValidationException : AxiomException
     public static GeoDivisionValidationException ParentInvalid() =>
         new("ParentId", ApiErrorCodes.GEO_DIVISION_PARENT_INVALID, "父级行政区与当前行政区的层级或国家不匹配。");
 
+    public static GeoDivisionValidationException CyclicParent() =>
+        new("ParentId", ApiErrorCodes.GEO_DIVISION_PARENT_CYCLIC, "父级行政区不能是自身或自身的后代。");
+
     public static GeoDivisionValidationException SubdivisionMismatch(string? expected, string actual) =>
         new("SubdivisionCode", ApiErrorCodes.GEO_DIVISION_SUBDIVISION_MISMATCH,
             $"一级区划代码必须与所属一级行政区一致（应为 {expected ?? "空"}，实际为 {actual}）。",

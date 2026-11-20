@@ -78,7 +78,7 @@ public sealed class GeoDivisionAppService(
             .GroupBy(r => r.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        return BuildTree(country, byParent, lookup);
+        return BuildTree(country, byParent, lookup, new HashSet<Guid>());
     }
 
     public async Task<IReadOnlyList<GeoDivisionChildDto>> GetChildrenAsync(
@@ -176,7 +176,7 @@ public sealed class GeoDivisionAppService(
             parentId: input.ParentId,
             kind: kind);
 
-        if (await repository.AnyByUniqueKeyAsync(entity.Level, entity.CountryCode, entity.Code, ct))
+        if (await repository.AnyByUniqueKeyAsync(entity.Level, entity.CountryCode, entity.Code, ct: ct))
         {
             throw new GeoDivisionUniqueKeyConflictException(entity.CountryCode, entity.Level, entity.Code);
         }
@@ -271,9 +271,24 @@ public sealed class GeoDivisionAppService(
         var entity = await repository.GetByIdAsync(id, ct)
             ?? throw new GeoDivisionNotFoundException(id);
 
+        if (input.ParentId.HasValue)
+        {
+            await EnsureParentOnUpdateAsync(entity, input.ParentId.Value, ct);
+        }
+
         if (input.Kind is not null)
         {
             await EnsureKindExistsAsync(GeoDivisionKinds.Normalize(input.Kind), entity.CountryCode, ct);
+        }
+
+        // 改码时先做唯一键业务检查（排除自身），并发换码竞态由数据库唯一索引兜底（仓储层映射 409）。
+        if (!string.IsNullOrWhiteSpace(input.Code))
+        {
+            var normalizedCode = input.Code.Trim().ToUpperInvariant();
+            if (await repository.AnyByUniqueKeyAsync(entity.Level, entity.CountryCode, normalizedCode, entity.Id, ct))
+            {
+                throw new GeoDivisionUniqueKeyConflictException(entity.CountryCode, entity.Level, normalizedCode);
+            }
         }
 
         entity.Update(
@@ -349,22 +364,64 @@ public sealed class GeoDivisionAppService(
 
     // ---------- 私有辅助方法 ----------
 
-    private GeoDivisionTreeDto BuildTree(
+    private static GeoDivisionTreeDto BuildTree(
         GeoDivision node,
         Dictionary<Guid, List<GeoDivision>> byParent,
-        TranslationLookup lookup)
+        TranslationLookup lookup,
+        HashSet<Guid> visited)
     {
-        if (!byParent.TryGetValue(node.Id, out var children))
+        // 防御性防环：即使历史数据里出现父子环，也把已访问节点按叶子返回，避免无限递归。
+        if (!visited.Add(node.Id) || !byParent.TryGetValue(node.Id, out var children))
         {
             return GeoDivisionMapper.ToTreeNode(node, children: [], lookup);
         }
 
         var childNodes = children
             .OrderBy(r => r.Code)
-            .Select(child => BuildTree(child, byParent, lookup))
+            .Select(child => BuildTree(child, byParent, lookup, visited))
             .ToList();
 
         return GeoDivisionMapper.ToTreeNode(node, childNodes, lookup);
+    }
+
+    /// <summary>
+    /// 更新路径的父级校验：直接父级必须层级相邻且同国家；沿祖先链上溯到国家行，
+    /// 链上出现自身即为父子环（覆盖直接自指与深层互指）。
+    /// </summary>
+    private async Task EnsureParentOnUpdateAsync(GeoDivision entity, Guid parentId, CancellationToken ct)
+    {
+        if (entity.Level == GeoDivision.RootLevel)
+        {
+            throw GeoDivisionValidationException.ParentInvalid();
+        }
+
+        var expectedLevel = entity.Level - 1;
+        var currentId = parentId;
+        while (expectedLevel >= GeoDivision.RootLevel)
+        {
+            var node = await repository.GetByIdAsNoTrackingAsync(currentId, ct)
+                ?? throw GeoDivisionValidationException.ParentNotFound(parentId);
+
+            if (node.Id == entity.Id)
+            {
+                throw GeoDivisionValidationException.CyclicParent();
+            }
+
+            if (!string.Equals(node.CountryCode, entity.CountryCode, StringComparison.OrdinalIgnoreCase)
+                || node.Level != expectedLevel)
+            {
+                throw GeoDivisionValidationException.ParentInvalid();
+            }
+
+            if (node.Level == GeoDivision.RootLevel)
+            {
+                return; // 已达国家行，链完整。
+            }
+
+            // 链上的中间节点必须有父级，否则层级链中断。
+            currentId = node.ParentId ?? throw GeoDivisionValidationException.ParentInvalid();
+            expectedLevel--;
+        }
     }
 
     private static TranslationValue ToTranslationValue(GeoDivisionTranslation row) =>

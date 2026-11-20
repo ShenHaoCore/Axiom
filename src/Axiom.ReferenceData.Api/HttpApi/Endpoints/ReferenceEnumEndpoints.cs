@@ -32,34 +32,46 @@ public static class ReferenceEnumEndpoints
         group.MapGet("/{id:guid}", (Guid id,
                 IReferenceEnumAppService appService,
                 IStringLocalizer<ApiErrorMessages> localizer,
+                HttpContext ctx,
                 CancellationToken ct) =>
-                HandleGet(id, appService, localizer, ct))
+                HandleGet(id, appService, localizer, ctx, ct))
             .RequireAuthorization(READ_POLICY)
             .Produces<ReferenceEnumDto>();
 
         group.MapPost("/", (CreateReferenceEnumInput? input,
                 IReferenceEnumAppService appService,
                 IStringLocalizer<ApiErrorMessages> localizer,
+                HttpContext ctx,
                 CancellationToken ct) =>
-                HandleCreate(input, appService, localizer, ct))
+                HandleCreate(input, appService, localizer, ctx, ct))
             .RequireAuthorization(MANAGE_POLICY)
             .Produces<ReferenceEnumDto>(StatusCodes.Status201Created);
 
         group.MapPut("/{id:guid}", (Guid id, UpdateReferenceEnumInput? input,
                 IReferenceEnumAppService appService,
                 IStringLocalizer<ApiErrorMessages> localizer,
+                HttpContext ctx,
                 CancellationToken ct) =>
-                HandleUpdate(id, input, appService, localizer, ct))
+                HandleUpdate(id, input, appService, localizer, ctx, ct))
             .RequireAuthorization(MANAGE_POLICY)
-            .Produces<ReferenceEnumDto>();
+            .Produces<ReferenceEnumDto>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired);
 
         group.MapDelete("/{id:guid}", (Guid id,
                 IReferenceEnumAppService appService,
                 IStringLocalizer<ApiErrorMessages> localizer,
+                HttpContext ctx,
                 CancellationToken ct) =>
-                HandleDelete(id, appService, localizer, ct))
+                HandleDelete(id, appService, localizer, ctx, ct))
             .RequireAuthorization(MANAGE_POLICY)
-            .Produces(StatusCodes.Status204NoContent);
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired);
 
         group.MapGet("/{id:guid}/translations/{culture}", (Guid id, string culture,
                 IReferenceEnumAppService appService,
@@ -109,16 +121,24 @@ public static class ReferenceEnumEndpoints
         Guid id,
         IReferenceEnumAppService appService,
         IStringLocalizer<ApiErrorMessages> localizer,
+        HttpContext ctx,
         CancellationToken ct)
     {
-        var dto = await appService.GetAsync(id, CultureInfo.CurrentUICulture.Name, ct);
-        return dto is null ? NotFound(localizer, id) : Results.Ok(dto);
+        var (dto, etag) = await appService.GetAsync(id, CultureInfo.CurrentUICulture.Name, ct);
+        if (dto is null)
+        {
+            return NotFound(localizer, id);
+        }
+
+        ctx.Response.Headers.ETag = $"\"{etag:N}\"";
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> HandleCreate(
         CreateReferenceEnumInput? input,
         IReferenceEnumAppService appService,
         IStringLocalizer<ApiErrorMessages> localizer,
+        HttpContext ctx,
         CancellationToken ct)
     {
         if (input is null)
@@ -128,7 +148,8 @@ public static class ReferenceEnumEndpoints
 
         try
         {
-            var (dto, location) = await appService.CreateAsync(input, ct);
+            var (dto, location, etag) = await appService.CreateAsync(input, ct);
+            ctx.Response.Headers.ETag = $"\"{etag:N}\"";
             return Results.Created(location.ToString(), dto);
         }
         catch (ReferenceEnumValidationException ex)
@@ -148,6 +169,7 @@ public static class ReferenceEnumEndpoints
         UpdateReferenceEnumInput? input,
         IReferenceEnumAppService appService,
         IStringLocalizer<ApiErrorMessages> localizer,
+        HttpContext ctx,
         CancellationToken ct)
     {
         if (input is null)
@@ -155,13 +177,24 @@ public static class ReferenceEnumEndpoints
             return BodyRequired(localizer);
         }
 
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedToken, out var error))
+        {
+            return error!;
+        }
+
         try
         {
-            return Results.Ok(await appService.UpdateAsync(id, input, ct));
+            var (dto, etag) = await appService.UpdateAsync(id, input, expectedToken, ct);
+            ctx.Response.Headers.ETag = $"\"{etag:N}\"";
+            return Results.Ok(dto);
         }
         catch (ReferenceEnumNotFoundException)
         {
             return NotFound(localizer, id);
+        }
+        catch (ReferenceEnumConcurrencyConflictException)
+        {
+            return ConcurrencyConflict(localizer);
         }
         catch (ReferenceEnumValidationException ex)
         {
@@ -173,16 +206,26 @@ public static class ReferenceEnumEndpoints
         Guid id,
         IReferenceEnumAppService appService,
         IStringLocalizer<ApiErrorMessages> localizer,
+        HttpContext ctx,
         CancellationToken ct)
     {
+        if (!IfMatchHeader.TryParse(ctx.Request.Headers.IfMatch.ToString(), localizer, out var expectedToken, out var error))
+        {
+            return error!;
+        }
+
         try
         {
-            await appService.DeleteAsync(id, ct);
+            await appService.DeleteAsync(id, expectedToken, ct);
             return Results.NoContent();
         }
         catch (ReferenceEnumNotFoundException)
         {
             return NotFound(localizer, id);
+        }
+        catch (ReferenceEnumConcurrencyConflictException)
+        {
+            return ConcurrencyConflict(localizer);
         }
         catch (ReferenceEnumInUseException ex)
         {
@@ -284,6 +327,11 @@ public static class ReferenceEnumEndpoints
         Results.Problem(
             statusCode: StatusCodes.Status404NotFound,
             title: localizer[ApiErrorCodes.REFERENCE_ENUM_NOT_FOUND, id].Value);
+
+    private static IResult ConcurrencyConflict(IStringLocalizer<ApiErrorMessages> localizer) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status412PreconditionFailed,
+            title: localizer[ApiErrorCodes.REFERENCE_ENUM_CONCURRENCY_CONFLICT].Value);
 
     private static IResult InvalidCulture(IStringLocalizer<ApiErrorMessages> localizer, string culture) =>
         Results.Problem(

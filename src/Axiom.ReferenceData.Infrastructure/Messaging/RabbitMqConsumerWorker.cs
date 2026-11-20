@@ -89,13 +89,30 @@ public sealed class RabbitMqConsumerWorker(
         catch (Exception exception)
         {
             activity?.SetStatus(ActivityStatusCode.Error);
-            logger.LogError(exception, "消费消息 {MessageId} 失败，将拒绝且不再入队。", eventArgs.BasicProperties.MessageId);
+            var requeue = IsTransient(exception) && !eventArgs.Redelivered;
+            if (requeue)
+            {
+                // 瞬时故障（数据库抖动等）且首次投递：放回队列再投一次，避免把可恢复错误变成永久死信。
+                logger.LogWarning(exception, "消费消息 {MessageId} 遇到瞬时故障，将重新入队。", eventArgs.BasicProperties.MessageId);
+            }
+            else
+            {
+                logger.LogError(exception, "消费消息 {MessageId} 失败，将拒绝且不再入队。", eventArgs.BasicProperties.MessageId);
+            }
+
             if (channel.IsOpen)
             {
-                channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: false);
+                channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: requeue);
             }
         }
     }
+
+    // 确定性失败（消息本身坏）直接死信；基础设施类瞬时故障允许一次重投（结合 Redelivered 标记有界重试）。
+    private static bool IsTransient(Exception exception) =>
+        exception is System.Data.Common.DbException
+            or TimeoutException
+            or System.Net.Sockets.SocketException
+            or IOException;
 
     private static ActivityContext GetParentContext(BasicDeliverEventArgs eventArgs)
     {

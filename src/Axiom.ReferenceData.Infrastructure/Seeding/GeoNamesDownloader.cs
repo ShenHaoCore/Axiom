@@ -10,9 +10,9 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
     private static readonly char[] Separators = ['\t'];
 
     private readonly Uri _admin1Url = new(
-        configuration["GeoNames:Admin1CodesUrl"] ?? "http://download.geonames.org/export/dump/admin1CodesASCII.txt");
+        configuration["GeoNames:Admin1CodesUrl"] ?? "https://download.geonames.org/export/dump/admin1CodesASCII.txt");
     private readonly Uri _allCountriesUrl = new(
-        configuration["GeoNames:AllCountriesUrl"] ?? "http://download.geonames.org/export/dump/allCountries.zip");
+        configuration["GeoNames:AllCountriesUrl"] ?? "https://download.geonames.org/export/dump/allCountries.zip");
     private readonly long _minPopulation = configuration.GetValue<long>("GeoNames:MinPopulation", 500_000);
 
     // 一级行政区关键字段：admin1Code (CC.ADM1), name, geonameid, countryCode
@@ -38,7 +38,7 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
     // 内置国家数据
     public sealed record CountrySeed(string Code, string Name);
 
-    public async Task<List<CountrySeed>> LoadBuiltInCountriesAsync(CancellationToken cancellationToken)
+    public static async Task<List<CountrySeed>> LoadBuiltInCountriesAsync(CancellationToken cancellationToken)
     {
         var assembly = typeof(GeoNamesDownloader).Assembly;
         var resourceName = "Axiom.ReferenceData.Infrastructure.Seeding.countries.json";
@@ -78,7 +78,7 @@ public sealed class GeoNamesDownloader(HttpClient httpClient, ILogger<GeoNamesDo
         logger.LogInformation("下载 GeoNames allCountries.zip ...");
         await using var zipStream = await httpClient.GetStreamAsync(_allCountriesUrl, cancellationToken);
         using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
-        var entry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".txt"));
+        var entry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".txt", StringComparison.Ordinal));
         if (entry is null)
         {
             logger.LogWarning("allCountries.zip 中未找到 .txt 条目。");

@@ -1,4 +1,5 @@
 // 启动时同步行政区层级：先内置国家，再尝试 GeoNames 增量。
+using System.Globalization;
 using Axiom.ReferenceData.Domain.Constants;
 using Axiom.ReferenceData.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +46,7 @@ public sealed class GeoDivisionSeedService(
         await EnsureGeoDivisionKindEnumsAsync(dbContext, cancellationToken);
 
         // Phase 1: 内置国家
-        var countries = await downloader.LoadBuiltInCountriesAsync(cancellationToken);
+        var countries = await GeoNamesDownloader.LoadBuiltInCountriesAsync(cancellationToken);
         var countryIdByCode = await UpsertCountriesAsync(dbContext, countries, cancellationToken);
         logger.LogInformation("内置国家种子完成：{Count} 个国家。", countryIdByCode.Count);
 
@@ -107,21 +108,10 @@ public sealed class GeoDivisionSeedService(
         var toAdd = new List<GeoDivision>();
         foreach (var country in countries)
         {
+            // existing 覆盖全部 Level 1 行（按 CountryCode 键），已含“同码唯一键条目”的复用。
             if (existing.TryGetValue(country.Code, out var id))
             {
                 codeToId[country.Code] = id;
-                continue;
-            }
-
-            // 同 CountryCode+Level+Code 唯一键可能有其他条目，也尝试复用
-            var dup = await dbContext.GeoDivisions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    r => r.CountryCode == country.Code && r.Level == 1 && r.Code == country.Code,
-                    cancellationToken);
-            if (dup is not null)
-            {
-                codeToId[country.Code] = dup.Id;
                 continue;
             }
 
@@ -161,6 +151,13 @@ public sealed class GeoDivisionSeedService(
                 r => r.Id,
                 cancellationToken);
 
+        // 一次性加载 GeoNameId → Id 映射，避免逐行探测查询（N+1）。
+        var idByGeoNameId = await dbContext.GeoDivisions
+            .AsNoTracking()
+            .Where(r => r.GeoNameId != null)
+            .Select(r => new { GeoNameId = r.GeoNameId!.Value, r.Id })
+            .ToDictionaryAsync(r => r.GeoNameId, r => r.Id, cancellationToken);
+
         foreach (var row in admin1List)
         {
             keyToId[$"{row.CountryCode}.{row.Admin1Code}"] = existing.TryGetValue($"{row.CountryCode}.{row.Admin1Code}", out var eId)
@@ -175,14 +172,10 @@ public sealed class GeoDivisionSeedService(
             if (existing.ContainsKey(key)) continue;
             if (!countryIdByCode.TryGetValue(row.CountryCode, out var countryId)) continue;
 
-            // GeoNameId 唯一键可能冲突（同一条目已存在），跳过。
-            var dupByGeoNameId = row.GeoNameId > 0
-                ? await dbContext.GeoDivisions.AsNoTracking().FirstOrDefaultAsync(
-                    r => r.GeoNameId == row.GeoNameId, cancellationToken)
-                : null;
-            if (dupByGeoNameId is not null)
+            // GeoNameId 唯一键可能冲突（同一条目已存在），复用其 Id 并跳过。
+            if (row.GeoNameId > 0 && idByGeoNameId.TryGetValue(row.GeoNameId, out var dupId))
             {
-                keyToId[key] = dupByGeoNameId.Id;
+                keyToId[key] = dupId;
                 continue;
             }
 
@@ -382,7 +375,7 @@ public sealed class GeoDivisionSeedService(
                 city.CountryCode,
                 city.Name,
                 subdivisionCode: city.Admin1Code,
-                code: city.GeoNameId.ToString(),
+                code: city.GeoNameId.ToString(CultureInfo.InvariantCulture),
                 asciiName: city.AsciiName,
                 localName: ExtractLocalName(city.AlternateNames),
                 latitude: city.Latitude,

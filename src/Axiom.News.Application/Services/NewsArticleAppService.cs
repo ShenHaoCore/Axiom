@@ -21,13 +21,16 @@ public sealed class NewsArticleAppService(
         string? culture = null,
         CancellationToken ct = default)
     {
+        // 状态值严格解析：无法识别直接 400，绝不静默吞掉（否则过滤失效返回全量、草稿可能外泄）。
         var status = string.IsNullOrWhiteSpace(query.Status)
             ? (NewsArticleStatus?)null
-            : Enum.TryParse<NewsArticleStatus>(query.Status.Trim(), true, out var parsed) ? parsed : null;
+            : Enum.TryParse<NewsArticleStatus>(query.Status.Trim(), true, out var parsed)
+                ? parsed
+                : throw NewsArticleValidationException.InvalidStatus(query.Status.Trim());
 
         var paged = await repository.ListAsync(
-            query.Page,
-            query.PageSize,
+            Math.Clamp(query.Page, 1, int.MaxValue),
+            Math.Clamp(query.PageSize, 1, NewsArticleListQuery.MaxPageSize),
             NormalizeString(query.Category),
             status,
             NormalizeString(query.Keyword),

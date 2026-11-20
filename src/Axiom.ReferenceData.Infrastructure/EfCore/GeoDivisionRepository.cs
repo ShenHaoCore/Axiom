@@ -31,8 +31,11 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
         if (subdivisionCode is { } code) query = query.Where(r => r.SubdivisionCode == code);
         if (keyword is { } kw)
         {
-            query = query.Where(r => EF.Functions.Like(r.Name, $"%{kw}%")
-                                     || (r.AsciiName != null && EF.Functions.Like(r.AsciiName, $"%{kw}%")));
+            // 双侧 Lower + LIKE：大小写不敏感（等价 ILIKE），InMemory 测试同样可翻译；
+            // 通配符转义后用户输入不再被解释为模式。
+            var pattern = $"%{LikePattern.Escape(kw.Trim().ToLowerInvariant())}%";
+            query = query.Where(r => EF.Functions.Like(r.Name.ToLowerInvariant(), pattern)
+                                     || (r.AsciiName != null && EF.Functions.Like(r.AsciiName.ToLowerInvariant(), pattern)));
         }
 
         var totalCount = await query.CountAsync(ct);
@@ -76,8 +79,14 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
             .ToListAsync(ct);
     }
 
-    public async Task<bool> AnyByUniqueKeyAsync(int level, string countryCode, string code, CancellationToken ct = default) =>
-        await dbContext.GeoDivisions.AnyAsync(r => r.CountryCode == countryCode && r.Level == level && r.Code == code, ct);
+    public async Task<bool> AnyByUniqueKeyAsync(
+        int level,
+        string countryCode,
+        string code,
+        Guid? excludedId = null,
+        CancellationToken ct = default) =>
+        await dbContext.GeoDivisions.AnyAsync(
+            r => r.CountryCode == countryCode && r.Level == level && r.Code == code && r.Id != excludedId, ct);
 
     public async Task<bool> AnyByKindAsync(string kind, CancellationToken ct = default) =>
         await dbContext.GeoDivisions.AnyAsync(r => r.Kind == kind, ct);
@@ -88,7 +97,15 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
     public async Task AddAsync(GeoDivision region, CancellationToken ct = default)
     {
         dbContext.GeoDivisions.Add(region);
-        await dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            // 前查与提交之间的并发插入竞态：以数据库唯一索引为准，映射为业务冲突。
+            throw new GeoDivisionUniqueKeyConflictException(region.CountryCode, region.Level, region.Code);
+        }
     }
 
     public async Task UpdateWithETagAsync(GeoDivision region, Guid expectedToken, CancellationToken ct = default)
@@ -102,6 +119,11 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
         catch (DbUpdateConcurrencyException)
         {
             throw new GeoDivisionConcurrencyConflictException(region.Id);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            // 并发换码竞态：唯一索引兜底，映射为业务冲突而非 500。
+            throw new GeoDivisionUniqueKeyConflictException(region.CountryCode, region.Level, region.Code);
         }
     }
 
@@ -159,28 +181,34 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
                 translation => translation.GeoDivisionId == regionId && translation.Culture == culture,
                 ct);
 
+        var changed = false;
         if (!values.TryGetValue(GeoDivisionTranslationFields.Name, out var name)
             || string.IsNullOrWhiteSpace(name))
         {
             if (existing is not null)
             {
                 dbContext.GeoDivisionTranslations.Remove(existing);
-                await dbContext.SaveChangesAsync(ct);
+                changed = true;
             }
-
-            return;
         }
-
-        if (existing is null)
+        else if (existing is null)
         {
             dbContext.GeoDivisionTranslations.Add(new GeoDivisionTranslation(regionId, culture, name));
+            changed = true;
         }
         else
         {
             existing.ChangeName(name);
+            changed = true;
         }
 
-        await dbContext.SaveChangesAsync(ct);
+        if (changed)
+        {
+            // 译文属于资源表示的一部分：刷新主表并发令牌，保证 If-Match 覆盖“主表+译文”表示。
+            // 行政区不发地点事件，无 Outbox 写入。
+            BumpConcurrencyToken(regionId);
+            await dbContext.SaveChangesAsync(ct);
+        }
     }
 
     public async Task<bool> DeleteTranslationsAsync(Guid regionId, string culture, CancellationToken ct = default)
@@ -195,7 +223,18 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
         }
 
         dbContext.GeoDivisionTranslations.RemoveRange(existing);
+        BumpConcurrencyToken(regionId);
         await dbContext.SaveChangesAsync(ct);
         return true;
+    }
+
+    // 译文变更时同步刷新主表并发令牌。
+    private void BumpConcurrencyToken(Guid regionId)
+    {
+        var region = dbContext.GeoDivisions.FirstOrDefault(r => r.Id == regionId);
+        if (region is not null)
+        {
+            dbContext.Entry(region).Property(r => r.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+        }
     }
 }

@@ -35,6 +35,10 @@ public sealed class NewsArticleValidationException : AxiomException
     public static NewsArticleValidationException TooLong(string field, int maxLength) =>
         new(field, ApiErrorCodes.VALIDATION_FIELD_TOO_LONG, $"长度不能超过 {maxLength} 个字符。", field, maxLength);
 
+    /// <summary>列表筛选传入无法识别的状态值——静默吞掉会导致过滤失效返回全量，必须显式 400。</summary>
+    public static NewsArticleValidationException InvalidStatus(string status) =>
+        new("Status", ApiErrorCodes.NEWS_INVALID_STATUS, $"无法识别的状态值：{status}。", status);
+
     /// <summary>翻译写入时字段不在白名单内。</summary>
     public static NewsArticleValidationException UnknownTranslatableField(string field) =>
         new(field, ApiErrorCodes.LOCALIZATION_UNSUPPORTED_FIELD, $"不支持翻译该字段：{field}。", field);

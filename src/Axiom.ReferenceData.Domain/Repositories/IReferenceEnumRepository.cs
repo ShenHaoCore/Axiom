@@ -19,8 +19,12 @@ public interface IReferenceEnumRepository
     Task<bool> ExistsAsync(string category, string code, CancellationToken ct = default);
 
     Task AddAsync(ReferenceEnum entity, CancellationToken ct = default);
-    Task UpdateAsync(ReferenceEnum entity, CancellationToken ct = default);
-    Task RemoveAsync(ReferenceEnum entity, CancellationToken ct = default);
+
+    /// <summary>按 If-Match 期望令牌更新；令牌不一致时抛出并发冲突。</summary>
+    Task UpdateWithETagAsync(ReferenceEnum entity, Guid expectedToken, CancellationToken ct = default);
+
+    /// <summary>按 If-Match 期望令牌删除；令牌不一致时抛出并发冲突。</summary>
+    Task RemoveWithETagAsync(ReferenceEnum entity, Guid expectedToken, CancellationToken ct = default);
 
     Task<List<ReferenceEnumTranslation>> ListTranslationsAsync(
         IReadOnlyCollection<Guid> enumIds,

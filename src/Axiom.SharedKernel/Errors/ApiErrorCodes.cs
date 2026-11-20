@@ -44,12 +44,14 @@ public static class ApiErrorCodes
     public const string GEO_DIVISION_PARENT_REQUIRED = "ReferenceData.GeoDivision.Validation.ParentRequired";
     public const string GEO_DIVISION_PARENT_NOT_FOUND = "ReferenceData.GeoDivision.Validation.ParentNotFound";
     public const string GEO_DIVISION_PARENT_INVALID = "ReferenceData.GeoDivision.Validation.ParentInvalid";
+    public const string GEO_DIVISION_PARENT_CYCLIC = "ReferenceData.GeoDivision.Validation.ParentCyclic";
     public const string GEO_DIVISION_SUBDIVISION_MISMATCH = "ReferenceData.GeoDivision.Validation.SubdivisionMismatch";
 
     // ---------- 枚举字典 ----------
     public const string REFERENCE_ENUM_NOT_FOUND = "ReferenceData.Enum.NotFound";
     public const string REFERENCE_ENUM_CODE_CONFLICT = "ReferenceData.Enum.CodeConflict";
     public const string REFERENCE_ENUM_IN_USE = "ReferenceData.Enum.InUse";
+    public const string REFERENCE_ENUM_CONCURRENCY_CONFLICT = "ReferenceData.Enum.ConcurrencyConflict";
 
     // ---------- 地点档案 ----------
     public const string LOCATION_NOT_FOUND = "ReferenceData.Location.NotFound";
