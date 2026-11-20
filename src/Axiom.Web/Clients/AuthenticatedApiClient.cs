@@ -1,6 +1,7 @@
 // 网关 API 客户端基类：统一注入 SSO 访问令牌、语言协商头与 If-Match 并发令牌，
 // 并提供 GetAsync 重载、翻译子资源的标准路径与读写方法——子类只需声明 EntityPath 和差异化方法。
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Axiom.Web.Models;
@@ -39,7 +40,24 @@ public abstract class AuthenticatedApiClient(HttpClient httpClient, IHttpContext
         }
 
         request.Content = content;
-        return await httpClient.SendAsync(request, cancellationToken);
+        try
+        {
+            return await httpClient.SendAsync(request, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 调用方主动取消：原样抛出，由调用管线处理。
+            throw;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+                or TaskCanceledException // HttpClient 超时也以 TaskCanceledException 形态出现
+                or ProtocolViolationException)
+        {
+            // 传输层故障（网关宕机/网络中断/超时）：统一转成可识别异常，
+            // 由 GatewayUnavailablePageFilter 呈现内联错误，而不是丢给异常页丢表单。
+            throw new GatewayUnavailableException($"网关调用失败：{method.Method} {path}", exception);
+        }
     }
 
     // ---------- 统一的实体读取 ----------

@@ -107,6 +107,7 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
 
     public Task<HttpResponseMessage> UpdateAsync(
         Guid id,
+        string eTag,
         ReferenceEnumInput input,
         CancellationToken cancellationToken = default) =>
         SendAsync(
@@ -117,10 +118,14 @@ public sealed class ReferenceEnumClient(HttpClient httpClient, IHttpContextAcces
                 name = input.Name,
                 sortOrder = input.SortOrder
             }),
-            cancellationToken);
+            cancellationToken,
+            eTag);
 
-    public Task<HttpResponseMessage> DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Delete, $"{ENUMS_PATH}/{id}", null, cancellationToken);
+    public Task<HttpResponseMessage> DeleteAsync(
+        Guid id,
+        string eTag,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"{ENUMS_PATH}/{id}", null, cancellationToken, eTag);
 
     private async Task<(List<ReferenceEnumView>? Items, HttpStatusCode StatusCode)> ReadKindItemsAsync(
         string category,

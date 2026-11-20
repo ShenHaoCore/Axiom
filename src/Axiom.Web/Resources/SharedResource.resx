@@ -22,8 +22,8 @@
   <data name="Enums.EditFailed" xml:space="preserve"><value>更新枚举失败。</value></data>
   <data name="Enums.Deleted" xml:space="preserve"><value>枚举已删除。</value></data>
   <data name="Enums.DeleteFailed" xml:space="preserve"><value>删除枚举失败。</value></data>
-  <data name="Enums.DeleteInUse" xml:space="preserve"><value>枚举仍被引用，无法删除。</value></data>
-  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>确认删除该枚举项？</value></data>
+  <data name="Enums.DeleteInUse" xml:space="preserve"><value>该枚举项仍被业务数据引用，无法删除。请先移除引用它的记录后再删除。</value></data>
+  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>确定删除枚举项“{0}”吗？删除后不可恢复。</value></data>
   <data name="Enums.NotFound" xml:space="preserve"><value>枚举项不存在。</value></data>
   <data name="Enums.CodeConflict" xml:space="preserve"><value>相同分类下代码已存在。</value></data>
   <data name="Field.Enum.Category" xml:space="preserve"><value>分类</value></data>
@@ -58,7 +58,7 @@
   <data name="Common.BackToList" xml:space="preserve"><value>返回列表</value></data>
   <data name="Common.TotalCount" xml:space="preserve"><value>共 {0} 条。</value></data>
   <data name="Common.MissingETag" xml:space="preserve"><value>缺少并发令牌，请刷新页面后重试。</value></data>
-  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>内容已被其他请求修改，请刷新后重试。</value></data>
+  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>内容已被其他请求修改，你的修改已保留。请对照最新内容后重新保存；不要刷新本页，否则未保存的修改会丢失。</value></data>
   <data name="Common.ValidationFailed" xml:space="preserve"><value>提交内容未通过服务端校验，请检查后重试。</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>无法加载数据，请稍后重试。</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>操作</value></data>
@@ -107,7 +107,7 @@
   <data name="Airports.Edit.LoadFailed" xml:space="preserve"><value>无法加载机场详情，请稍后重试。</value></data>
   <data name="Airports.Edit.SaveFailed" xml:space="preserve"><value>保存机场失败，请稍后重试。</value></data>
   <data name="Airports.Edit.Updated" xml:space="preserve"><value>机场已更新。</value></data>
-  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>确定删除这个机场吗？</value></data>
+  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>确定删除机场“{0}”吗？删除后不可恢复。</value></data>
   <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>删除机场失败，请稍后重试。</value></data>
   <data name="Airports.Edit.Deleted" xml:space="preserve"><value>机场已删除。</value></data>
   <data name="Airports.Translations.Title" xml:space="preserve"><value>机场翻译</value></data>
@@ -138,7 +138,7 @@
   <data name="News.Detail.Title" xml:space="preserve"><value>新闻详情</value></data>
   <data name="News.Detail.Summary" xml:space="preserve"><value>摘要</value></data>
   <data name="News.Detail.Unpublished" xml:space="preserve"><value>未发布</value></data>
-  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这条新闻吗？</value></data>
+  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除新闻“{0}”吗？删除后不可恢复。</value></data>
   <data name="News.Detail.Deleted" xml:space="preserve"><value>新闻已删除。</value></data>
   <data name="News.Detail.DeleteFailed" xml:space="preserve"><value>删除新闻失败，请稍后重试。</value></data>
   <data name="News.Detail.LoadFailed" xml:space="preserve"><value>无法加载新闻详情，请稍后重试。</value></data>
@@ -213,7 +213,7 @@
   <data name="GeoDivisions.Detail.RecordId" xml:space="preserve"><value>记录 ID</value></data>
   <data name="GeoDivisions.Detail.Meta" xml:space="preserve"><value>记录信息</value></data>
   <data name="GeoDivisions.Detail.LoadFailed" xml:space="preserve"><value>无法加载行政区详情。</value></data>
-  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除这个行政区吗？</value></data>
+  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>确定删除行政区“{0}”吗？删除后不可恢复；若其下仍有子级，删除会被拒绝。</value></data>
   <data name="GeoDivisions.Detail.Deleted" xml:space="preserve"><value>行政区已删除。</value></data>
   <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>删除行政区失败，请稍后重试。</value></data>
   <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>该行政区仍有子节点，请先删除或移动子节点。</value></data>
@@ -305,11 +305,32 @@
 
   <!-- 错误页 -->
   <data name="Error.Title" xml:space="preserve"><value>错误</value></data>
-  <data name="Error.Heading" xml:space="preserve"><value>错误。</value></data>
+  <data name="Error.Heading" xml:space="preserve"><value>出错了</value></data>
   <data name="Error.Message" xml:space="preserve"><value>处理你的请求时发生错误。</value></data>
   <data name="Error.RequestId" xml:space="preserve"><value>请求 ID：</value></data>
   <data name="Error.DevelopmentMode" xml:space="preserve"><value>开发模式</value></data>
   <data name="Error.DevelopmentDetail" xml:space="preserve"><value>切换到 Development 环境可显示详细的错误信息。</value></data>
   <data name="Error.DevelopmentWarningTitle" xml:space="preserve"><value>不应在已部署的应用程序中启用 Development 环境。</value></data>
   <data name="Error.DevelopmentWarning" xml:space="preserve"><value>这可能导致将异常中的敏感信息显示给最终用户。若要在本地调试，请将 ASPNETCORE_ENVIRONMENT 环境变量设置为 Development 并重启应用。</value></data>
+  <data name="Error.NotFound.Title" xml:space="preserve"><value>页面不存在</value></data>
+  <data name="Error.NotFound.Heading" xml:space="preserve"><value>页面不存在（404）</value></data>
+  <data name="Error.NotFound.Detail" xml:space="preserve"><value>你访问的地址不存在或已被移动。请检查地址，或返回首页继续操作。</value></data>
+  <data name="Error.BackHome" xml:space="preserve"><value>返回首页</value></data>
+  <data name="Common.ViewLatest" xml:space="preserve"><value>查看最新内容（在新标签页打开，不影响本页已保留的修改）</value></data>
+  <data name="Common.ConfirmDelete" xml:space="preserve"><value>删除</value></data>
+  <data name="Layout.SkipToContent" xml:space="preserve"><value>跳到主内容</value></data>
+
+  <!-- 网关不可用 -->
+  <data name="Common.GatewayUnavailable" xml:space="preserve"><value>服务暂时不可用，请稍后重试；你的填写内容已保留。</value></data>
+
+  <!-- 分页 -->
+  <data name="Common.Pager.Label" xml:space="preserve"><value>分页</value></data>
+  <data name="Common.Pager.Previous" xml:space="preserve"><value>上一页</value></data>
+  <data name="Common.Pager.Next" xml:space="preserve"><value>下一页</value></data>
+  <data name="Common.Pager.PageOf" xml:space="preserve"><value>第 {0} / {1} 页</value></data>
+
+  <!-- 布局 aria -->
+  <data name="Layout.Aria.Main" xml:space="preserve"><value>主导航</value></data>
+  <data name="Layout.Aria.Section" xml:space="preserve"><value>功能模块导航</value></data>
+  <data name="Layout.Aria.Mobile" xml:space="preserve"><value>移动端导航</value></data>
 </root>

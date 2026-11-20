@@ -4,13 +4,17 @@
     ViewData["Title"] = Localizer["Enums.Title"];
 }
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@Localizer["Enums.Title"]</h1>
-        <p class="page-description">@Localizer["Enums.Description"]</p>
-    </div>
-    <div class="page-actions">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@Localizer["Enums.Title"]</div>
+            <div class="page-subtitle text-secondary">@Localizer["Enums.Description"]</div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-primary" asp-page="/Enums/Create" asp-route-category="@Model.Category">@Localizer["Enums.Create"]</a>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -34,30 +38,27 @@
     </div>
 </form>
 
-<section class="card data-card" aria-labelledby="enum-list-title">
-    <div class="card-toolbar">
-        <div class="card-toolbar-title">
-            <h2 id="enum-list-title">@Localizer["Enums.Title"]</h2>
-            <span class="count-pill">@Model.Items.Count</span>
-        </div>
-    </div>
+<div class="card" aria-labelledby="enum-list-title">
+    <div class="card-header">
+    <h2 class="card-title" id="enum-list-title">@Localizer["Enums.Title"] <span class="badge bg-secondary-lt">@Model.Items.Count</span></h2>
+</div>
 
     @if (Model.Items.Count == 0 && string.IsNullOrWhiteSpace(Model.ErrorMessage))
     {
-        <div class="empty-state">
-            <span class="empty-state-icon" aria-hidden="true">
+        <div class="empty">
+            <span class="empty-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
                     <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7" />
                 </svg>
             </span>
-            <p class="empty-state-title">@Localizer["Enums.Empty"]</p>
+            <p class="empty-title">@Localizer["Enums.Empty"]</p>
             <a class="btn btn-primary btn-sm" asp-page="/Enums/Create" asp-route-category="@Model.Category">@Localizer["Enums.Create"]</a>
         </div>
     }
     else if (Model.Items.Count > 0)
     {
         <div class="table-responsive" tabindex="0" role="region" aria-labelledby="enum-list-title">
-            <table class="table data-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["Field.Enum.Category"]</th>
@@ -80,7 +81,7 @@
                                     <a class="btn btn-ghost" asp-page="/Enums/Edit" asp-route-id="@item.Id">@Localizer["Common.Edit"]</a>
                                     <a class="btn btn-ghost" asp-page="/Enums/Translations" asp-route-id="@item.Id">@Localizer["Translations.Manage"]</a>
                                     <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id" class="d-inline"
-                                          data-confirm="@Localizer["Enums.DeleteConfirm"]">
+                                          data-confirm="@string.Format(Localizer["Enums.DeleteConfirm"].Value, item.Name)" data-confirm-button="@Localizer["Common.ConfirmDelete"]">
                                         <input type="hidden" name="Category" value="@Model.Category" />
                                         <button type="submit" class="btn btn-ghost btn-ghost-danger">@Localizer["Common.Delete"]</button>
                                     </form>
@@ -92,4 +93,4 @@
             </table>
         </div>
     }
-</section>
+</div>

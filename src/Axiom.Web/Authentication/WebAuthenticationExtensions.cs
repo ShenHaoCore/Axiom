@@ -41,6 +41,9 @@ internal static class WebAuthenticationExtensions
                 options.ResponseType = OpenIdConnectResponseType.Code;
                 options.UsePkce = true;
                 options.SaveTokens = true;
+                // 单点登出：OIDC handler 登出后经 /signout-callback-oidc 回跳本站。
+                options.SignedOutCallbackPath = "/signout-callback-oidc";
+                options.SignedOutRedirectUri = "/";
                 // 登录页语言跟随 Web 当前界面语言，AuthHub 按 ui_locales 本地化。
                 options.Events.OnRedirectToIdentityProvider = context =>
                 {

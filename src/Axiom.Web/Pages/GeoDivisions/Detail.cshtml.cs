@@ -84,9 +84,10 @@ public sealed class DetailModel(
             return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
         }
 
-        if (response.StatusCode == HttpStatusCode.Conflict)
+        if (response.StatusCode == HttpStatusCode.PreconditionFailed
+            || response.StatusCode == HttpStatusCode.Conflict)
         {
-            // 删除时的 409 只可能是并发令牌过期：记录已被他人改过。
+            // 删除时的 412 只可能是并发令牌过期：记录已被他人改过。
             ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
             return await ReloadAfterDeleteFailureAsync(id, cancellationToken);
         }

@@ -39,6 +39,11 @@ public sealed class EditModel(
 
     public string? ErrorMessage { get; private set; }
 
+    /// <summary>412 并发冲突时置位：错误区渲染“查看最新内容”链接（输入已保留）。</summary>
+    public bool ShowLatestLink { get; private set; }
+
+    public string? LatestUrl { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var failure = await LoadRegionAsync(id, cancellationToken);
@@ -110,12 +115,19 @@ public sealed class EditModel(
             return Page();
         }
 
+        if (response.StatusCode == HttpStatusCode.PreconditionFailed)
+        {
+            // 412：并发令牌过期。输入完整保留，提供“查看最新内容”出路而不是让用户刷新。
+            ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
+            ShowLatestLink = true;
+            LatestUrl = $"/GeoDivisions/Detail/{id}";
+            return Page();
+        }
+
         if (response.StatusCode == HttpStatusCode.Conflict)
         {
-            // 409 有两个来源：并发令牌过期与唯一键冲突，靠问题详情里的 errorCode 区分。
-            ErrorMessage = await IsConcurrencyConflictAsync(response, cancellationToken)
-                ? localizer["Common.ConcurrencyConflict"].Value
-                : localizer["GeoDivisions.Form.UniqueConflict"].Value;
+            // 409 只剩唯一键冲突来源（并发冲突已改走 412）。
+            ErrorMessage = localizer["GeoDivisions.Form.UniqueConflict"].Value;
             return Page();
         }
 

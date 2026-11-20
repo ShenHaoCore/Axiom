@@ -4,18 +4,22 @@
     ViewData["Title"] = Localizer["GeoDivisions.Title"];
 }
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@Localizer["GeoDivisions.Title"]</h1>
-        <p class="page-description">@Localizer["GeoDivisions.Description"]</p>
-    </div>
-    <div class="page-actions">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@Localizer["GeoDivisions.Title"]</div>
+            <div class="page-subtitle text-secondary">@Localizer["GeoDivisions.Description"]</div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-primary" asp-page="/GeoDivisions/Create">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />
             </svg>
             @Localizer["GeoDivisions.Create.Title"]
         </a>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -50,18 +54,14 @@
 <!-- 搜索结果 -->
 @if (Model.SearchResults.Count > 0)
 {
-    <section class="card data-card mb-4" aria-labelledby="search-title">
-        <div class="card-toolbar">
-            <div class="card-toolbar-title">
-                <h2 id="search-title">@Localizer["GeoDivisions.SearchResults"]</h2>
-                <span class="count-pill">@Model.SearchResults.Count</span>
-            </div>
-            <div class="card-toolbar-meta">
-                @Localizer["GeoDivisions.SearchTotal", Model.SearchTotalCount]
-            </div>
+    <div class="card mb-4" aria-labelledby="search-title">
+        <div class="card-header">
+            <h2 class="card-title" id="search-title">@Localizer["GeoDivisions.SearchResults"]
+                <span class="badge bg-secondary-lt">@Model.SearchResults.Count</span></h2>
+            <div class="text-secondary">@Localizer["GeoDivisions.SearchTotal", Model.SearchTotalCount]</div>
         </div>
         <div class="table-responsive" tabindex="0" role="region" aria-labelledby="search-title">
-            <table class="table data-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["Field.GeoDivision.Kind"]</th>
@@ -96,27 +96,27 @@
                 </tbody>
             </table>
         </div>
-    </section>
+    </div>
 }
 else if (!string.IsNullOrEmpty(Model.SearchQuery))
 {
     <div class="card mb-4">
-        <div class="empty-state">
-            <span class="empty-state-icon" aria-hidden="true">
+        <div class="empty">
+            <span class="empty-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                     <circle cx="7" cy="7" r="4.5" />
                     <path d="m10.5 10.5 3 3" />
                 </svg>
             </span>
-            <p class="empty-state-title">@Localizer["GeoDivisions.NoMatch", Model.SearchQuery]</p>
-            <p class="empty-state-text">@Localizer["GeoDivisions.NoMatchHint"]</p>
+            <p class="empty-title">@Localizer["GeoDivisions.NoMatch", Model.SearchQuery]</p>
+            <p class="empty-subtitle text-secondary">@Localizer["GeoDivisions.NoMatchHint"]</p>
             <a class="btn btn-outline-secondary btn-sm" asp-page="/GeoDivisions/Index">@Localizer["Common.Clear"]</a>
         </div>
     </div>
 }
 
 <!-- 层级树：所有国家同属一棵树，国家为根节点，子级在展开时惰性加载 -->
-<section class="card data-card" aria-labelledby="tree-title">
+<div class="card" aria-labelledby="tree-title">
     <div class="card-toolbar">
         <div class="card-toolbar-title">
             <h2 id="tree-title">@Localizer["GeoDivisions.TreeTitle"]</h2>
@@ -142,7 +142,7 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
             }
         }
     </div>
-</section>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -14,9 +14,15 @@ public sealed class NewsClient(HttpClient httpClient, IHttpContextAccessor httpC
     public Task<HttpResponseMessage> ListAsync(
         string? status,
         int page,
+        int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
         var query = new List<string> { $"{GatewayFields.PAGE}={page}" };
+        if (pageSize.HasValue)
+        {
+            query.Add($"{GatewayFields.PAGE_SIZE}={pageSize.Value}");
+        }
+
         if (!string.IsNullOrWhiteSpace(status))
         {
             query.Add($"{GatewayFields.STATUS}={Uri.EscapeDataString(status)}");

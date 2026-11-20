@@ -78,7 +78,8 @@ public sealed class EditModel(
             ErrorMessage = response.StatusCode switch
             {
                 HttpStatusCode.BadRequest => localizer["Common.ValidationFailed"].Value,
-                HttpStatusCode.Conflict => localizer["Common.ConcurrencyConflict"].Value,
+                HttpStatusCode.PreconditionFailed => localizer["Common.ConcurrencyConflict"].Value,
+                HttpStatusCode.Conflict => localizer["Airports.CodeConflict"].Value,
                 HttpStatusCode.PreconditionRequired => localizer["Common.MissingETag"].Value,
                 _ => localizer["Airports.Edit.SaveFailed"].Value
             };
@@ -119,7 +120,7 @@ public sealed class EditModel(
             ErrorMessage = response.StatusCode switch
             {
                 HttpStatusCode.BadRequest => localizer["Common.ValidationFailed"].Value,
-                HttpStatusCode.Conflict => localizer["Common.ConcurrencyConflict"].Value,
+                HttpStatusCode.PreconditionFailed => localizer["Common.ConcurrencyConflict"].Value,
                 HttpStatusCode.PreconditionRequired => localizer["Common.MissingETag"].Value,
                 _ => localizer["Airports.Edit.DeleteFailed"].Value
             };

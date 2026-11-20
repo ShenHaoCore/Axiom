@@ -1,4 +1,7 @@
 // 在 Cookie 校验阶段使用 refresh_token 续期访问令牌，避免 15 分钟到期后整页重新登录。
+// 失败语义：仅当 AuthHub 明确拒绝授权（invalid_grant 类 400/401）才强制登出；
+// 网络抖动、5xx、超时等瞬时故障一律跳过续期放行本次请求，避免一次抖动把所有用户踢下线。
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using Axiom.Web.Clients;
@@ -18,6 +21,10 @@ public sealed class RefreshCookieEvents(
     private static readonly TimeSpan RefreshThreshold = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan FallbackLifetime = TimeSpan.FromMinutes(15);
 
+    // 按用户串行化刷新（单飞）：令牌临近到期的并发请求不会同时打 /connect/token，
+    // 防止 refresh_token 轮换时后到请求用旧令牌刷新失败而被误登出。
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _refreshLocks = new(StringComparer.Ordinal);
+
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
         var tokens = context.Properties.GetTokens().ToList();
@@ -34,6 +41,26 @@ public sealed class RefreshCookieEvents(
             return;
         }
 
+        // 键优先用用户名（有界：用户数），缺失时退化为 refresh_token（按会话有界）。
+        var lockKey = context.HttpContext.User.Identity?.Name ?? refreshToken;
+        var semaphore = _refreshLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(context.HttpContext.RequestAborted);
+        try
+        {
+            await RefreshTokensAsync(context, tokens, accessToken, refreshToken);
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    private async Task RefreshTokensAsync(
+        CookieValidatePrincipalContext context,
+        List<AuthenticationToken> tokens,
+        string accessToken,
+        string refreshToken)
+    {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, ResolveTokenEndpoint())
@@ -50,8 +77,19 @@ public sealed class RefreshCookieEvents(
             using var response = await client.SendAsync(request, context.HttpContext.RequestAborted);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("刷新访问令牌失败，AuthHub 返回 {StatusCode}。", (int)response.StatusCode);
-                await RejectAsync(context);
+                var statusCode = (int)response.StatusCode;
+                if (statusCode is 400 or 401)
+                {
+                    // AuthHub 明确拒绝授权：refresh_token 已失效/被吊销，只能强制重新登录。
+                    logger.LogWarning("刷新访问令牌被拒绝（AuthHub 返回 {StatusCode}），将结束本地会话。", statusCode);
+                    await RejectAsync(context);
+                }
+                else
+                {
+                    // 5xx 等临时故障：跳过续期放行本次请求，等待下一个请求窗口重试。
+                    logger.LogWarning("刷新访问令牌失败（AuthHub 返回 {StatusCode}），跳过续期放行本次请求。", statusCode);
+                }
+
                 return;
             }
 
@@ -63,8 +101,7 @@ public sealed class RefreshCookieEvents(
             if (!root.TryGetProperty(ACCESS_TOKEN, out var accessElement)
                 || accessElement.GetString() is not { Length: > 0 } newAccessToken)
             {
-                logger.LogWarning("刷新令牌响应缺少 access_token。");
-                await RejectAsync(context);
+                logger.LogWarning("刷新令牌响应缺少 access_token，跳过续期放行本次请求。");
                 return;
             }
 
@@ -97,14 +134,19 @@ public sealed class RefreshCookieEvents(
             context.ShouldRenew = true;
             logger.LogInformation("访问令牌已通过 refresh_token 续期。");
         }
-        catch (Exception exception) when (exception is HttpRequestException or JsonException)
+        catch (OperationCanceledException) when (context.HttpContext.RequestAborted.IsCancellationRequested)
         {
-            logger.LogError(exception, "刷新访问令牌异常。");
-            await RejectAsync(context);
+            // 请求已被客户端中止：无需续期也无需登出。
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            // 网络/解析/超时类瞬时故障：跳过续期放行本次请求（原令牌在真实到期前仍可用）。
+            logger.LogWarning(exception, "刷新访问令牌遇到瞬时故障，跳过续期放行本次请求。");
         }
     }
 
-    private DateTimeOffset? ResolveExpiry(List<AuthenticationToken> tokens, string accessToken)
+    private static DateTimeOffset? ResolveExpiry(List<AuthenticationToken> tokens, string accessToken)
     {
         var expiresAtValue = tokens.FirstOrDefault(token => token.Name == EXPIRES_AT)?.Value;
         if (DateTimeOffset.TryParse(

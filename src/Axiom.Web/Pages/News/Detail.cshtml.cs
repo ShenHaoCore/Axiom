@@ -53,7 +53,8 @@ public sealed class DetailModel(
             return StatusCode(StatusCodes.Status403Forbidden);
         }
 
-        if (response.StatusCode == HttpStatusCode.Conflict)
+        if (response.StatusCode == HttpStatusCode.PreconditionFailed
+            || response.StatusCode == HttpStatusCode.Conflict)
         {
             ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
             var reloadFailure = await LoadAsync(ArticleId, cancellationToken);
