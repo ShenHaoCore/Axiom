@@ -7,6 +7,7 @@ using Axiom.AuthHub.Resources;
 using Axiom.Observability;
 using Axiom.SharedKernel.Localization;
 using Axiom.SharedKernel.Security;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -17,6 +18,16 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAxiomObservability("Axiom.AuthHub");
+
+// Data Protection：Identity Cookie 与防伪造令牌的密钥持久化到磁盘（容器内挂卷），
+// 重启不掉线、多副本可共享；路径可按部署环境覆盖，默认仅在非开发环境落盘 /keys。
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
+    ?? (builder.Environment.IsDevelopment() ? null : "/keys");
+if (dataProtectionKeysPath is not null)
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
 
 // 国际化：登录页按 OIDC 的 ui_locales（Web 语言选择）→ 查询串 → Cookie → Accept-Language 协商。
 var localizationOptions = builder.Configuration.GetSection(AxiomLocalizationOptions.SECTION)
