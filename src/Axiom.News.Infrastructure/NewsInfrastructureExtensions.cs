@@ -16,7 +16,9 @@ public static class NewsInfrastructureExtensions
         IConfiguration configuration)
     {
         services.AddDbContext<NewsDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("News")));
+            options.UseNpgsql(
+                configuration.GetConnectionString("News"),
+                npgsql => npgsql.EnableRetryOnFailure()));
         services.AddScoped<INewsArticleRepository, NewsArticleRepository>();
         return services;
     }
