@@ -61,10 +61,21 @@ services:
       OpenIddict__Issuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
       Oidc__Clients__0__ClientId: axiom-web
       Oidc__Clients__0__RedirectUris__0: ${PUBLIC_WEB_CALLBACK_URL:-http://localhost:3000/callback}
+      Oidc__Clients__0__PostLogoutRedirectUris__0: ${PUBLIC_WEB_POST_LOGOUT_URL:-http://localhost:3000/signout-callback-oidc}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
       SeedUser__Password: ${DEMO_USER_PASSWORD:-}
     ports:
       - "${AUTHHUB_PORT:-5101}:8080"
+    environment:
+      DataProtection__KeysPath: ${DATA_PROTECTION_KEYS_PATH:-}
+    volumes:
+      - authhub-keys:/keys
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,15 +96,21 @@ services:
       ConnectionStrings__ReferenceData: Host=postgres;Port=5432;Database=axiom_reference_data;Username=axiom;Password=${POSTGRES_PASSWORD}
       Authentication__Authority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
       Authentication__ValidIssuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
+      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:?Set AUTH_REQUIRE_HTTPS_METADATA to true/false}
       RabbitMq__HostName: rabbitmq
       RabbitMq__Password: ${RABBITMQ_PASSWORD}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
       authhub:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_started
       db-migrator:
@@ -110,15 +127,19 @@ services:
       ConnectionStrings__News: Host=postgres;Port=5432;Database=axiom_news;Username=axiom;Password=${POSTGRES_PASSWORD}
       Authentication__Authority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
       Authentication__ValidIssuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
+      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:?Set AUTH_REQUIRE_HTTPS_METADATA to true/false}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
-    ports:
-      - "${NEWS_PORT:-5104}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
       authhub:
-        condition: service_started
+        condition: service_healthy
       db-migrator:
         condition: service_completed_successfully
 
@@ -132,18 +153,24 @@ services:
       ASPNETCORE_URLS: http://+:8080
       Authentication__Authority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
       Authentication__ValidIssuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
-      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
+      Authentication__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:?Set AUTH_REQUIRE_HTTPS_METADATA to true/false}
       ReverseProxy__Clusters__reference-data__Destinations__primary__Address: http://reference-data:8080
       ReverseProxy__Clusters__news__Destinations__primary__Address: http://news-api:8080
       ReferenceDataGrpc__Address: http://reference-data:8081
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
     ports:
       - "${GATEWAY_PORT:-5100}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       reference-data:
-        condition: service_started
+        condition: service_healthy
       news-api:
-        condition: service_started
+        condition: service_healthy
 
   web:
     build:
@@ -156,17 +183,26 @@ services:
       Oidc__Authority: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
       Oidc__ValidIssuer: ${PUBLIC_AUTH_ISSUER:-http://localhost:5101/}
       Oidc__BackchannelAuthority: ${INTERNAL_AUTH_URL:-http://authhub:8080}
-      Oidc__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:-false}
+      Oidc__RequireHttpsMetadata: ${AUTH_REQUIRE_HTTPS_METADATA:?Set AUTH_REQUIRE_HTTPS_METADATA to true/false}
       ApiGateway__BaseAddress: ${INTERNAL_GATEWAY_URL:-http://gateway:8080}
       MockAuth__Enabled: ${MOCK_AUTH_ENABLED:-false}
+      DataProtection__KeysPath: ${DATA_PROTECTION_KEYS_PATH:-}
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-http://otel-collector:4317}
     ports:
       - "${WEB_PORT:-3000}:8080"
+    volumes:
+      - web-keys:/keys
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       authhub:
-        condition: service_started
+        condition: service_healthy
       gateway:
-        condition: service_started
+        condition: service_healthy
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.135.0
@@ -219,3 +255,5 @@ volumes:
   postgres-data:
   rabbitmq-data:
   grafana-data:
+  authhub-keys:
+  web-keys:

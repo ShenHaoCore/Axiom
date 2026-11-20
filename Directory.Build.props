@@ -5,4 +5,14 @@
     <Version>0.1.1</Version>
   </PropertyGroup>
 
+  <!-- 编译期质量门：警告即失败、内置分析器、代码风格在构建期强制（规则细则见根 .editorconfig）。 -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
 </Project>
