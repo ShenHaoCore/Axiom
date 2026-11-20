@@ -1,6 +1,6 @@
 // 验证三类基础档案在 API 边界执行的输入规则。
-using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Application.Dtos;
+using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Infrastructure.EfCore;
 using FluentAssertions;
 

@@ -375,7 +375,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (values.SingleOrDefault() != AirportETag(id))
             {
-                return new HttpResponseMessage(HttpStatusCode.Conflict);
+                // 真实 API 的 If-Match 前置条件失败返回 412（RFC 9110），桩保持同契约。
+                return new HttpResponseMessage((HttpStatusCode)412);
             }
 
             if (request.Method == HttpMethod.Delete)
@@ -595,8 +596,9 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (values.SingleOrDefault() != RegionETag(id))
             {
+                // 真实 API 的 If-Match 前置条件失败返回 412（RFC 9110），桩保持同契约。
                 return Problem(
-                    HttpStatusCode.Conflict,
+                    (HttpStatusCode)412,
                     "行政区已被其他请求修改。",
                     ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT);
             }
@@ -792,7 +794,8 @@ public sealed class WebFactory : WebApplicationFactory<WebApplicationMarker>
 
             if (values.SingleOrDefault() != NewsETag(id))
             {
-                return new HttpResponseMessage(HttpStatusCode.Conflict);
+                // 真实 API 的 If-Match 前置条件失败返回 412（RFC 9110），桩保持同契约。
+                return new HttpResponseMessage((HttpStatusCode)412);
             }
 
             if (request.Method == HttpMethod.Delete)
