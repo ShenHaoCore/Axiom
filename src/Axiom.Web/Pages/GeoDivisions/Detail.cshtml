@@ -51,38 +51,38 @@
         <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
-    <div class="detail-layout">
-        <div class="detail-main">
+    <div class="row g-3">
+        <div class="col-12 col-lg-8 d-flex flex-column gap-3">
             <div class="card">
                 <div class="card-header">@Localizer["GeoDivisions.Detail.BasicInfo"]</div>
                 <div class="card-body">
-                    <dl class="detail-list">
-                        <div class="detail-row">
-                            <dt class="detail-label">@Localizer["Field.GeoDivision.Kind"]</dt>
-                            <dd class="detail-value">
+                    <dl class="datagrid">
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Field.GeoDivision.Kind"]</div>
+                            <div class="datagrid-content">
                                 <span class="badge-soft @(r.Level is >= 1 and <= 4 ? $"level-{r.Level}" : "level-default")">@Model.KindNameFor(r.Kind, r.Level)</span>
-                            </dd>
+                            </div>
                         </div>
-                        <div class="detail-row">
-                            <dt class="detail-label">@Localizer["GeoDivisions.Detail.Code"]</dt>
-                            <dd class="detail-value"><code>@r.Code</code></dd>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["GeoDivisions.Detail.Code"]</div>
+                            <div class="datagrid-content"><code>@r.Code</code></div>
                         </div>
-                        <div class="detail-row">
-                            <dt class="detail-label">@Localizer["GeoDivisions.Detail.Country"]</dt>
-                            <dd class="detail-value">@r.CountryCode</dd>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["GeoDivisions.Detail.Country"]</div>
+                            <div class="datagrid-content">@r.CountryCode</div>
                         </div>
                         @if (r.SubdivisionCode is not null)
                         {
-                            <div class="detail-row">
-                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.SubdivisionCode"]</dt>
-                                <dd class="detail-value"><code>@r.SubdivisionCode</code></dd>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.SubdivisionCode"]</div>
+                                <div class="datagrid-content"><code>@r.SubdivisionCode</code></div>
                             </div>
                         }
                         @if (r.AsciiName is not null)
                         {
-                            <div class="detail-row">
-                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.AsciiName"]</dt>
-                                <dd class="detail-value">@r.AsciiName</dd>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.AsciiName"]</div>
+                                <div class="datagrid-content">@r.AsciiName</div>
                             </div>
                         }
                     </dl>
@@ -92,26 +92,26 @@
             <div class="card">
                 <div class="card-header">@Localizer["GeoDivisions.Detail.GeoData"]</div>
                 <div class="card-body">
-                    <dl class="detail-list">
+                    <dl class="datagrid">
                         @if (r.Population.HasValue)
                         {
-                            <div class="detail-row">
-                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Population"]</dt>
-                                <dd class="detail-value num">@r.Population.Value.ToString("N0")</dd>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.Population"]</div>
+                                <div class="datagrid-content num">@r.Population.Value.ToString("N0")</div>
                             </div>
                         }
                         @if (r.Latitude.HasValue || r.Longitude.HasValue)
                         {
-                            <div class="detail-row">
-                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Coordinates"]</dt>
-                                <dd class="detail-value num">@r.Latitude?.ToString("F4"), @r.Longitude?.ToString("F4")</dd>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.Coordinates"]</div>
+                                <div class="datagrid-content num">@r.Latitude?.ToString("F4"), @r.Longitude?.ToString("F4")</div>
                             </div>
                         }
                         @if (!r.Population.HasValue && !r.Latitude.HasValue && !r.Longitude.HasValue)
                         {
-                            <div class="detail-row">
-                                <dt class="detail-label">@Localizer["GeoDivisions.Detail.Population"]</dt>
-                                <dd class="detail-value text-muted">-</dd>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.Population"]</div>
+                                <div class="datagrid-content text-secondary">-</div>
                             </div>
                         }
                     </dl>
@@ -119,30 +119,30 @@
             </div>
         </div>
 
-        <aside class="detail-side">
+        <aside class="col-12 col-lg-4 d-flex flex-column gap-3">
             <div class="card">
                 <div class="card-header">@Localizer["GeoDivisions.Detail.Meta"]</div>
                 <div class="card-body">
-                    <div class="meta-list">
+                    <div class="datagrid">
                         @if (r.GeoNameId.HasValue)
                         {
-                            <div class="meta-item">
-                                <span class="meta-item-label">@Localizer["GeoDivisions.Detail.GeoNameId"]</span>
-                                <span class="meta-item-value">
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.GeoNameId"]</div>
+                                <div class="datagrid-content">
                                     <a href="https://www.geonames.org/@r.GeoNameId" target="_blank" rel="noopener">@r.GeoNameId</a>
-                                </span>
+                                </div>
                             </div>
                         }
                         @if (r.ParentId.HasValue)
                         {
-                            <div class="meta-item">
-                                <span class="meta-item-label">@Localizer["GeoDivisions.Detail.ParentId"]</span>
-                                <span class="meta-item-value"><code>@r.ParentId.Value.ToString("D")</code></span>
+                            <div class="datagrid-item">
+                                <div class="datagrid-title">@Localizer["GeoDivisions.Detail.ParentId"]</div>
+                                <div class="datagrid-content"><code>@r.ParentId.Value.ToString("D")</code></div>
                             </div>
                         }
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["GeoDivisions.Detail.RecordId"]</span>
-                            <span class="meta-item-value"><code>@r.Id.ToString("D")</code></span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["GeoDivisions.Detail.RecordId"]</div>
+                            <div class="datagrid-content"><code>@r.Id.ToString("D")</code></div>
                         </div>
                     </div>
                 </div>
