@@ -2,6 +2,7 @@
 using Axiom.ReferenceData.Api;
 using Axiom.ReferenceData.Domain.Constants;
 using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Infrastructure.EfCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -10,8 +11,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-
-using Axiom.ReferenceData.Infrastructure.EfCore;
 
 namespace Axiom.IntegrationTests;
 

@@ -2,10 +2,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Axiom.ReferenceData.Infrastructure.Messaging;
 using Axiom.ReferenceData.Application.Dtos;
 using Axiom.ReferenceData.Domain.Entities;
 using Axiom.ReferenceData.Infrastructure.EfCore;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using Axiom.SharedKernel.Errors;
 using Axiom.SharedKernel.Models;
 using Axiom.SharedKernel.Security;
@@ -209,7 +209,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var mismatchProblem = await mismatchResponse.Content.ReadFromJsonAsync<ProblemDetails>();
         mismatchProblem.Should().NotBeNull(mismatchContent);
         mismatchProblem!.Title.Should().NotBeNullOrWhiteSpace();
-        ((JsonElement)mismatchProblem.Extensions["field"]).GetString().Should().Be("SubdivisionCode");
+        mismatchProblem.Extensions["field"].Should().BeOfType<JsonElement>().Which.GetString().Should().Be("SubdivisionCode");
 
         // 二级行缺父级：400 + ParentId 校验错误。
         using var noParentRequest = CreateJsonRequest(
@@ -226,7 +226,7 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         noParentResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, noParentContent);
         var noParentProblem = await noParentResponse.Content.ReadFromJsonAsync<ProblemDetails>();
         noParentProblem.Should().NotBeNull(noParentContent);
-        ((JsonElement)noParentProblem!.Extensions["field"]).GetString().Should().Be("ParentId");
+        noParentProblem.Extensions["field"].Should().BeOfType<JsonElement>().Which.GetString().Should().Be("ParentId");
 
         await DeleteAsync(city.Id, cityETag);
         await DeleteAsync(admin1.Id, admin1ETag);
@@ -580,16 +580,17 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ManagePermissions,
             update,
             staleETag);
+        // RFC 9110：If-Match 前置条件失败映射为 412（409 保留给唯一键等状态冲突）。
         var staleUpdateResponse = await _client.SendAsync(staleUpdateRequest);
-        staleUpdateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        staleUpdateResponse.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         var updateProblem = await staleUpdateResponse.Content.ReadFromJsonAsync<ProblemDetails>();
-        updateProblem!.Status.Should().Be((int)HttpStatusCode.Conflict);
+        updateProblem!.Status.Should().Be((int)HttpStatusCode.PreconditionFailed);
 
         using var staleDeleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, staleETag);
         var staleDeleteResponse = await _client.SendAsync(staleDeleteRequest);
-        staleDeleteResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        staleDeleteResponse.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         var deleteProblem = await staleDeleteResponse.Content.ReadFromJsonAsync<ProblemDetails>();
-        deleteProblem!.Status.Should().Be((int)HttpStatusCode.Conflict);
+        deleteProblem!.Status.Should().Be((int)HttpStatusCode.PreconditionFailed);
 
         var getResponse = await _client.SendAsync(CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
         var unchanged = await getResponse.Content.ReadFromJsonAsync<ReferenceLocationDto>();
@@ -633,14 +634,15 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             ManagePermissions,
             update,
             staleETag);
+        // RFC 9110：If-Match 前置条件失败映射为 412（409 保留给唯一键冲突，errorCode 可判别）。
         var staleUpdateResponse = await _client.SendAsync(staleUpdateRequest);
-        staleUpdateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        staleUpdateResponse.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         var updateProblem = await staleUpdateResponse.Content.ReadFromJsonAsync<ProblemDetails>();
         updateProblem!.Extensions["errorCode"]?.ToString()
             .Should().Be(ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT);
 
         using var staleDeleteRequest = CreateRequest(HttpMethod.Delete, location, ManagePermissions, staleETag);
-        (await _client.SendAsync(staleDeleteRequest)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await _client.SendAsync(staleDeleteRequest)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
 
         var getResponse = await _client.SendAsync(CreateRequest(HttpMethod.Get, location, ReferenceDataPermissions.READ));
         getResponse.Headers.ETag?.ToString().Should().Be(etag);
@@ -731,6 +733,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         created.Should().NotBeNull();
         created!.Category.Should().Be(category);
         created.Code.Should().Be(code);
+        var enumETag = createResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException($"创建枚举响应缺少 ETag：{createContent}");
 
         using var listRequest = CreateRequest(
             HttpMethod.Get,
@@ -745,12 +749,25 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
             HttpMethod.Put,
             $"/api/reference-data/enums/{created.Id}",
             ManagePermissions,
-            new UpdateReferenceEnumInput("测试枚举改名", 20));
+            new UpdateReferenceEnumInput("测试枚举改名", 20),
+            enumETag);
         var updateResponse = await _client.SendAsync(updateRequest);
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updateContent = await updateResponse.Content.ReadAsStringAsync();
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK, updateContent);
         var updated = await updateResponse.Content.ReadFromJsonAsync<ReferenceEnumDto>();
         updated!.Name.Should().Be("测试枚举改名");
         updated.SortOrder.Should().Be(20);
+        // 更新成功后并发令牌轮换：后续写操作必须携带新 ETag；旧 ETag 再写应得到 412。
+        var staleETag = enumETag;
+        enumETag = updateResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException($"更新枚举响应缺少 ETag：{updateContent}");
+        using var staleUpdateRequest = CreateJsonRequest(
+            HttpMethod.Put,
+            $"/api/reference-data/enums/{created.Id}",
+            ManagePermissions,
+            new UpdateReferenceEnumInput("过期写入", 21),
+            staleETag);
+        (await _client.SendAsync(staleUpdateRequest)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
 
         var countryCode = $"T{(char)('A' + suffix[0] % 26)}";
         using var unknownKindRequest = CreateJsonRequest(
@@ -782,10 +799,19 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         var kinds = await kindsResponse.Content.ReadFromJsonAsync<PagedResponse<ReferenceEnumDto>>();
         var countryKind = kinds!.Items.Single(item => item.Code == "country");
 
+        using var countryKindGetRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/api/reference-data/enums/{countryKind.Id}",
+            ReferenceDataPermissions.READ);
+        var countryKindGetResponse = await _client.SendAsync(countryKindGetRequest);
+        var countryKindETag = countryKindGetResponse.Headers.ETag?.ToString()
+            ?? throw new InvalidOperationException("枚举 GET 响应缺少 ETag。");
+
         using var deleteInUseKindRequest = CreateRequest(
             HttpMethod.Delete,
             $"/api/reference-data/enums/{countryKind.Id}",
-            ManagePermissions);
+            ManagePermissions,
+            countryKindETag);
         var deleteInUseKindResponse = await _client.SendAsync(deleteInUseKindRequest);
         deleteInUseKindResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
@@ -799,7 +825,8 @@ public sealed class ReferenceDataEndpointTests(ReferenceDataApiFactory factory)
         using var deleteEnumRequest = CreateRequest(
             HttpMethod.Delete,
             $"/api/reference-data/enums/{created.Id}",
-            ManagePermissions);
+            ManagePermissions,
+            enumETag);
         (await _client.SendAsync(deleteEnumRequest)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 

@@ -211,7 +211,8 @@ public static class ReferenceLocationEndpoints
         catch (ReferenceLocationConcurrencyConflictException)
         {
             return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
+                // RFC 9110: If-Match 前置条件失败用 412；409 保留给唯一键冲突。
+                statusCode: StatusCodes.Status412PreconditionFailed,
                 title: localizer[ApiErrorCodes.LOCATION_CONCURRENCY_CONFLICT].Value);
         }
     }
@@ -239,7 +240,7 @@ public static class ReferenceLocationEndpoints
         catch (ReferenceLocationConcurrencyConflictException)
         {
             return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
+                statusCode: StatusCodes.Status412PreconditionFailed,
                 title: localizer[ApiErrorCodes.LOCATION_CONCURRENCY_CONFLICT].Value);
         }
     }

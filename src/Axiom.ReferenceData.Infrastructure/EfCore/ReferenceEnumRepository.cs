@@ -1,6 +1,7 @@
 // ReferenceEnum 仓储 EF Core 实现（Infrastructure 层）。
 using Axiom.ReferenceData.Domain.Constants;
 using Axiom.ReferenceData.Domain.Entities;
+using Axiom.ReferenceData.Domain.Exceptions;
 using Axiom.ReferenceData.Domain.Repositories;
 using Axiom.SharedKernel.Models;
 using Microsoft.EntityFrameworkCore;
@@ -50,16 +51,48 @@ public sealed class ReferenceEnumRepository(ReferenceDataDbContext dbContext) : 
     public async Task AddAsync(ReferenceEnum entity, CancellationToken ct = default)
     {
         dbContext.ReferenceEnums.Add(entity);
-        await dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            // 前查与提交之间的并发插入竞态：以数据库唯一索引为准，映射为业务冲突。
+            throw new ReferenceEnumCodeConflictException(entity.Category, entity.Code);
+        }
     }
 
-    public async Task UpdateAsync(ReferenceEnum entity, CancellationToken ct = default) =>
-        await dbContext.SaveChangesAsync(ct);
-
-    public async Task RemoveAsync(ReferenceEnum entity, CancellationToken ct = default)
+    public async Task UpdateWithETagAsync(ReferenceEnum entity, Guid expectedToken, CancellationToken ct = default)
     {
-        dbContext.ReferenceEnums.Remove(entity);
-        await dbContext.SaveChangesAsync(ct);
+        dbContext.Entry(entity).Property(e => e.ConcurrencyToken).OriginalValue = expectedToken;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ReferenceEnumConcurrencyConflictException(entity.Id);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            throw new ReferenceEnumCodeConflictException(entity.Category, entity.Code);
+        }
+    }
+
+    public async Task RemoveWithETagAsync(ReferenceEnum entity, Guid expectedToken, CancellationToken ct = default)
+    {
+        dbContext.Entry(entity).Property(e => e.ConcurrencyToken).OriginalValue = expectedToken;
+
+        try
+        {
+            dbContext.ReferenceEnums.Remove(entity);
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ReferenceEnumConcurrencyConflictException(entity.Id);
+        }
     }
 
     public async Task<List<ReferenceEnumTranslation>> ListTranslationsAsync(
@@ -101,28 +134,33 @@ public sealed class ReferenceEnumRepository(ReferenceDataDbContext dbContext) : 
                 translation => translation.ReferenceEnumId == enumId && translation.Culture == culture,
                 ct);
 
+        var changed = false;
         if (!values.TryGetValue(ReferenceEnumTranslationFields.Name, out var name)
             || string.IsNullOrWhiteSpace(name))
         {
             if (existing is not null)
             {
                 dbContext.ReferenceEnumTranslations.Remove(existing);
-                await dbContext.SaveChangesAsync(ct);
+                changed = true;
             }
-
-            return;
         }
-
-        if (existing is null)
+        else if (existing is null)
         {
             dbContext.ReferenceEnumTranslations.Add(new ReferenceEnumTranslation(enumId, culture, name));
+            changed = true;
         }
         else
         {
             existing.ChangeName(name);
+            changed = true;
         }
 
-        await dbContext.SaveChangesAsync(ct);
+        if (changed)
+        {
+            // 译文属于资源表示的一部分：同步刷新主表并发令牌，保证 If-Match 覆盖“主表+译文”表示。
+            BumpConcurrencyToken(enumId);
+            await dbContext.SaveChangesAsync(ct);
+        }
     }
 
     public async Task<bool> DeleteTranslationsAsync(Guid enumId, string culture, CancellationToken ct = default)
@@ -137,7 +175,18 @@ public sealed class ReferenceEnumRepository(ReferenceDataDbContext dbContext) : 
         }
 
         dbContext.ReferenceEnumTranslations.RemoveRange(existing);
+        BumpConcurrencyToken(enumId);
         await dbContext.SaveChangesAsync(ct);
         return true;
+    }
+
+    // 译文变更时同步刷新主表并发令牌（枚举字典不参与地点事件流，无需写 Outbox）。
+    private void BumpConcurrencyToken(Guid enumId)
+    {
+        var entity = dbContext.ReferenceEnums.FirstOrDefault(e => e.Id == enumId);
+        if (entity is not null)
+        {
+            dbContext.Entry(entity).Property(e => e.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+        }
     }
 }

@@ -106,6 +106,10 @@ internal static class MockDataStore
     internal static readonly Dictionary<Guid, Guid> GeoDivisionETags =
         GeoDivisions.ToDictionary(region => region.Id, _ => Guid.NewGuid());
 
+    // 枚举字典写操作已接入 If-Match 并发控制，与主数据分开维护。
+    internal static readonly Dictionary<Guid, Guid> EnumETags =
+        Enums.ToDictionary(item => item.Id, _ => Guid.NewGuid());
+
     // 译文存储：key = "{kind}/{id}/{culture}"，kind ∈ airport | news | region | enum。
     internal static readonly Dictionary<string, Dictionary<string, string>> Translations = new();
 

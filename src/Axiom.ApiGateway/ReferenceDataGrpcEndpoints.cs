@@ -81,5 +81,13 @@ public static class ReferenceDataGrpcEndpoints
                 statusCode: StatusCodes.Status503ServiceUnavailable,
                 title: localizer[ApiErrorCodes.GATEWAY_UNAVAILABLE].Value);
         }
+        catch (RpcException exception) when (exception.StatusCode == StatusCode.Internal)
+        {
+            // 下游通用失败：透传 traceId 供关联日志，但不泄露内部异常消息。
+            return Results.Problem(
+                statusCode: StatusCodes.Status500InternalServerError,
+                title: localizer[ApiErrorCodes.SERVER_INTERNAL_ERROR].Value,
+                extensions: new Dictionary<string, object?> { ["traceId"] = httpContext.TraceIdentifier });
+        }
     }
 }

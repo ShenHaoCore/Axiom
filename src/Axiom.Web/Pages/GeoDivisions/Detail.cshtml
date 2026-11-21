@@ -2,7 +2,9 @@
 @model Axiom.Web.Pages.GeoDivisions.DetailModel
 @{
     ViewData["Title"] = Localizer["GeoDivisions.Detail.Title"];
-    var deleteConfirm = Localizer["GeoDivisions.Detail.DeleteConfirm"].Value;
+    var divisionName = Model.GeoDivision?.Name ?? string.Empty;
+    var deleteConfirm = string.Format(Localizer["GeoDivisions.Detail.DeleteConfirm"].Value, divisionName);
+    var confirmButton = Localizer["Common.ConfirmDelete"].Value;
 }
 
 <nav aria-label="breadcrumb">
@@ -16,25 +18,29 @@
 {
     var r = Model.GeoDivision;
 
-    <div class="page-header">
-        <div class="page-header-main">
-            <h1>
+    <div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">
                 @r.Name
                 @if (r.LocalName is not null)
                 {
                     <small>@r.LocalName</small>
                 }
-            </h1>
-            <p class="page-description">
+            </div>
+            <div class="page-subtitle text-secondary">
                 @Model.KindNameFor(r.Kind, r.Level) · @r.CountryCode · <code>@r.Code</code>
-            </p>
+            </div>
         </div>
-        <div class="page-actions">
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
             <a class="btn btn-outline-secondary" asp-page="/GeoDivisions/Index"
                asp-route-countryCode="@r.CountryCode">@Localizer["GeoDivisions.Detail.BackToTree"]</a>
             <a class="btn btn-primary" asp-page="/GeoDivisions/Edit" asp-route-id="@r.Id">@Localizer["Common.Edit"]</a>
         </div>
+        </div>
     </div>
+</div>
 
     @if (Model.StatusMessage is not null)
     {
@@ -131,12 +137,12 @@
                         {
                             <div class="meta-item">
                                 <span class="meta-item-label">@Localizer["GeoDivisions.Detail.ParentId"]</span>
-                                <span class="meta-item-value"><code>@r.ParentId.Value.ToString("N")</code></span>
+                                <span class="meta-item-value"><code>@r.ParentId.Value.ToString("D")</code></span>
                             </div>
                         }
                         <div class="meta-item">
                             <span class="meta-item-label">@Localizer["GeoDivisions.Detail.RecordId"]</span>
-                            <span class="meta-item-value"><code>@r.Id.ToString("N")</code></span>
+                            <span class="meta-item-value"><code>@r.Id.ToString("D")</code></span>
                         </div>
                     </div>
                 </div>
@@ -147,7 +153,7 @@
                 <div class="card-body">
                     <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
                     <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id"
-                          data-confirm="@deleteConfirm">
+                          data-confirm="@deleteConfirm" data-confirm-button="@confirmButton">
                         <input type="hidden" name="CountryCode" value="@r.CountryCode" />
                         <input type="hidden" name="ETag" value="@Model.ETag" />
                         <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>

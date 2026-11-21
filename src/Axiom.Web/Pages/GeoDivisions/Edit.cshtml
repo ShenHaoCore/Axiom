@@ -41,6 +41,10 @@
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    @if (Model.ShowLatestLink)
+    {
+        <p class="form-text"><a href="@Model.LatestUrl" target="_blank" rel="noopener">@Localizer["Common.ViewLatest"]</a></p>
+    }
 }
 
 @if (Model.GeoDivision is not null)

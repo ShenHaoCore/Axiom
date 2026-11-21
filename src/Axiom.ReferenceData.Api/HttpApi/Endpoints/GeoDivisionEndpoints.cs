@@ -352,9 +352,9 @@ public static class GeoDivisionEndpoints
 
     private static IResult ConcurrencyConflict(IStringLocalizer<ApiErrorMessages> localizer) =>
         Results.Problem(
-            statusCode: StatusCodes.Status409Conflict,
+            // RFC 9110 §13.1.2：If-Match 前置条件失败用 412；409 保留给唯一键冲突（errorCode 可判别）。
+            statusCode: StatusCodes.Status412PreconditionFailed,
             title: localizer[ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT].Value,
-            // 409 同时用于唯一键冲突，客户端需要可判别的机器码。
             extensions: new Dictionary<string, object?>
             {
                 ["errorCode"] = ApiErrorCodes.GEO_DIVISION_CONCURRENCY_CONFLICT

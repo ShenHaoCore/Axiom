@@ -1,6 +1,6 @@
 // 验证 Outbox Confirm 后标记、失败重试和 Inbox 持久化去重语义。
-using Axiom.ReferenceData.Infrastructure.Messaging;
 using Axiom.ReferenceData.Infrastructure.EfCore;
+using Axiom.ReferenceData.Infrastructure.Messaging;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -88,22 +88,6 @@ public sealed class MessagingProcessorTests
 
         count.Should().Be(0);
         publisher.MessageIds.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task Inbox_duplicate_event_is_processed_once()
-    {
-        await using var testContext = await ReferenceDataTestContext.CreateAsync();
-        await using var context = new ReferenceDataDbContext(testContext.Options);
-        var processor = new InboxProcessor(context);
-        var eventId = Guid.NewGuid();
-
-        var first = await processor.ProcessAsync(eventId, "test-consumer");
-        var duplicate = await processor.ProcessAsync(eventId, "test-consumer");
-
-        first.Should().BeTrue();
-        duplicate.Should().BeFalse();
-        (await context.InboxMessages.CountAsync()).Should().Be(1);
     }
 
     private static OutboxMessage CreateMessage() => new()

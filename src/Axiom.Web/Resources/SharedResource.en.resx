@@ -22,8 +22,8 @@
   <data name="Enums.EditFailed" xml:space="preserve"><value>Failed to update enum.</value></data>
   <data name="Enums.Deleted" xml:space="preserve"><value>Enum deleted.</value></data>
   <data name="Enums.DeleteFailed" xml:space="preserve"><value>Failed to delete enum.</value></data>
-  <data name="Enums.DeleteInUse" xml:space="preserve"><value>Enum is still referenced and cannot be deleted.</value></data>
-  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>Delete this enum entry?</value></data>
+  <data name="Enums.DeleteInUse" xml:space="preserve"><value>This enum entry is still referenced by business data and cannot be deleted. Remove the referencing records first.</value></data>
+  <data name="Enums.DeleteConfirm" xml:space="preserve"><value>Delete enum entry “{0}”? This cannot be undone.</value></data>
   <data name="Enums.NotFound" xml:space="preserve"><value>Enum entry not found.</value></data>
   <data name="Enums.CodeConflict" xml:space="preserve"><value>Code already exists in this category.</value></data>
   <data name="Field.Enum.Category" xml:space="preserve"><value>Category</value></data>
@@ -58,7 +58,7 @@
   <data name="Common.BackToList" xml:space="preserve"><value>Back to list</value></data>
   <data name="Common.TotalCount" xml:space="preserve"><value>{0} in total.</value></data>
   <data name="Common.MissingETag" xml:space="preserve"><value>The concurrency token is missing. Please refresh the page and try again.</value></data>
-  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>The content was modified by another request. Please refresh and try again.</value></data>
+  <data name="Common.ConcurrencyConflict" xml:space="preserve"><value>This content was changed by someone else. Your changes have been kept. Compare with the latest version and save again; do not refresh this page, or your unsaved changes will be lost.</value></data>
   <data name="Common.ValidationFailed" xml:space="preserve"><value>The submitted content failed server-side validation. Please check it and try again.</value></data>
   <data name="Common.LoadFailed" xml:space="preserve"><value>Failed to load data. Please try again later.</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>Actions</value></data>
@@ -107,7 +107,7 @@
   <data name="Airports.Edit.LoadFailed" xml:space="preserve"><value>Failed to load the airport detail. Please try again later.</value></data>
   <data name="Airports.Edit.SaveFailed" xml:space="preserve"><value>Failed to save the airport. Please try again later.</value></data>
   <data name="Airports.Edit.Updated" xml:space="preserve"><value>The airport has been updated.</value></data>
-  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>Delete this airport?</value></data>
+  <data name="Airports.Edit.DeleteConfirm" xml:space="preserve"><value>Delete airport “{0}”? This cannot be undone.</value></data>
   <data name="Airports.Edit.DeleteFailed" xml:space="preserve"><value>Failed to delete the airport. Please try again later.</value></data>
   <data name="Airports.Edit.Deleted" xml:space="preserve"><value>The airport has been deleted.</value></data>
   <data name="Airports.Translations.Title" xml:space="preserve"><value>Airport translations</value></data>
@@ -138,7 +138,7 @@
   <data name="News.Detail.Title" xml:space="preserve"><value>Article detail</value></data>
   <data name="News.Detail.Summary" xml:space="preserve"><value>Summary</value></data>
   <data name="News.Detail.Unpublished" xml:space="preserve"><value>Not published</value></data>
-  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this article?</value></data>
+  <data name="News.Detail.DeleteConfirm" xml:space="preserve"><value>Delete news article “{0}”? This cannot be undone.</value></data>
   <data name="News.Detail.Deleted" xml:space="preserve"><value>The article has been deleted.</value></data>
   <data name="News.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the article. Please try again later.</value></data>
   <data name="News.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the article. Please try again later.</value></data>
@@ -213,7 +213,7 @@
   <data name="GeoDivisions.Detail.RecordId" xml:space="preserve"><value>Record ID</value></data>
   <data name="GeoDivisions.Detail.Meta" xml:space="preserve"><value>Record info</value></data>
   <data name="GeoDivisions.Detail.LoadFailed" xml:space="preserve"><value>Failed to load the division detail.</value></data>
-  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete this division?</value></data>
+  <data name="GeoDivisions.Detail.DeleteConfirm" xml:space="preserve"><value>Delete division “{0}”? This cannot be undone; deletion is refused while child divisions exist.</value></data>
   <data name="GeoDivisions.Detail.Deleted" xml:space="preserve"><value>The division has been deleted.</value></data>
   <data name="GeoDivisions.Detail.DeleteFailed" xml:space="preserve"><value>Failed to delete the division. Please try again later.</value></data>
   <data name="GeoDivisions.Detail.DeleteHasChildren" xml:space="preserve"><value>This division still has child nodes. Delete or move them first.</value></data>
@@ -305,11 +305,32 @@
 
   <!-- Error page -->
   <data name="Error.Title" xml:space="preserve"><value>Error</value></data>
-  <data name="Error.Heading" xml:space="preserve"><value>Error.</value></data>
+  <data name="Error.Heading" xml:space="preserve"><value>Something went wrong</value></data>
   <data name="Error.Message" xml:space="preserve"><value>An error occurred while processing your request.</value></data>
   <data name="Error.RequestId" xml:space="preserve"><value>Request ID:</value></data>
   <data name="Error.DevelopmentMode" xml:space="preserve"><value>Development mode</value></data>
   <data name="Error.DevelopmentDetail" xml:space="preserve"><value>Switching to the Development environment displays detailed information about the error.</value></data>
   <data name="Error.DevelopmentWarningTitle" xml:space="preserve"><value>The Development environment should not be enabled for deployed applications.</value></data>
   <data name="Error.DevelopmentWarning" xml:space="preserve"><value>It can result in displaying sensitive information from exceptions to end users. For local debugging, set the ASPNETCORE_ENVIRONMENT environment variable to Development and restart the app.</value></data>
+  <data name="Error.NotFound.Title" xml:space="preserve"><value>Page not found</value></data>
+  <data name="Error.NotFound.Heading" xml:space="preserve"><value>Page not found (404)</value></data>
+  <data name="Error.NotFound.Detail" xml:space="preserve"><value>The address you visited does not exist or has been moved. Check the address, or go back to the home page.</value></data>
+  <data name="Error.BackHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="Common.ConfirmDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Layout.SkipToContent" xml:space="preserve"><value>Skip to content</value></data>
+  <data name="Common.ViewLatest" xml:space="preserve"><value>View the latest version (opens in a new tab; changes kept on this page are unaffected)</value></data>
+
+  <!-- Gateway unavailable -->
+  <data name="Common.GatewayUnavailable" xml:space="preserve"><value>The service is temporarily unavailable. Please try again later; your input has been kept.</value></data>
+
+  <!-- Pagination -->
+  <data name="Common.Pager.Label" xml:space="preserve"><value>Pagination</value></data>
+  <data name="Common.Pager.Previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="Common.Pager.Next" xml:space="preserve"><value>Next</value></data>
+  <data name="Common.Pager.PageOf" xml:space="preserve"><value>Page {0} of {1}</value></data>
+
+  <!-- Layout aria -->
+  <data name="Layout.Aria.Main" xml:space="preserve"><value>Main navigation</value></data>
+  <data name="Layout.Aria.Section" xml:space="preserve"><value>Module navigation</value></data>
+  <data name="Layout.Aria.Mobile" xml:space="preserve"><value>Mobile navigation</value></data>
 </root>

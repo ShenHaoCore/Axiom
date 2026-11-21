@@ -10,15 +10,21 @@ using Grpc.Core;
 
 namespace Axiom.ReferenceData.HttpApi;
 
-public sealed class ReferenceDataQueryGrpcService(IReferenceLocationAppService app)
+public sealed class ReferenceDataQueryGrpcService(
+    IReferenceLocationAppService app,
+    ILogger<ReferenceDataQueryGrpcService> logger)
     : ReferenceDataQuery.ReferenceDataQueryBase
 {
+    /// <summary>gRPC 分页上限：与 REST 侧查询参数边界对齐，防止无界查询拖垮内存与带宽。</summary>
+    private const int MAX_PAGE_SIZE = 100;
+
     public override async Task<ListAirportsResponse> ListAirports(
         ListAirportsRequest request,
         ServerCallContext context)
     {
-        var pageSize = request.PageSize == 0 ? 20 : request.PageSize;
-        var page = request.Page == 0 ? 1 : request.Page;
+        // 边界钳制：page_size 上限 100，非法 page 兜底为 1（异常输入不值得 500）。
+        var pageSize = Math.Clamp(request.PageSize == 0 ? 20 : request.PageSize, 1, MAX_PAGE_SIZE);
+        var page = Math.Max(request.Page == 0 ? 1 : request.Page, 1);
 
         var query = new ReferenceLocationListQuery(
             request.Code,
@@ -45,9 +51,22 @@ public sealed class ReferenceDataQueryGrpcService(IReferenceLocationAppService a
 
             return response;
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+            // 客户端断开：映射为 Cancelled，避免污染 Internal 错误监控。
+            throw new RpcException(new Status(StatusCode.Cancelled, "Request cancelled."));
+        }
+        catch (RpcException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            // 与 REST 侧 GlobalExceptionHandler 口径一致：记完整日志、回传通用文案，不泄露内部异常消息。
+            logger.LogError(exception, "gRPC ListAirports 处理失败（TraceId={TraceId}）。", context.GetHttpContext().TraceIdentifier);
+            throw new RpcException(new Status(
+                StatusCode.Internal,
+                $"Internal error (traceId: {context.GetHttpContext().TraceIdentifier})."));
         }
     }
 

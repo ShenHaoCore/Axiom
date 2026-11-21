@@ -13,6 +13,10 @@ public sealed class ReferenceEnum
     }
 
     public Guid Id { get; private set; }
+
+    /// <summary>EF Core 并发令牌：每次更新重新生成，与 If-Match 的 ETag 对应。</summary>
+    public Guid ConcurrencyToken { get; private set; } = Guid.NewGuid();
+
     public string Category { get; private set; } = null!;
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
@@ -47,6 +51,8 @@ public sealed class ReferenceEnum
         {
             SortOrder = sortOrder.Value;
         }
+
+        ConcurrencyToken = Guid.NewGuid();
     }
 
     public static string NormalizeKey(string? value, string field)

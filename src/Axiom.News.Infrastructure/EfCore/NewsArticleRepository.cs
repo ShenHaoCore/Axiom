@@ -30,10 +30,13 @@ public sealed class NewsArticleRepository(NewsDbContext dbContext) : INewsArticl
         if (status.HasValue) query = query.Where(a => a.Status == status.Value);
         if (keyword is { } kw)
         {
+            // 双侧 Lower + LIKE：EF 将 ToLower 翻译为 SQL LOWER（等价 ILIKE）且 InMemory 亦可翻译。
+            // 搜索限定在 Title/Summary（短文本列）；Content 是 50k 大字段，避免逐行全扫。
+            // 通配符转义后用户输入不再被解释为模式。
+            var pattern = $"%{LikePattern.Escape(kw.Trim().ToLowerInvariant())}%";
             query = query.Where(a =>
-                a.Title.Contains(kw) ||
-                (a.Summary != null && a.Summary.Contains(kw)) ||
-                a.Content.Contains(kw));
+                EF.Functions.Like(a.Title.ToLower(), pattern) ||
+                (a.Summary != null && EF.Functions.Like(a.Summary.ToLower(), pattern)));
         }
 
         var totalCount = await query.CountAsync(ct);
@@ -140,6 +143,13 @@ public sealed class NewsArticleRepository(NewsDbContext dbContext) : INewsArticl
             .ToArray();
 
         dbContext.NewsArticleTranslations.RemoveRange(removed);
+
+        // 译文属于资源表示的一部分：刷新主表并发令牌，保证 If-Match 覆盖“主表+译文”表示。
+        // 新闻模块不发地点事件，无 Outbox 写入。
+        var article = await dbContext.NewsArticles.FirstOrDefaultAsync(a => a.Id == articleId, ct)
+            ?? throw new NewsArticleNotFoundException(articleId);
+        dbContext.Entry(article).Property(a => a.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+
         await dbContext.SaveChangesAsync(ct);
     }
 
@@ -155,6 +165,12 @@ public sealed class NewsArticleRepository(NewsDbContext dbContext) : INewsArticl
         }
 
         dbContext.NewsArticleTranslations.RemoveRange(existing);
+
+        // 与 ReplaceTranslationsAsync 同理：表示发生变化，刷新并发令牌。
+        var article = await dbContext.NewsArticles.FirstOrDefaultAsync(a => a.Id == articleId, ct)
+            ?? throw new NewsArticleNotFoundException(articleId);
+        dbContext.Entry(article).Property(a => a.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+
         await dbContext.SaveChangesAsync(ct);
         return true;
     }

@@ -28,7 +28,7 @@ public interface IGeoDivisionRepository
     /// <summary>一次读取多个父节点的直接子级（用于统计各子级的下级数量与同名子级检测）。</summary>
     Task<List<GeoDivision>> ListByParentIdsAsync(IReadOnlyCollection<Guid> parentIds, CancellationToken ct = default);
 
-    Task<bool> AnyByUniqueKeyAsync(int level, string countryCode, string code, CancellationToken ct = default);
+    Task<bool> AnyByUniqueKeyAsync(int level, string countryCode, string code, Guid? excludedId = null, CancellationToken ct = default);
     Task<bool> AnyByKindAsync(string kind, CancellationToken ct = default);
     Task<bool> HasChildrenAsync(Guid parentId, CancellationToken ct = default);
 

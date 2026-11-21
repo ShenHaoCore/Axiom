@@ -8,10 +8,10 @@ public sealed class PublicAuthorizationEndpointConfigurationManager(
     IConfigurationManager<OpenIdConnectConfiguration> inner,
     string publicAuthority) : IConfigurationManager<OpenIdConnectConfiguration>
 {
-    public async Task<OpenIdConnectConfiguration> GetConfigurationAsync(CancellationToken cancellationToken)
+    public async Task<OpenIdConnectConfiguration> GetConfigurationAsync(CancellationToken cancel)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        var configuration = await inner.GetConfigurationAsync(cancellationToken);
+        cancel.ThrowIfCancellationRequested();
+        var configuration = await inner.GetConfigurationAsync(cancel);
         configuration.AuthorizationEndpoint = $"{publicAuthority.TrimEnd('/')}/connect/authorize";
         return configuration;
     }

@@ -31,12 +31,14 @@
   <data name="ReferenceData.Enum.NotFound" xml:space="preserve"><value>指定的枚举项不存在：{0:N}。</value></data>
   <data name="ReferenceData.Enum.CodeConflict" xml:space="preserve"><value>相同分类+代码的枚举项已存在：{0}/{1}。</value></data>
   <data name="ReferenceData.Enum.InUse" xml:space="preserve"><value>枚举项仍被引用，无法删除：{0}/{1}。</value></data>
+  <data name="ReferenceData.Enum.ConcurrencyConflict" xml:space="preserve"><value>枚举项已被其他请求修改，请重新获取后再操作。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.InvalidCountryCode" xml:space="preserve"><value>国家代码必须是 2 个英文字母。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.LatitudeOutOfRange" xml:space="preserve"><value>纬度必须位于 -90 到 90 之间。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.LongitudeOutOfRange" xml:space="preserve"><value>经度必须位于 -180 到 180 之间。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.ParentRequired" xml:space="preserve"><value>非国家行必须指定父级行政区。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.ParentNotFound" xml:space="preserve"><value>父级行政区不存在：{0:N}。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.ParentInvalid" xml:space="preserve"><value>父级行政区与当前行政区的层级或国家不匹配。</value></data>
+  <data name="ReferenceData.GeoDivision.Validation.ParentCyclic" xml:space="preserve"><value>父级行政区不能是自身或自身的后代。</value></data>
   <data name="ReferenceData.GeoDivision.Validation.SubdivisionMismatch" xml:space="preserve"><value>一级区划代码必须与所属一级行政区一致（应为 {0}，实际为 {1}）。</value></data>
   <data name="ReferenceData.Location.NotFound" xml:space="preserve"><value>指定的地点不存在：{0:N}。</value></data>
   <data name="ReferenceData.Location.CodeConflict" xml:space="preserve"><value>相同类型的地点代码已存在：{0}。</value></data>

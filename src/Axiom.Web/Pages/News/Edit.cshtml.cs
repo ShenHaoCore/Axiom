@@ -27,6 +27,11 @@ public sealed class EditModel(
 
     public string? ErrorMessage { get; private set; }
 
+    /// <summary>412 并发冲突时置位：错误区渲染“查看最新内容”链接（输入已保留）。</summary>
+    public bool ShowLatestLink { get; private set; }
+
+    public string? LatestUrl { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(Guid? id, CancellationToken cancellationToken = default)
     {
         ArticleId = id;
@@ -97,6 +102,15 @@ public sealed class EditModel(
             if (response.StatusCode == HttpStatusCode.Forbidden)
             {
                 return StatusCode(StatusCodes.Status403Forbidden);
+            }
+
+            if (response.StatusCode == HttpStatusCode.PreconditionFailed)
+            {
+                // 412：并发令牌过期。输入完整保留，提供“查看最新内容”出路而不是让用户刷新。
+                ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
+                ShowLatestLink = true;
+                LatestUrl = $"/News/Detail?id={ArticleId}";
+                return Page();
             }
 
             if (response.StatusCode == HttpStatusCode.Conflict)

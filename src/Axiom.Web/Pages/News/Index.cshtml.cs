@@ -15,9 +15,16 @@ public sealed class IndexModel(
     NewsClient newsClient,
     IStringLocalizer<SharedResource> localizer) : PageModel
 {
+    private const int PAGE_SIZE = 20;
+
     public IReadOnlyList<NewsArticleView> Articles { get; private set; } = [];
 
     public int TotalCount { get; private set; }
+
+    /// <summary>当前页码与总页数，供分页控件渲染。</summary>
+    public int CurrentPage { get; private set; } = 1;
+
+    public int TotalPages { get; private set; } = 1;
 
     public string? StatusFilter { get; private set; }
 
@@ -26,10 +33,11 @@ public sealed class IndexModel(
 
     public string? ErrorMessage { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(string? status, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OnGetAsync(string? status, int page = 1, CancellationToken cancellationToken = default)
     {
         StatusFilter = string.IsNullOrWhiteSpace(status) ? null : status.Trim();
-        using var response = await newsClient.ListAsync(StatusFilter, 1, cancellationToken);
+        var currentPage = Math.Max(page, 1);
+        using var response = await newsClient.ListAsync(StatusFilter, currentPage, PAGE_SIZE, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -47,9 +55,11 @@ public sealed class IndexModel(
             return Page();
         }
 
-        var page = await response.Content.ReadFromJsonAsync<PagedResponse<NewsArticleView>>(cancellationToken);
-        Articles = page?.Items ?? [];
-        TotalCount = page?.TotalCount ?? 0;
+        var paged = await response.Content.ReadFromJsonAsync<PagedResponse<NewsArticleView>>(cancellationToken);
+        Articles = paged?.Items ?? [];
+        TotalCount = paged?.TotalCount ?? 0;
+        TotalPages = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PAGE_SIZE));
+        CurrentPage = Math.Min(currentPage, TotalPages);
         return Page();
     }
 }

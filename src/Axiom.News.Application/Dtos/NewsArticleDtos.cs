@@ -40,7 +40,11 @@ public sealed record NewsArticleListQuery(
     int PageSize = 20,
     string? Category = null,
     string? Status = null,
-    string? Keyword = null);
+    string? Keyword = null)
+{
+    /// <summary>分页上限：防止超大数据页拖垮内存与带宽（列表 DTO 含全部字段）。</summary>
+    public const int MaxPageSize = 100;
+}
 
 /// <summary>某个实体在单一语言下的翻译集合（字段名 → 译文）。</summary>
 public sealed record TranslationDto(string Culture, IReadOnlyDictionary<string, string> Values);

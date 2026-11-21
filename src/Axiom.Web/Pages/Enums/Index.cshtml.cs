@@ -23,7 +23,10 @@ public sealed class IndexModel(
     [TempData]
     public string? StatusMessage { get; set; }
 
-    public string? ErrorMessage { get; private set; }
+    // [TempData]：删除失败经 RedirectToPage 返回列表，错误信息必须能跨请求存活，
+    // 否则失败分支会静默无提示（这是“失败当成功播报”问题的另一半根因）。
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken = default)
     {
@@ -51,7 +54,30 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        using var response = await enumClient.DeleteAsync(id, cancellationToken);
+        // 删除需要 If-Match：先取当前条目与其 ETag，再删除。
+        string? eTag;
+        using (var getResponse = await enumClient.GetAsync(id, cancellationToken))
+        {
+            if (getResponse.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return Challenge();
+            }
+
+            if (getResponse.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+
+            if (getResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                ErrorMessage = localizer["Enums.NotFound"].Value;
+                return RedirectToPage(new { Category });
+            }
+
+            eTag = getResponse.Headers.ETag?.Tag;
+        }
+
+        using var response = await enumClient.DeleteAsync(id, eTag ?? string.Empty, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             return Challenge();
@@ -62,21 +88,34 @@ public sealed class IndexModel(
             return StatusCode(StatusCodes.Status403Forbidden);
         }
 
+        // 失败一律走 ErrorMessage（红色、手动关闭）：失败混进成功通道会让用户误以为已删除。
         if (response.StatusCode == HttpStatusCode.Conflict)
         {
-            StatusMessage = localizer["Enums.DeleteInUse"].Value;
+            ErrorMessage = localizer["Enums.DeleteInUse"].Value;
+            return RedirectToPage(new { Category });
+        }
+
+        if (response.StatusCode == HttpStatusCode.PreconditionFailed)
+        {
+            ErrorMessage = localizer["Common.ConcurrencyConflict"].Value;
             return RedirectToPage(new { Category });
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            StatusMessage = localizer["Enums.NotFound"].Value;
+            ErrorMessage = localizer["Enums.NotFound"].Value;
             return RedirectToPage(new { Category });
         }
 
-        StatusMessage = response.IsSuccessStatusCode
-            ? localizer["Enums.Deleted"].Value
-            : localizer["Enums.DeleteFailed"].Value;
+        if (response.IsSuccessStatusCode)
+        {
+            StatusMessage = localizer["Enums.Deleted"].Value;
+        }
+        else
+        {
+            ErrorMessage = localizer["Enums.DeleteFailed"].Value;
+        }
+
         return RedirectToPage(new { Category });
     }
 }

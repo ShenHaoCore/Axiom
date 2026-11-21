@@ -9,3 +9,7 @@ TestResults/
 .env.staging
 .env.production
 deploy/certs/
+
+# 本地工具产物：评审快照/截图与工作区代理配置
+.impeccable/
+.zcode/

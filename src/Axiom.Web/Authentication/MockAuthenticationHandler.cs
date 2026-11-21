@@ -1,4 +1,5 @@
 // 仅开发环境启用：跳过 SSO 登录，直接注入模拟用户与可配置的访问令牌。
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Axiom.Web.Clients;
@@ -19,10 +20,14 @@ public sealed class MockAuthenticationHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // 模拟用户显示名跟随界面语言，避免英文界面下漏出中文名。
+        var displayName = CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase)
+            ? "开发用户"
+            : "Dev User";
         var identity = new ClaimsIdentity(
             [
                 new Claim("sub", "dev-user"),
-                new Claim("name", "开发用户"),
+                new Claim("name", displayName),
                 new Claim("preferred_username", "dev-user")
             ],
             SCHEME,

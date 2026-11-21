@@ -2,20 +2,32 @@
 (function () {
     'use strict';
 
+    // 异步加载失败的兜底文案：页面未传 data-error-text 时按界面语言回退，避免中文界面漏出英文。
+    var FALLBACK_ERROR_TEXT = (document.documentElement.lang || '').toLowerCase().indexOf('zh') === 0
+        ? '加载失败'
+        : 'Load failed';
+
     // ---------- 通用确认对话框 ----------
 
     var confirmDialog = document.getElementById('confirm-dialog');
     var confirmText = document.getElementById('confirm-dialog-text');
+    var confirmButton = confirmDialog ? confirmDialog.querySelector('button[value="confirm"]') : null;
+    var confirmButtonLabel = confirmButton ? confirmButton.textContent : null;
     var confirmResolve = null;
 
     // 弹出确认对话框并返回 Promise；对话框不可用时回退 window.confirm。
-    function showConfirm(message) {
+    // confirmLabel 让确认按钮用动词+对象命名（“删除”），而不是对任何场景都说“确认”。
+    function showConfirm(message, confirmLabel) {
         if (!confirmDialog || typeof confirmDialog.showModal !== 'function') {
             return Promise.resolve(window.confirm(message));
         }
 
         if (confirmText) {
             confirmText.textContent = message;
+        }
+
+        if (confirmButton && confirmButtonLabel) {
+            confirmButton.textContent = confirmLabel || confirmButtonLabel;
         }
 
         confirmDialog.returnValue = '';
@@ -44,7 +56,7 @@
         }
 
         event.preventDefault();
-        showConfirm(form.getAttribute('data-confirm')).then(function (confirmed) {
+        showConfirm(form.getAttribute('data-confirm'), form.getAttribute('data-confirm-button')).then(function (confirmed) {
             if (!confirmed) {
                 return;
             }
@@ -251,7 +263,8 @@
                 expand.type = 'button';
                 expand.className = 'tree-select-expand';
                 expand.setAttribute('aria-expanded', 'false');
-                expand.setAttribute('aria-label', 'expand');
+                // 以节点名作为可访问名称，读屏播报“XX 已折叠/展开”，而不是无意义的 "expand"。
+                expand.setAttribute('aria-label', nodeLabel || 'expand');
                 expand.textContent = '▶';
                 expand.addEventListener('click', function (event) {
                     event.preventDefault();
@@ -337,7 +350,7 @@
                     var button = document.createElement('button');
                     button.type = 'button';
                     button.className = 'tree-select-option';
-                    button.textContent = root.getAttribute('data-error-text') || 'Load failed';
+                    button.textContent = root.getAttribute('data-error-text') || FALLBACK_ERROR_TEXT;
                     button.addEventListener('click', function (event) {
                         event.preventDefault();
                         event.stopPropagation();
@@ -489,6 +502,11 @@
             return;
         }
 
+        // 树选器的搜索框只影响下拉候选，不改任何可提交字段：标脏会制造离开假警报。
+        if (element.closest('[data-tree-select]')) {
+            return;
+        }
+
         var form = element.closest('form[method="post"]');
         if (form) {
             form.setAttribute('data-dirty', '1');
@@ -587,7 +605,7 @@
                 var retry = document.createElement('button');
                 retry.type = 'button';
                 retry.className = 'region-children-retry';
-                retry.textContent = container.getAttribute('data-error-text') || 'Load failed';
+                retry.textContent = container.getAttribute('data-error-text') || FALLBACK_ERROR_TEXT;
                 retry.addEventListener('click', function () {
                     loadRegionChildren(container);
                 });
@@ -634,8 +652,11 @@
 
         var toast = document.createElement('div');
         toast.className = 'toast align-items-center border-0 toast-' + type;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
+        // 语义分级：danger 是需要立即处理的错误（role=alert / assertive）；
+        // success 是非紧急结果（role=status / polite），不应打断读屏用户。
+        var isDanger = type === 'danger';
+        toast.setAttribute('role', isDanger ? 'alert' : 'status');
+        toast.setAttribute('aria-live', isDanger ? 'assertive' : 'polite');
         toast.setAttribute('aria-atomic', 'true');
 
         var layout = document.createElement('div');

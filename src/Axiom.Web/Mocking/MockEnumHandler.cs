@@ -57,7 +57,8 @@ internal sealed class MockEnumHandler(MockLocalizer localizer)
 
                     var created = new ReferenceEnumView(Guid.NewGuid(), category, code, name, sortOrder);
                     MockDataStore.Enums.Add(created);
-                    return Json(created, HttpStatusCode.Created);
+                    MockDataStore.EnumETags[created.Id] = Guid.NewGuid();
+                    return Json(created, HttpStatusCode.Created, MockDataStore.EnumETags[created.Id].ToString("N"));
                 }
             }
         }
@@ -77,12 +78,17 @@ internal sealed class MockEnumHandler(MockLocalizer localizer)
                     var item = MockDataStore.Enums.FirstOrDefault(e => e.Id == id);
                     return item is null
                         ? Problem(HttpStatusCode.NotFound, "未找到指定枚举项。")
-                        : Json(localizer.Localize(item, requestCulture), HttpStatusCode.OK);
+                        : Json(localizer.Localize(item, requestCulture), HttpStatusCode.OK, MockDataStore.EnumETags[id].ToString("N"));
                 }
             }
 
             if (request.Method == HttpMethod.Put)
             {
+                if (!TryParseIfMatch(request, out var expectedETag, out var error))
+                {
+                    return error!;
+                }
+
                 using var body = await ReadJsonAsync(request, cancellationToken);
                 lock (MockDataStore.Gate)
                 {
@@ -92,6 +98,12 @@ internal sealed class MockEnumHandler(MockLocalizer localizer)
                         return Problem(HttpStatusCode.NotFound, "未找到指定枚举项。");
                     }
 
+                    if (MockDataStore.EnumETags[id] != expectedETag)
+                    {
+                        // RFC 9110：If-Match 前置条件失败用 412。
+                        return Problem(HttpStatusCode.PreconditionFailed, "枚举项已被其他请求修改，请刷新后重试。");
+                    }
+
                     var original = MockDataStore.Enums[index];
                     var updated = original with
                     {
@@ -99,18 +111,29 @@ internal sealed class MockEnumHandler(MockLocalizer localizer)
                         SortOrder = (int?)Integer(body, GatewayFields.SORT_ORDER) ?? original.SortOrder
                     };
                     MockDataStore.Enums[index] = updated;
-                    return Json(updated, HttpStatusCode.OK);
+                    MockDataStore.EnumETags[id] = Guid.NewGuid();
+                    return Json(updated, HttpStatusCode.OK, MockDataStore.EnumETags[id].ToString("N"));
                 }
             }
 
             if (request.Method == HttpMethod.Delete)
             {
+                if (!TryParseIfMatch(request, out var expectedETag, out var error))
+                {
+                    return error!;
+                }
+
                 lock (MockDataStore.Gate)
                 {
                     var index = MockDataStore.Enums.FindIndex(e => e.Id == id);
                     if (index < 0)
                     {
                         return Problem(HttpStatusCode.NotFound, "未找到指定枚举项。");
+                    }
+
+                    if (MockDataStore.EnumETags[id] != expectedETag)
+                    {
+                        return Problem(HttpStatusCode.PreconditionFailed, "枚举项已被其他请求修改，请刷新后重试。");
                     }
 
                     var item = MockDataStore.Enums[index];
@@ -121,6 +144,7 @@ internal sealed class MockEnumHandler(MockLocalizer localizer)
                     }
 
                     MockDataStore.Enums.RemoveAt(index);
+                    MockDataStore.EnumETags.Remove(id);
                     MockDataStore.RemoveTranslations("enum", id);
                     return Empty(HttpStatusCode.NoContent);
                 }

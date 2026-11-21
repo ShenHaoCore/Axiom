@@ -20,7 +20,9 @@ public static class ReferenceDataInfrastructureExtensions
         IHostEnvironment environment)
     {
         services.AddDbContext<ReferenceDataDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("ReferenceData")));
+            options.UseNpgsql(
+                configuration.GetConnectionString("ReferenceData"),
+                npgsql => npgsql.EnableRetryOnFailure()));
 
         services.AddScoped<IGeoDivisionRepository, GeoDivisionRepository>();
         services.AddScoped<IReferenceLocationRepository, ReferenceLocationRepository>();

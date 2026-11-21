@@ -4,18 +4,22 @@
     ViewData["Title"] = Localizer["News.Title"];
 }
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@Localizer["News.Title"]</h1>
-        <p class="page-description">@Localizer["News.Description"]</p>
-    </div>
-    <div class="page-actions">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@Localizer["News.Title"]</div>
+            <div class="page-subtitle text-secondary">@Localizer["News.Description"]</div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-primary" asp-page="/News/Edit">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />
             </svg>
             @Localizer["News.New"]
         </a>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -44,32 +48,29 @@
     </div>
 </div>
 
-<section class="card data-card" aria-labelledby="news-list-title">
-    <div class="card-toolbar">
-        <div class="card-toolbar-title">
-            <h2 id="news-list-title">@Localizer["News.Title"]</h2>
-            <span class="count-pill">@Model.Articles.Count</span>
-        </div>
-    </div>
+<div class="card" aria-labelledby="news-list-title">
+    <div class="card-header">
+    <h2 class="card-title" id="news-list-title">@Localizer["News.Title"] <span class="badge bg-secondary-lt">@Model.TotalCount</span></h2>
+</div>
 
     @if (Model.Articles.Count == 0)
     {
-        <div class="empty-state">
-            <span class="empty-state-icon" aria-hidden="true">
+        <div class="empty">
+            <span class="empty-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
                     <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
                     <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
                 </svg>
             </span>
-            <p class="empty-state-title">@Localizer["News.Empty"]</p>
-            <p class="empty-state-text">@Localizer["News.EmptyHint"]</p>
+            <p class="empty-title">@Localizer["News.Empty"]</p>
+            <p class="empty-subtitle text-secondary">@Localizer["News.EmptyHint"]</p>
             <a class="btn btn-primary btn-sm" asp-page="/News/Edit">@Localizer["News.New"]</a>
         </div>
     }
     else
     {
         <div class="table-responsive" tabindex="0" role="region" aria-labelledby="news-list-title">
-            <table class="table data-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["News.Column.Title"]</th>
@@ -101,5 +102,26 @@
                 </tbody>
             </table>
         </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pager" aria-label="@Localizer["Common.Pager.Label"]">
+                @if (Model.CurrentPage > 1)
+                {
+                    <a class="btn btn-ghost btn-sm"
+                       asp-page="/News/Index"
+                       asp-route-status="@Model.StatusFilter"
+                       asp-route-page="@(Model.CurrentPage - 1)">@Localizer["Common.Pager.Previous"]</a>
+                }
+                <span class="pager-status">@Localizer["Common.Pager.PageOf", Model.CurrentPage, Model.TotalPages]</span>
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <a class="btn btn-ghost btn-sm"
+                       asp-page="/News/Index"
+                       asp-route-status="@Model.StatusFilter"
+                       asp-route-page="@(Model.CurrentPage + 1)">@Localizer["Common.Pager.Next"]</a>
+                }
+            </nav>
+        }
     }
-</section>
+</div>

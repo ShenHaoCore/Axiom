@@ -80,8 +80,27 @@ public static class NewsArticleEndpoints
     private static async Task<IResult> HandleList(
         [AsParameters] NewsArticleListQuery query,
         INewsArticleAppService app,
+        IStringLocalizer<ApiErrorMessages> localizer,
         CancellationToken ct)
     {
+        // 分页边界显式校验：page=0 会导致 Skip 负数异常，pagesize 无界会一次捞全表。
+        var errors = new Dictionary<string, string[]>();
+        if (query.Page < 1)
+        {
+            errors[nameof(query.Page)] = [localizer[ApiErrorCodes.VALIDATION_PAGE_OUT_OF_RANGE].Value];
+        }
+
+        if (query.PageSize is < 1 or > NewsArticleListQuery.MaxPageSize)
+        {
+            errors[nameof(query.PageSize)] = [
+                localizer[ApiErrorCodes.VALIDATION_PAGE_SIZE_OUT_OF_RANGE, NewsArticleListQuery.MaxPageSize].Value];
+        }
+
+        if (errors.Count > 0)
+        {
+            return Results.ValidationProblem(errors);
+        }
+
         var paged = await app.ListAsync(query, CultureInfo.CurrentUICulture.Name, ct);
         return Results.Ok(paged);
     }
@@ -162,7 +181,8 @@ public static class NewsArticleEndpoints
         catch (NewsArticleConcurrencyConflictException)
         {
             return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
+                // RFC 9110: If-Match 前置条件失败用 412；409 保留给状态类冲突。
+                statusCode: StatusCodes.Status412PreconditionFailed,
                 title: localizer[ApiErrorCodes.NEWS_CONCURRENCY_CONFLICT].Value);
         }
     }
@@ -191,7 +211,7 @@ public static class NewsArticleEndpoints
         catch (NewsArticleConcurrencyConflictException)
         {
             return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
+                statusCode: StatusCodes.Status412PreconditionFailed,
                 title: localizer[ApiErrorCodes.NEWS_CONCURRENCY_CONFLICT].Value);
         }
     }

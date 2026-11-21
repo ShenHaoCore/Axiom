@@ -365,7 +365,7 @@ public sealed class CreateModel(
         KindOptions = GeoDivisionKindOptions.ToSelectList(items, Input.Level);
     }
 
-    private static IReadOnlyList<ParentTreeSelectItemDto> MapChildren(
+    private static List<ParentTreeSelectItemDto> MapChildren(
         IEnumerable<GeoDivisionChildView> children,
         Guid? selectedId,
         Guid? excludeId,

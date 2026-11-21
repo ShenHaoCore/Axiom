@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Axiom.DbMigrator</RootNamespace>
+    <!-- 引用 AuthHub 后其 appsettings.json 会流入 publish 输出（NETSDK1152）。
+         允许重复：主项目文件优先，且容器内连接串来自环境变量。 -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
   <ItemGroup>

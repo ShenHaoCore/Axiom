@@ -2,7 +2,9 @@
 @model Axiom.Web.Pages.News.DetailModel
 @{
     ViewData["Title"] = Model.Article?.Title ?? Localizer["News.Detail.Title"];
-    var deleteConfirm = Localizer["News.Detail.DeleteConfirm"].Value;
+    var articleTitle = Model.Article?.Title ?? string.Empty;
+    var deleteConfirm = string.Format(Localizer["News.Detail.DeleteConfirm"].Value, articleTitle);
+    var confirmButton = Localizer["Common.ConfirmDelete"].Value;
 }
 
 <nav aria-label="breadcrumb">
@@ -14,21 +16,25 @@
 
 @if (Model.Article is { } article)
 {
-    <div class="page-header">
-        <div class="page-header-main">
-            <h1>@article.Title</h1>
-            <p class="page-description">
+    <div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@article.Title</div>
+            <div class="page-subtitle text-secondary">
                 <span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span>
                 <span class="ms-2">@article.Category</span>
                 <span class="text-muted">· @article.Author</span>
                 <span class="text-muted">· @(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</span>
-            </p>
+            </div>
         </div>
-        <div class="page-actions">
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
             <a class="btn btn-outline-secondary" asp-page="/News/Index">@Localizer["Common.BackToList"]</a>
             <a class="btn btn-primary" asp-page="/News/Edit" asp-route-id="@article.Id">@Localizer["Common.Edit"]</a>
         </div>
+        </div>
     </div>
+</div>
 
     @if (Model.StatusMessage is not null)
     {
@@ -84,7 +90,7 @@
                 <div class="card-header">@Localizer["Common.DangerZone"]</div>
                 <div class="card-body">
                     <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
-                    <form method="post" asp-page-handler="Delete" data-confirm="@deleteConfirm">
+                    <form method="post" asp-page-handler="Delete" data-confirm="@deleteConfirm" data-confirm-button="@confirmButton">
                         <input type="hidden" name="ArticleId" value="@article.Id" />
                         <input type="hidden" name="ETag" value="@Model.ETag" />
                         <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>

@@ -1,5 +1,12 @@
 # 生产环境覆盖文件：切换 Production 配置，OpenIddict 证书从宿主机目录挂载。
 # 使用方式：docker compose --env-file .env.production -f compose.yaml -f compose.production.yaml up -d --build
+#
+# 安全基线（审核项）：
+# - AUTH_REQUIRE_HTTPS_METADATA=true：JWT 发现文档与 JWKS 必须经 TLS 获取（同时要求
+#   AuthHub 通道本身有 TLS 终止，如反代或透传；当前 compose 拓扑需要先补齐这一层再上生产）。
+# - 演示用户显式禁用（SeedUser__Password=""）。
+# - Data Protection 密钥落盘持久卷（DATA_PROTECTION_KEYS_PATH=/keys）。
+# - 观测栈不再匿名 Admin、不向宿主机发布内部端口（如需在服务器上查看，用 SSH 隧道 + docker exec）。
 services:
   authhub:
     environment:
@@ -8,21 +15,45 @@ services:
       OpenIddict__Certificates__Signing__Password: ${OPENIDDICT_CERT_PASSWORD:?Set OPENIDDICT_CERT_PASSWORD}
       OpenIddict__Certificates__Encryption__Path: /certs/encryption.pfx
       OpenIddict__Certificates__Encryption__Password: ${OPENIDDICT_CERT_PASSWORD:?Set OPENIDDICT_CERT_PASSWORD}
+      AUTH_REQUIRE_HTTPS_METADATA: "true"
+      DATA_PROTECTION_KEYS_PATH: /keys
+      PUBLIC_AUTH_ISSUER: ${PUBLIC_AUTH_ISSUER:?Set PUBLIC_AUTH_ISSUER to the public HTTPS auth URL}
+      PUBLIC_WEB_POST_LOGOUT_URL: ${PUBLIC_WEB_POST_LOGOUT_URL:-http://localhost:3000/signout-callback-oidc}
     volumes:
       - ${OPENIDDICT_CERT_DIR:?Set OPENIDDICT_CERT_DIR}:/certs:ro
 
   reference-data:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      AUTH_REQUIRE_HTTPS_METADATA: "true"
 
   news-api:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      AUTH_REQUIRE_HTTPS_METADATA: "true"
 
   gateway:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      AUTH_REQUIRE_HTTPS_METADATA: "true"
 
   web:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      AUTH_REQUIRE_HTTPS_METADATA: "true"
+      DATA_PROTECTION_KEYS_PATH: /keys
+
+  postgres:
+    ports: []
+
+  rabbitmq:
+    ports: []
+
+  jaeger:
+    ports: []
+
+  grafana:
+    ports: []
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"

@@ -2,7 +2,8 @@
 @model Axiom.Web.Pages.Airports.EditModel
 @{
     ViewData["Title"] = Localizer["Airports.Edit.Title"];
-    var deleteConfirm = Localizer["Airports.Edit.DeleteConfirm"].Value;
+    var deleteConfirm = string.Format(Localizer["Airports.Edit.DeleteConfirm"].Value, Model.Airport?.Name ?? string.Empty);
+    var confirmButton = Localizer["Common.ConfirmDelete"].Value;
     var airport = Model.Airport;
 }
 
@@ -13,19 +14,23 @@
     </ol>
 </nav>
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@(airport?.Name ?? Localizer["Airports.Edit.Title"].Value)</h1>
-        <p class="page-description">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@(airport?.Name ?? Localizer["Airports.Edit.Title"].Value)</div>
+            <div class="page-subtitle text-secondary">
             @Localizer["Airports.Edit.Description"]
             @if (airport is not null)
             {
                 <span class="text-muted">· @airport.Code · @airport.CountryCode</span>
             }
-        </p>
-    </div>
-    <div class="page-actions">
+        </div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-outline-secondary" asp-page="/Index">@Localizer["Common.BackToList"]</a>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -143,7 +148,7 @@
                 <div class="card-body">
                     <p class="danger-zone-text">@Localizer["Common.DeleteWarning"]</p>
                     <form method="post" asp-page-handler="Delete" asp-route-id="@Model.AirportId"
-                          id="airport-delete-form" data-confirm="@deleteConfirm">
+                          id="airport-delete-form" data-confirm="@deleteConfirm" data-confirm-button="@confirmButton">
                         <input type="hidden" name="ETag" value="@Model.ETag" />
                         <button type="submit" class="btn btn-outline-danger btn-sm">@Localizer["Common.Delete"]</button>
                     </form>

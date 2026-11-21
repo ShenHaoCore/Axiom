@@ -64,6 +64,7 @@ public sealed class ReferenceDataDbContext(DbContextOptions<ReferenceDataDbConte
         {
             entity.ToTable("reference_enums");
             entity.HasKey(item => item.Id);
+            entity.Property(item => item.ConcurrencyToken).IsConcurrencyToken().IsRequired();
             entity.Property(item => item.Category).HasMaxLength(ReferenceEnumCategories.MaxLength).IsRequired();
             entity.Property(item => item.Code).HasMaxLength(ReferenceEnum.MaxCodeLength).IsRequired();
             entity.Property(item => item.Name).HasMaxLength(ReferenceEnum.MaxNameLength).IsRequired();

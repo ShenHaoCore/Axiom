@@ -4,18 +4,22 @@
     ViewData["Title"] = Localizer["Airports.Title"];
 }
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@Localizer["Airports.Title"]</h1>
-        <p class="page-description">@Localizer["Airports.Description"]</p>
-    </div>
-    <div class="page-actions">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@Localizer["Airports.Title"]</div>
+            <div class="page-subtitle text-secondary">@Localizer["Airports.Description"]</div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-primary" asp-page="/Airports/Create">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />
             </svg>
             @Localizer["Airports.CreateHeading"]
         </a>
+    </div>
+        </div>
     </div>
 </div>
 
@@ -28,31 +32,28 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<section class="card data-card" aria-labelledby="airport-list-title">
-    <div class="card-toolbar">
-        <div class="card-toolbar-title">
-            <h2 id="airport-list-title">@Localizer["Airports.ListHeading"]</h2>
-            <span class="count-pill">@Model.Airports.Count</span>
-        </div>
-    </div>
+<div class="card" aria-labelledby="airport-list-title">
+    <div class="card-header">
+    <h2 class="card-title" id="airport-list-title">@Localizer["Airports.ListHeading"] <span class="badge bg-secondary-lt">@Model.Airports.Count</span></h2>
+</div>
 
     @if (Model.Airports.Count == 0)
     {
-        <div class="empty-state">
-            <span class="empty-state-icon" aria-hidden="true">
+        <div class="empty">
+            <span class="empty-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
                     <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
                 </svg>
             </span>
-            <p class="empty-state-title">@Localizer["Airports.Empty"]</p>
-            <p class="empty-state-text">@Localizer["Airports.EmptyHint"]</p>
+            <p class="empty-title">@Localizer["Airports.Empty"]</p>
+            <p class="empty-subtitle text-secondary">@Localizer["Airports.EmptyHint"]</p>
             <a class="btn btn-primary btn-sm" asp-page="/Airports/Create">@Localizer["Airports.CreateHeading"]</a>
         </div>
     }
     else
     {
         <div class="table-responsive" tabindex="0" role="region" aria-labelledby="airport-list-title">
-            <table class="table data-table">
+            <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
                         <th scope="col">@Localizer["Airports.Column.Code"]</th>
@@ -86,4 +87,4 @@
             </table>
         </div>
     }
-</section>
+</div>

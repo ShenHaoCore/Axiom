@@ -1,66 +1,44 @@
 /* Axiom 管理后台设计系统。设计基线：Stripe（电光靛蓝 + 深海军蓝 + 密集型后台字阶）。 */
+/* Axiom 管理后台 —— Tabler 视觉世界（@tabler/core 1.7.5）。
+   组件层保留 --axiom-* 旧名，值全部指向 Tabler 色板；主色 #066fd1、页面底 #f6f8fb。 */
 :root {
-  /* ---------- 尺寸与布局 ---------- */
-  --axiom-sidebar-width: 248px;
-  --axiom-sidebar-collapsed-width: 68px;
-  --axiom-topbar-height: 56px;
-  --axiom-content-max: 1440px;
+  --axiom-accent: #066fd1;
+  --axiom-accent-hover: #0b5ebe;
+  --axiom-accent-press: #094fa0;
+  --axiom-accent-soft: #eaf2fb;
+  --axiom-accent-ring: #066fd1;
+  --axiom-accent-soft-strong: #3f8ae3;
 
-  /* ---------- 品牌色 ---------- */
-  --axiom-accent: #533afd;
-  --axiom-accent-hover: #4434d4;
-  --axiom-accent-press: #2e2b8c;
-  --axiom-accent-soft: #f0eeff;
-  --axiom-accent-ring: rgba(83, 58, 253, 0.16);
-  /* Stripe 规范：产品色高光，用于图表/强调，不作按钮底色。 */
-  --axiom-accent-soft-strong: #665efd;
+  --axiom-ink: #1d273b;
+  --axiom-ink-secondary: #495057;
+  --axiom-ink-mute: #5e7089;
+  --axiom-ink-faint: #566883;
 
-  /* ---------- 文字与表面 ---------- */
-  --axiom-ink: #0d253d;
-  --axiom-ink-secondary: #425466;
-  --axiom-ink-mute: #6b7c93;
-  --axiom-ink-faint: #8792a2;
-
-  --axiom-bg: #f7f9fc;
+  --axiom-bg: #f6f8fb;
   --axiom-surface: #ffffff;
-  --axiom-surface-soft: #f6f9fc;
+  --axiom-surface-soft: #f8fafc;
   --axiom-surface-hover: #f8fafc;
   --axiom-surface-sunken: #f1f5f9;
 
-  --axiom-border: #e3e8ee;
-  --axiom-border-strong: #cfd7df;
-  --axiom-input-border: #cfd7df;
-  --axiom-divider: #eef2f6;
+  --axiom-border: #e6e7eb;
+  --axiom-border-strong: #d3d6dc;
+  --axiom-input-border: #d3d6dc;
+  --axiom-divider: #eef1f4;
 
-  /* ---------- 语义色 ---------- */
   --axiom-success: #0f7b4f;
   --axiom-success-soft: #e9f7f0;
   --axiom-warning: #9a5b00;
   --axiom-warning-soft: #fff6e6;
-  --axiom-danger: #d9275c;
-  --axiom-danger-soft: #fdeef3;
+  --axiom-danger: #d63939;
+  --axiom-danger-soft: #fceaea;
 
-  /* ---------- 顶栏 ---------- */
-  --axiom-topbar-bg: #1c1e54;
-  --axiom-topbar-fg: #e8eaf6;
-  --axiom-topbar-mute: #b9bce0;
-  --axiom-topbar-hover: #2a2d6e;
-  --axiom-topbar-input-bg: #171a45;
-  --axiom-topbar-input-border: #3a3d75;
-
-  /* ---------- 圆角 / 投影 ---------- */
   --axiom-radius-xs: 4px;
   --axiom-radius-sm: 6px;
   --axiom-radius-md: 8px;
   --axiom-radius-lg: 12px;
   --axiom-radius-pill: 9999px;
 
-  /* Stripe 规范的阴影取自 shadow-blue（#003770）：比中性灰更冷、更贴品牌。 */
-  --axiom-shadow-blue: 0, 55, 112;
-  --axiom-shadow-1: 0 1px 3px rgba(var(--axiom-shadow-blue), 0.08);
-  --axiom-shadow-2: 0 8px 24px rgba(var(--axiom-shadow-blue), 0.08), 0 2px 6px rgba(var(--axiom-shadow-blue), 0.04);
-
-  /* ---------- 间距刻度（4 的倍数） ---------- */
+  --axiom-shadow-blue: 13, 39, 59;
   --axiom-space-1: 4px;
   --axiom-space-2: 8px;
   --axiom-space-3: 12px;
@@ -69,12 +47,6 @@
   --axiom-space-6: 24px;
   --axiom-space-7: 32px;
   --axiom-space-8: 40px;
-
-  /* Bootstrap 链接色跟随品牌色 */
-  --bs-link-color: var(--axiom-accent);
-  --bs-link-hover-color: var(--axiom-accent-hover);
-  --bs-link-color-rgb: 83, 58, 253;
-  --bs-link-hover-color-rgb: 68, 52, 212;
 }
 
 /* =========================================================
@@ -82,19 +54,11 @@
    ========================================================= */
 
 html {
-  font-size: 14px;
-  position: relative;
-  min-height: 100%;
+  scroll-padding-block-start: 72px;
 }
 
 body {
-  margin: 0;
-  background: var(--axiom-bg);
-  color: var(--axiom-ink);
-  font-family: "Inter", "SF Pro Text", "SF Pro Display", -apple-system, "Segoe UI", system-ui, "Microsoft YaHei", sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-  font-feature-settings: "ss01";
+  font-family: -apple-system, "Segoe UI", system-ui, "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -107,10 +71,6 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: none;
-}
-
 code {
   padding: 2px 6px;
   border-radius: var(--axiom-radius-xs);
@@ -118,7 +78,7 @@ code {
   color: var(--axiom-ink-secondary);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.8125rem;
-  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 
 hr {
@@ -128,16 +88,10 @@ hr {
 
 /* 统一键盘焦点：品牌色双层光环；未列出的控件保留浏览器默认描边 */
 .btn:focus-visible,
-.btn-link.nav-link:focus-visible,
+.nav-link:focus-visible,
 .form-control:focus-visible,
 .form-select:focus-visible,
 .form-check-input:focus-visible,
-.sidebar-link:focus-visible,
-.app-header-brand:focus-visible,
-.app-header-link:focus-visible,
-.topbar-language-select:focus-visible,
-.topbar-user-btn:focus-visible,
-.topbar-toggler:focus-visible,
 .dropdown-item:focus-visible,
 .region-toggle:focus-visible,
 .segmented a:focus-visible,
@@ -147,447 +101,12 @@ summary:focus-visible {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--axiom-accent-ring);
 }
 
-/* =========================================================
-   应用外壳
-   ========================================================= */
-
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.app-body {
-  display: flex;
-  align-items: stretch;
-  flex: 1 1 auto;
-  min-height: calc(100vh - var(--axiom-topbar-height));
-}
-
-.app-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--axiom-bg);
-}
-
-/* ---------- 侧边栏 ---------- */
-
-.sidebar {
-  width: var(--axiom-sidebar-width);
-  flex: 0 0 var(--axiom-sidebar-width);
-  position: sticky;
-  top: var(--axiom-topbar-height);
-  height: calc(100vh - var(--axiom-topbar-height));
-  height: calc(100dvh - var(--axiom-topbar-height));
-  display: flex;
-  flex-direction: column;
-  background: var(--axiom-surface);
-  border-right: 1px solid var(--axiom-border);
-  transition: width 0.18s ease, flex-basis 0.18s ease;
-  z-index: 1020;
-}
-
-.sidebar-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  background: var(--axiom-accent);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 2px 6px rgba(83, 58, 253, 0.35);
-}
-
-.sidebar-nav {
-  padding: 12px 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 36px;
-  padding: 6px 10px;
-  border-radius: var(--axiom-radius-md);
-  color: var(--axiom-ink-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.sidebar-link:hover {
-  background: var(--axiom-surface-hover);
-  color: var(--axiom-ink);
-}
-
-.sidebar-link.active,
-.sidebar-link.active:hover {
-  background: var(--axiom-accent-soft);
-  color: var(--axiom-accent);
-  font-weight: 600;
-}
-
-.sidebar-link svg {
-  flex: 0 0 auto;
-  opacity: 0.75;
-}
-
-.sidebar-link.active svg {
-  opacity: 1;
-}
-
-.sidebar-section {
-  margin-top: 18px;
-  padding: 4px 10px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--axiom-ink-faint);
-}
-
-.sidebar-nav .sidebar-section:first-child {
-  margin-top: 4px;
-}
-
-/* 折叠态 */
-.sidebar-collapsed .sidebar {
-  width: var(--axiom-sidebar-collapsed-width);
-  flex: 0 0 var(--axiom-sidebar-collapsed-width);
-}
-
-.sidebar-collapsed .sidebar-link span,
-.sidebar-collapsed .sidebar-section span {
-  display: none;
-}
-
-.sidebar-collapsed .sidebar-link {
-  justify-content: center;
-  padding-inline: 0;
-}
-
-.sidebar-collapsed .sidebar-section {
-  margin-top: 12px;
-  padding: 12px 8px 0;
-  border-top: 1px solid var(--axiom-border);
-}
-
-/* ---------- 顶栏 ---------- */
-
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 1030;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: var(--axiom-topbar-height);
-  padding: 0 20px;
-  background: var(--axiom-topbar-bg);
-  color: var(--axiom-topbar-fg);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.app-header-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 2px;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.app-header-brand:hover {
-  color: #fff;
-}
-
-.app-header-nav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 100%;
-  margin-left: 10px;
-}
-
-.app-header-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--axiom-topbar-mute);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.app-header-link:hover {
-  background: var(--axiom-topbar-hover);
-  color: #fff;
-}
-
-.app-header-link.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
-.app-header-link.active svg {
-  color: #c9c6ff;
-}
-
-.app-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
-}
-
-@media (max-width: 575.98px) {
-  .app-header {
-    padding: 0 12px;
+/* Windows 高对比度模式不渲染 box-shadow：补 outline 兜底，保证键盘焦点始终可见。 */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid LinkText;
+    outline-offset: 2px;
   }
-
-  .app-header-brand-text {
-    display: none;
-  }
-}
-
-.topbar-toggler {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--axiom-radius-sm);
-  background: transparent;
-  color: var(--axiom-topbar-mute);
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.topbar-toggler:hover {
-  background: var(--axiom-topbar-hover);
-  color: #fff;
-}
-
-/* 界面语言切换：只显示语言名，不绑定国家/地区。 */
-.topbar-language {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-
-.topbar-language-label {
-  margin: 0;
-  color: var(--axiom-topbar-mute);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.topbar-language-select {
-  height: 32px;
-  min-width: 104px;
-  padding: 0 28px 0 10px;
-  border: 1px solid var(--axiom-topbar-input-border);
-  border-radius: var(--axiom-radius-sm);
-  background-color: var(--axiom-topbar-input-bg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23b9bce0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
-  color: var(--axiom-topbar-fg);
-  font-size: 12px;
-  appearance: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.topbar-language-select:hover {
-  background-color: var(--axiom-topbar-hover);
-  border-color: #4e518f;
-}
-
-.topbar-language-select option {
-  background: var(--axiom-surface);
-  color: var(--axiom-ink);
-}
-
-@media (max-width: 575.98px) {
-  .topbar-language-label {
-    display: none;
-  }
-}
-
-.topbar-user-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--axiom-radius-sm);
-  background: transparent;
-  color: var(--axiom-topbar-fg);
-  font-size: 12px;
-  transition: background-color 0.15s ease;
-}
-
-.topbar-user-btn:hover,
-.topbar-user-btn.show {
-  background: var(--axiom-topbar-hover);
-  color: #fff;
-}
-
-.user-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--axiom-accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.topbar-user {
-  color: var(--axiom-topbar-fg);
-  font-size: 12px;
-}
-
-/* ---------- 内容区 ---------- */
-
-.content {
-  flex: 1 1 auto;
-  padding: 28px 28px 40px;
-}
-
-.content-inner {
-  width: 100%;
-  max-width: var(--axiom-content-max);
-  margin: 0 auto;
-}
-
-.footer {
-  padding: 14px 28px;
-  border-top: 1px solid var(--axiom-border);
-  background: var(--axiom-surface);
-  color: var(--axiom-ink-faint);
-  font-size: 12px;
-}
-
-/* =========================================================
-   页头 / 面包屑
-   ========================================================= */
-
-.breadcrumb {
-  --bs-breadcrumb-divider: "/";
-  --bs-breadcrumb-divider-color: var(--axiom-ink-faint);
-  margin: 0 0 10px;
-  font-size: 12px;
-}
-
-.breadcrumb-item,
-.breadcrumb-item.active {
-  color: var(--axiom-ink-mute);
-}
-
-.breadcrumb-item + .breadcrumb-item::before {
-  padding: 0 6px;
-  color: var(--axiom-ink-faint);
-}
-
-.breadcrumb a {
-  color: var(--axiom-ink-mute);
-  font-weight: 500;
-}
-
-.breadcrumb a:hover {
-  color: var(--axiom-accent);
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-}
-
-.page-header-main {
-  min-width: 0;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.22;
-  letter-spacing: -0.5px;
-  color: var(--axiom-ink);
-  overflow-wrap: anywhere;
-}
-
-.page-header h1 small {
-  margin-left: 8px;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--axiom-ink-mute);
-}
-
-.page-description {
-  margin: 6px 0 0;
-  max-width: 72ch;
-  font-size: 13px;
-  color: var(--axiom-ink-mute);
-}
-
-.page-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* 详情页标题上方的状态行 */
-.page-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--axiom-ink-mute);
-}
-
-.content h2,
-.content h3 {
-  color: var(--axiom-ink);
 }
 
 /* =========================================================
@@ -686,16 +205,11 @@ summary:focus-visible {
   font-weight: 500;
 }
 
-.btn-ghost:hover {
-  background: var(--axiom-surface-sunken);
-  color: var(--axiom-ink);
-  border-color: transparent;
-}
 
-.btn-ghost.btn-ghost-danger:hover {
-  background: var(--axiom-danger-soft);
+.btn-ghost.btn-ghost-danger {
   color: var(--axiom-danger);
 }
+
 
 .btn.is-loading:disabled {
   cursor: wait;
@@ -719,70 +233,16 @@ summary:focus-visible {
 }
 
 /* =========================================================
-   卡片 / 工具栏
-   ========================================================= */
+   计数 / 分页
 
-.card {
-  background: var(--axiom-surface);
-  border: 1px solid var(--axiom-border);
-  border-radius: var(--axiom-radius-lg);
-  box-shadow: var(--axiom-shadow-1);
-}
-
-.card-header {
-  padding: 14px 24px;
-  background: transparent;
-  border-bottom: 1px solid var(--axiom-border);
-  font-size: 13px;
+/* Tabler 侧边栏分组标题 */
+.nav-category {
+  padding: 12px 16px 6px;
+  color: var(--axiom-ink-faint);
+  font-size: 0.625rem;
   font-weight: 600;
-  color: var(--axiom-ink);
-}
-
-.card-body {
-  padding: 24px;
-}
-
-.card-footer {
-  padding: 14px 24px;
-  background: transparent;
-  border-top: 1px solid var(--axiom-border);
-}
-
-/* 列表卡：表头工具栏 + 无外边距表格 */
-.data-card {
-  overflow: hidden;
-}
-
-.card-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--axiom-border);
-}
-
-.card-toolbar-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.card-toolbar-title h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.card-toolbar-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--axiom-ink-mute);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .count-pill {
@@ -797,19 +257,27 @@ summary:focus-visible {
   color: var(--axiom-ink-secondary);
   font-size: 11px;
   font-weight: 600;
-  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 
-/* 旧版表格卡兼容 */
-.table-card {
-  margin-bottom: 16px;
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--axiom-border);
 }
 
-.table-card .table {
-  margin-bottom: 0;
+
+.pager-status {
+  color: var(--axiom-ink-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* =========================================================
+
    筛选工具栏
    ========================================================= */
 
@@ -884,9 +352,6 @@ summary:focus-visible {
   font-weight: 500;
 }
 
-.segmented a:hover {
-  color: var(--axiom-ink);
-}
 
 .segmented a.active {
   background: var(--axiom-surface);
@@ -938,16 +403,13 @@ summary:focus-visible {
   transition: background-color 0.12s ease;
 }
 
-.table tbody tr:hover > * {
-  background-color: var(--axiom-surface-hover);
-}
 
 .table tbody tr:last-child > * {
   border-bottom: 0;
 }
 
 .table td {
-  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table {
@@ -965,7 +427,8 @@ summary:focus-visible {
 }
 
 .data-table .cell-num {
-  font-feature-settings: "tnum";
+  text-align: right;
+  font-variant-numeric: tabular-nums;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--axiom-ink-secondary);
@@ -984,41 +447,6 @@ summary:focus-visible {
   padding: 40px 16px;
   color: var(--axiom-ink-mute);
   text-align: center;
-}
-
-/* =========================================================
-   空状态
-   ========================================================= */
-
-.empty-state {
-  padding: 52px 24px 56px;
-  text-align: center;
-}
-
-.empty-state-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 14px;
-  border-radius: 50%;
-  background: var(--axiom-accent-soft);
-  color: var(--axiom-accent);
-}
-
-.empty-state-title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--axiom-ink);
-}
-
-.empty-state-text {
-  margin: 0 auto 16px;
-  max-width: 44ch;
-  font-size: 13px;
-  color: var(--axiom-ink-mute);
 }
 
 /* =========================================================
@@ -1215,10 +643,6 @@ summary:focus-visible {
   opacity: 1;
 }
 
-.form-control:hover:not(:focus):not(:disabled):not([readonly]),
-.form-select:hover:not(:focus):not(:disabled) {
-  border-color: var(--axiom-ink-faint);
-}
 
 .form-control:focus,
 .form-select:focus {
@@ -1430,12 +854,6 @@ textarea.form-control {
   font-weight: 500;
 }
 
-.translation-tabs .nav-link:hover {
-  border-color: transparent;
-  border-bottom-color: var(--axiom-border-strong);
-  background: var(--axiom-surface-hover);
-  color: var(--axiom-ink);
-}
 
 .translation-tabs .nav-link.active {
   border-color: transparent;
@@ -1495,9 +913,6 @@ textarea.form-control {
   cursor: pointer;
 }
 
-.translation-copy:hover {
-  text-decoration: underline;
-}
 
 .translation-source-input {
   background: var(--axiom-surface-soft);
@@ -1812,9 +1227,6 @@ dialog::backdrop {
   background: var(--axiom-border-strong);
 }
 
-.tree-select-list::-webkit-scrollbar-thumb:hover {
-  background: var(--axiom-ink-faint);
-}
 
 /* 子级列表不再承担缩进（margin/padding 会使高亮块随层级右移）；
    缩进改由下方按嵌套深度的行内 padding 实现，高亮始终通铺到面板边缘。 */
@@ -1991,17 +1403,11 @@ dialog::backdrop {
   font-size: 13px;
 }
 
-.region-row:hover {
-  background: var(--axiom-surface-hover);
-}
 
 .region-row > a:not(.region-toggle) {
   color: var(--axiom-ink);
 }
 
-.region-row > a:not(.region-toggle):hover {
-  color: var(--axiom-accent);
-}
 
 .region-toggle {
   display: inline-flex;
@@ -2015,10 +1421,6 @@ dialog::backdrop {
   font-size: 9px;
 }
 
-.region-toggle:hover {
-  background: var(--axiom-surface-sunken);
-  color: var(--axiom-accent);
-}
 
 .region-chevron {
   display: inline-block;
@@ -2104,9 +1506,6 @@ dialog::backdrop {
   cursor: pointer;
 }
 
-.region-children-retry:hover {
-  background: var(--axiom-surface-sunken);
-}
 
 /* =========================================================
    工具类
@@ -2122,7 +1521,7 @@ dialog::backdrop {
 }
 
 .num {
-  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2250,11 +1649,199 @@ dialog::backdrop {
   .form-select,
   .region-chevron,
   .sidebar,
-  .table tbody tr {
+  .table tbody tr,
+  .tree-select-panel,
+  .toast,
+  .collapsing {
     transition: none;
   }
 
+  /* 动效可省；进度指示必须保留（加载中不是装饰运动）。 */
   .btn.is-loading::before {
     animation-duration: 1.5s;
   }
+
+  .region-children-spin,
+  .region-children-spin::after {
+    animation-duration: 0.7s;
+  }
+
+  .tree-select-panel {
+    animation: none;
+  }
+}
+
+
+
+/* 树行代码：走主题 ink token，不用 Bootstrap .text-muted 的另一套灰。 */
+.region-row code,
+.region-row .text-muted {
+  color: var(--axiom-ink-mute);
+}
+
+/* =========================================================
+   触控与小屏适配（audit 修复：触控目标 ≥44px、树行信息主体、操作列 sticky）
+   ========================================================= */
+
+/* 触屏（coarse pointer）：核心触控目标放大到 44px；桌面指针形态不变。 */
+@media (pointer: coarse) {
+  .segmented a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .region-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .tree-select-expand,
+  .tree-select-option,
+  .region-children-retry {
+    min-height: 44px;
+  }
+
+  .data-table .btn-ghost,
+  .dropdown-item {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .app-header button,
+  .app-header select,
+  .topbar-toggler {
+    min-height: 44px;
+  }
+}
+
+/* 小屏：表格横向滚动时操作列固定在右缘，主操作永远可达。 */
+@media (max-width: 767px) {
+  .table-responsive .data-table th:last-child,
+  .table-responsive .data-table td:last-child {
+    position: sticky;
+    right: 0;
+    background: var(--axiom-surface);
+    box-shadow: -10px 0 10px -10px rgba(13, 37, 61, 0.28);
+  }
+
+  /* 树行：名称是信息主体，独占首行；徽章/代码/动作换到次行，不再挤压缩名称。 */
+  .region-row {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .region-row > a:not(.region-toggle) {
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* 低频动作在窄屏收起（详情页与列表页仍可新增子级）。 */
+  .region-row .region-add-child {
+    display: none;
+  }
+
+  .region-row .row-actions {
+    flex-shrink: 0;
+  }
+}
+
+/* 跳到主内容：视觉隐藏，键盘聚焦时出现在页首（2.4.1 Bypass Blocks）。 */
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 16px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: var(--axiom-radius-sm);
+  background: var(--axiom-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease-out;
+}
+
+.skip-link:focus-visible {
+  top: 12px;
+}
+
+/* hover 只作用于支持悬停的指针：触屏上 :hover 会点击后粘滞（better-ui） */
+@media (hover: hover) {
+a:hover {
+  text-decoration: none;
+}
+.sidebar-link:hover {
+  background: var(--axiom-surface-hover);
+  color: var(--axiom-ink);
+}
+.sidebar-link.active,
+.sidebar-link.active:hover {
+  background: var(--axiom-accent-soft);
+  color: var(--axiom-accent);
+  font-weight: 600;
+}
+.app-header-brand:hover {
+  color: #fff;
+}
+.app-header-link:hover {
+  background: var(--axiom-topbar-hover);
+  color: #fff;
+}
+.topbar-toggler:hover {
+  background: var(--axiom-topbar-hover);
+  color: #fff;
+}
+.topbar-language-select:hover {
+  background-color: var(--axiom-topbar-hover);
+  border-color: #4e518f;
+}
+.breadcrumb a:hover {
+  color: var(--axiom-accent);
+}
+.btn-ghost:hover {
+  background: var(--axiom-surface-sunken);
+  color: var(--axiom-ink);
+  border-color: transparent;
+}
+.btn-ghost.btn-ghost-danger:hover {
+  background: var(--axiom-danger-soft);
+  color: var(--axiom-danger);
+}
+.segmented a:hover {
+  color: var(--axiom-ink);
+}
+.table tbody tr:hover > * {
+  background-color: var(--axiom-surface-hover);
+}
+.form-control:hover:not(:focus):not(:disabled):not([readonly]),
+.form-select:hover:not(:focus):not(:disabled) {
+  border-color: var(--axiom-ink-faint);
+}
+.translation-tabs .nav-link:hover {
+  border-color: transparent;
+  border-bottom-color: var(--axiom-border-strong);
+  background: var(--axiom-surface-hover);
+  color: var(--axiom-ink);
+}
+.translation-copy:hover {
+  text-decoration: underline;
+}
+.tree-select-list::-webkit-scrollbar-thumb:hover {
+  background: var(--axiom-ink-faint);
+}
+.region-row:hover {
+  background: var(--axiom-surface-hover);
+}
+.region-row > a:not(.region-toggle):hover {
+  color: var(--axiom-accent);
+}
+.region-toggle:hover {
+  background: var(--axiom-surface-sunken);
+  color: var(--axiom-accent);
+}
+.region-children-retry:hover {
+  background: var(--axiom-surface-sunken);
+}
 }

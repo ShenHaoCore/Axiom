@@ -37,7 +37,7 @@ public static class AuthDataSeeder
     }
 
     // 支持 Oidc:Clients 数组配置多客户端，同时兼容旧的单客户端配置键。
-    private static IReadOnlyList<OidcClientConfiguration> ResolveClients(IConfiguration configuration)
+    private static OidcClientConfiguration[] ResolveClients(IConfiguration configuration)
     {
         var configured = configuration.GetSection("Oidc:Clients").Get<OidcClientConfiguration[]>();
         if (configured is { Length: > 0 })
@@ -72,6 +72,11 @@ public static class AuthDataSeeder
         foreach (var redirectUri in client.RedirectUris)
         {
             descriptor.RedirectUris.Add(new Uri(redirectUri));
+        }
+
+        foreach (var postLogoutUri in client.PostLogoutRedirectUris)
+        {
+            descriptor.PostLogoutRedirectUris.Add(new Uri(postLogoutUri));
         }
 
         descriptor.Permissions.Add(Permissions.Endpoints.Authorization);
@@ -112,6 +117,15 @@ public static class AuthDataSeeder
             if (descriptor.RedirectUris.All(existing => existing != redirectUri))
             {
                 descriptor.RedirectUris.Add(redirectUri);
+                changed = true;
+            }
+        }
+
+        foreach (var postLogoutUri in client.PostLogoutRedirectUris.Select(uri => new Uri(uri)))
+        {
+            if (descriptor.PostLogoutRedirectUris.All(existing => existing != postLogoutUri))
+            {
+                descriptor.PostLogoutRedirectUris.Add(postLogoutUri);
                 changed = true;
             }
         }
@@ -170,4 +184,7 @@ public sealed class OidcClientConfiguration
     public string? DisplayName { get; set; }
 
     public string[] RedirectUris { get; set; } = [];
+
+    /// <summary>单点登出后的回跳地址（post_logout_redirect_uri）；缺省时客户端登出后停留在 IdP 登出页。</summary>
+    public string[] PostLogoutRedirectUris { get; set; } = [];
 }

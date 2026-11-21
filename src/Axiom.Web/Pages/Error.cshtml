@@ -1,22 +1,47 @@
 ﻿@page
 @model ErrorModel
 @{
-    ViewData["Title"] = Localizer["Error.Title"];
+    ViewData["Title"] = Model.IsNotFound
+        ? Localizer["Error.NotFound.Title"]
+        : Localizer["Error.Title"];
 }
 
-<h1 class="text-danger">@Localizer["Error.Heading"]</h1>
-<h2 class="text-danger">@Localizer["Error.Message"]</h2>
+@* 与列表页同一套 page-header 结构：错误页是设计系统的一等公民，不是临时拼凑的红色大字。 *@
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@Localizer[Model.IsNotFound ? "Error.NotFound.Heading" : "Error.Heading"]</div>
+            <div class="page-subtitle text-secondary">
+            @(Model.IsNotFound ? Localizer["Error.NotFound.Detail"] : Localizer["Error.Message"])
+        </div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
+        <a class="btn btn-primary" href="/">@Localizer["Error.BackHome"]</a>
+    </div>
+        </div>
+    </div>
+</div>
 
 @if (Model.ShowRequestId)
 {
-    <p>
+    <p class="form-text">
         <strong>@Localizer["Error.RequestId"]</strong> <code>@Model.RequestId</code>
     </p>
 }
 
-<h3>@Localizer["Error.DevelopmentMode"]</h3>
-<p>@Localizer["Error.DevelopmentDetail"]</p>
-<p>
-    <strong>@Localizer["Error.DevelopmentWarningTitle"]</strong>
-    @Localizer["Error.DevelopmentWarning"]
-</p>
+@if (Model.ShowDevelopmentMode)
+{
+    <div class="card form-card">
+        <div class="card-header">
+            <h2 class="card-title">@Localizer["Error.DevelopmentMode"]</h2>
+        </div>
+        <div class="card-body">
+            <p>@Localizer["Error.DevelopmentDetail"]</p>
+            <p>
+                <strong>@Localizer["Error.DevelopmentWarningTitle"]</strong>
+                @Localizer["Error.DevelopmentWarning"]
+            </p>
+        </div>
+    </div>
+}

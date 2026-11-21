@@ -19,7 +19,7 @@
         <div class="row-actions ms-auto">
             @if (Model.Level is >= 1 and < 4)
             {
-                <a class="btn btn-ghost"
+                <a class="btn btn-ghost region-add-child"
                    asp-page="/GeoDivisions/Create"
                    asp-route-countryCode="@Model.CountryCode"
                    asp-route-parentId="@Model.Id">@Localizer["GeoDivisions.AddChild"]</a>

@@ -62,9 +62,14 @@ internal sealed class MockNewsHandler(MockLocalizer localizer)
                 var index = MockDataStore.Articles.FindIndex(a => a.Id == id);
                 if (request.Method == HttpMethod.Get)
                 {
+                    // 未知 id 返回 404：与真实网关一致，避免页面渲染出“看似存在的幽灵记录”。
+                    if (index < 0)
+                    {
+                        return Problem(HttpStatusCode.NotFound, "未找到指定新闻。");
+                    }
+
                     var requestCulture = localizer.ResolveCulture(request);
-                    var article = index < 0 ? SampleArticle(id) : MockDataStore.Articles[index];
-                    return Json(localizer.Localize(article, requestCulture), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
+                    return Json(localizer.Localize(MockDataStore.Articles[index], requestCulture), HttpStatusCode.OK, etag: $"mock-{id.ToString("N")[..8]}");
                 }
 
                 if (request.Method == HttpMethod.Put)

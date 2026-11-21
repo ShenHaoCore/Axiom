@@ -17,11 +17,30 @@ public sealed class OutboxPublishProcessor(
     public async Task<int> PublishPendingAsync(CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var messages = await dbContext.OutboxMessages
-            .Where(message => message.PublishedAtUtc == null && message.NextAttemptAtUtc <= now)
-            .OrderBy(message => message.OccurredAtUtc)
-            .Take(BATCH_SIZE)
-            .ToListAsync(cancellationToken);
+        List<OutboxMessage> messages;
+        if (dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            // 测试用 InMemory 提供程序不支持原生 SQL：回退到普通查询（无认领语义）。
+            messages = await dbContext.OutboxMessages
+                .Where(message => message.PublishedAtUtc == null && message.NextAttemptAtUtc <= now)
+                .OrderBy(message => message.OccurredAtUtc)
+                .Take(BATCH_SIZE)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            // FOR UPDATE SKIP LOCKED 认领：多副本同时跑发布器时各取各的批次，
+            // 行锁保持到 SaveChanges 提交为止，避免重复发布与重试计数互相覆盖。
+            messages = await dbContext.OutboxMessages
+                .FromSqlInterpolated($"""
+                    SELECT * FROM outbox_messages
+                    WHERE "PublishedAtUtc" IS NULL AND "NextAttemptAtUtc" <= {now}
+                    ORDER BY "OccurredAtUtc"
+                    LIMIT {BATCH_SIZE}
+                    FOR UPDATE SKIP LOCKED
+                    """)
+                .ToListAsync(cancellationToken);
+        }
 
         foreach (var message in messages)
         {

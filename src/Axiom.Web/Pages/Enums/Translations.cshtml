@@ -13,13 +13,17 @@
     </ol>
 </nav>
 
-<div class="page-header">
-    <div class="page-header-main">
-        <h1>@pageTitle</h1>
-        <p class="page-description">@Localizer["Translations.Description"]</p>
-    </div>
-    <div class="page-actions">
+<div class="page-header d-print-none">
+    <div class="row align-items-center g-2">
+        <div class="col">
+            <div class="page-title">@pageTitle</div>
+            <div class="page-subtitle text-secondary">@Localizer["Translations.Description"]</div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
         <a class="btn btn-outline-secondary" asp-page="/Enums/Index">@Localizer["Common.BackToList"]</a>
+    </div>
+        </div>
     </div>
 </div>
 

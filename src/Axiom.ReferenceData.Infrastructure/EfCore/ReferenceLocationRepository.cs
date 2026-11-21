@@ -30,7 +30,13 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
     {
         var query = dbContext.ReferenceLocations.AsNoTracking().Where(l => l.Type == type);
         if (code is { } c) query = query.Where(l => l.Code == c);
-        if (name is { } n) query = query.Where(l => l.Name.Contains(n));
+        if (name is { } n)
+        {
+            // 双侧 Lower + LIKE：PostgreSQL 下实现大小写不敏感（等价 ILIKE），InMemory 测试同样可翻译；
+            // 通配符转义后用户输入不再被解释为模式。
+            var pattern = $"%{LikePattern.Escape(n.Trim().ToLowerInvariant())}%";
+            query = query.Where(l => EF.Functions.Like(l.Name.ToLower(), pattern));
+        }
 
         var totalCount = await query.CountAsync(ct);
         var items = await query
@@ -55,7 +61,15 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
     {
         dbContext.ReferenceLocations.Add(location);
         dbContext.OutboxMessages.Add(CreateOutboxMessage(location, OutboxMessage.LOCATION_CREATED));
-        await dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            // 前查与提交之间的并发插入竞态：以数据库唯一索引为准，映射为业务冲突。
+            throw new ReferenceLocationCodeConflictException(location.Code, (int)location.Type);
+        }
     }
 
     public async Task UpdateWithETagAsync(
@@ -73,6 +87,11 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
         catch (DbUpdateConcurrencyException)
         {
             throw new ReferenceLocationConcurrencyConflictException(location.Id);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptions.IsUniqueViolation(exception))
+        {
+            // 并发换码竞态：唯一索引兜底，映射为业务冲突而非 500。
+            throw new ReferenceLocationCodeConflictException(location.Code, (int)location.Type);
         }
     }
 
@@ -152,6 +171,14 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
             .ToArray();
 
         dbContext.ReferenceLocationTranslations.RemoveRange(removed);
+
+        // 译文属于资源表示的一部分（GET 会按语言回退链合并）：刷新主表并发令牌并复用
+        // LOCATION_UPDATED 事件，保证 If-Match 与事件流覆盖“主表+译文”的完整表示。
+        var location = await dbContext.ReferenceLocations.FirstOrDefaultAsync(l => l.Id == locationId, ct)
+            ?? throw new ReferenceLocationNotFoundException(locationId);
+        dbContext.Entry(location).Property(l => l.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+        dbContext.OutboxMessages.Add(CreateOutboxMessage(location, OutboxMessage.LOCATION_UPDATED));
+
         await dbContext.SaveChangesAsync(ct);
     }
 
@@ -167,6 +194,13 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
         }
 
         dbContext.ReferenceLocationTranslations.RemoveRange(existing);
+
+        // 与 ReplaceTranslationsAsync 同理：表示发生变化，刷新并发令牌并发出更新事件。
+        var location = await dbContext.ReferenceLocations.FirstOrDefaultAsync(l => l.Id == locationId, ct)
+            ?? throw new ReferenceLocationNotFoundException(locationId);
+        dbContext.Entry(location).Property(l => l.ConcurrencyToken).CurrentValue = Guid.NewGuid();
+        dbContext.OutboxMessages.Add(CreateOutboxMessage(location, OutboxMessage.LOCATION_UPDATED));
+
         await dbContext.SaveChangesAsync(ct);
         return true;
     }
