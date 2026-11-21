@@ -45,8 +45,8 @@
         <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
     }
 
-    <div class="detail-layout">
-        <div class="detail-main">
+    <div class="row g-3">
+        <div class="col-12 col-lg-8 d-flex flex-column gap-3">
             <div class="card">
                 <div class="card-header">@Localizer["News.Detail.Article"]</div>
                 <div class="card-body">
@@ -59,28 +59,28 @@
             </div>
         </div>
 
-        <aside class="detail-side">
+        <aside class="col-12 col-lg-4 d-flex flex-column gap-3">
             <div class="card">
                 <div class="card-header">@Localizer["News.Detail.Meta"]</div>
                 <div class="card-body">
-                    <div class="meta-list">
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["News.Column.Status"]</span>
-                            <span class="meta-item-value">
+                    <div class="datagrid">
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["News.Column.Status"]</div>
+                            <div class="datagrid-content">
                                 <span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span>
-                            </span>
+                            </div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["News.Column.Category"]</span>
-                            <span class="meta-item-value">@article.Category</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["News.Column.Category"]</div>
+                            <div class="datagrid-content">@article.Category</div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["News.Column.Author"]</span>
-                            <span class="meta-item-value">@article.Author</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["News.Column.Author"]</div>
+                            <div class="datagrid-content">@article.Author</div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["News.Column.PublishedAt"]</span>
-                            <span class="meta-item-value num">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["News.Column.PublishedAt"]</div>
+                            <div class="datagrid-content num">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? Localizer["News.Detail.Unpublished"].Value)</div>
                         </div>
                     </div>
                 </div>

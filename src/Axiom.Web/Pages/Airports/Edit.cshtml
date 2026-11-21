@@ -43,8 +43,8 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<div class="detail-layout">
-    <div class="detail-main">
+<div class="row g-3">
+    <div class="col-12 col-lg-8 d-flex flex-column gap-3">
         <form method="post" asp-route-id="@Model.AirportId" class="card form-card" id="airport-edit-form">
             <input type="hidden" name="ETag" value="@Model.ETag" />
 
@@ -112,32 +112,32 @@
         </form>
     </div>
 
-    <aside class="detail-side">
+    <aside class="col-12 col-lg-4 d-flex flex-column gap-3">
         @if (airport is not null)
         {
             <div class="card">
                 <div class="card-header">@Localizer["Airports.Edit.DetailsHeading"]</div>
                 <div class="card-body">
-                    <div class="meta-list">
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Airports.Column.Code"]</span>
-                            <span class="meta-item-value"><span class="badge-soft">@airport.Code</span></span>
+                    <div class="datagrid">
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Airports.Column.Code"]</div>
+                            <div class="datagrid-content"><span class="badge-soft">@airport.Code</span></div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Airports.Column.Name"]</span>
-                            <span class="meta-item-value">@airport.Name</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Airports.Column.Name"]</div>
+                            <div class="datagrid-content">@airport.Name</div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Airports.Column.Country"]</span>
-                            <span class="meta-item-value">@airport.CountryCode</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Airports.Column.Country"]</div>
+                            <div class="datagrid-content">@airport.CountryCode</div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Airports.Column.City"]</span>
-                            <span class="meta-item-value">@(airport.City ?? "-")</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Airports.Column.City"]</div>
+                            <div class="datagrid-content">@(airport.City ?? "-")</div>
                         </div>
-                        <div class="meta-item">
-                            <span class="meta-item-label">@Localizer["Airports.Column.Latitude"] / @Localizer["Airports.Column.Longitude"]</span>
-                            <span class="meta-item-value num">@(airport.Latitude?.ToString() ?? "-"), @(airport.Longitude?.ToString() ?? "-")</span>
+                        <div class="datagrid-item">
+                            <div class="datagrid-title">@Localizer["Airports.Column.Latitude"] / @Localizer["Airports.Column.Longitude"]</div>
+                            <div class="datagrid-content num">@(airport.Latitude?.ToString() ?? "-"), @(airport.Longitude?.ToString() ?? "-")</div>
                         </div>
                     </div>
                 </div>

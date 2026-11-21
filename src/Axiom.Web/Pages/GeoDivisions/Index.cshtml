@@ -29,24 +29,21 @@
 }
 
 <!-- 筛选：名称搜索 -->
-<form method="get" class="filter-bar">
-    <div class="filter-field filter-field-grow">
-        <label class="form-label" for="q">@Localizer["GeoDivisions.SearchLabel"]</label>
-        <div class="search-field">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+<form method="get" class="card card-body mb-4">
+    <label class="form-label" for="q">@Localizer["GeoDivisions.SearchLabel"]</label>
+    <div class="input-group">
+        <span class="input-group-text" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
                 <circle cx="7" cy="7" r="4.5" />
                 <path d="m10.5 10.5 3 3" />
             </svg>
-            <input type="search" class="form-control" id="q" name="q"
-                   placeholder="@Localizer["GeoDivisions.SearchPlaceholder"]" value="@Model.SearchQuery" />
-        </div>
-    </div>
-    <div class="filter-actions">
+        </span>
+        <input type="search" class="form-control" id="q" name="q"
+               placeholder="@Localizer["GeoDivisions.SearchPlaceholder"]" value="@Model.SearchQuery" />
         <button type="submit" class="btn btn-primary">@Localizer["Common.Search"]</button>
         @if (!string.IsNullOrEmpty(Model.SearchQuery))
         {
-            <a asp-page="/GeoDivisions/Index"
-               class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
+            <a asp-page="/GeoDivisions/Index" class="btn btn-outline-secondary">@Localizer["Common.Clear"]</a>
         }
     </div>
 </form>
@@ -117,13 +114,9 @@ else if (!string.IsNullOrEmpty(Model.SearchQuery))
 
 <!-- 层级树：所有国家同属一棵树，国家为根节点，子级在展开时惰性加载 -->
 <div class="card" aria-labelledby="tree-title">
-    <div class="card-toolbar">
-        <div class="card-toolbar-title">
-            <h2 id="tree-title">@Localizer["GeoDivisions.TreeTitle"]</h2>
-        </div>
-        <div class="card-toolbar-meta">
-            <span class="count-pill">@Model.Countries.Count</span>
-        </div>
+    <div class="card-header">
+        <h2 class="card-title" id="tree-title">@Localizer["GeoDivisions.TreeTitle"]
+            <span class="badge bg-secondary-lt">@Model.Countries.Count</span></h2>
     </div>
     <div class="card-body">
         @if (Model.Countries.Count == 0)

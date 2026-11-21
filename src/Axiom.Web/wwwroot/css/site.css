@@ -96,10 +96,6 @@ hr {
 .region-toggle:focus-visible,
 .segmented a:focus-visible,
 a:focus-visible,
-summary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--axiom-accent-ring);
-}
 
 /* Windows 高对比度模式不渲染 box-shadow：补 outline 兜底，保证键盘焦点始终可见。 */
 @media (forced-colors: active) {
@@ -134,6 +130,7 @@ summary:focus-visible {
   transform: translateY(1px);
 }
 
+.btn:disabled,
 .btn:disabled,
 .btn.disabled {
   opacity: 0.6;
@@ -205,11 +202,9 @@ summary:focus-visible {
   font-weight: 500;
 }
 
-
 .btn-ghost.btn-ghost-danger {
   color: var(--axiom-danger);
 }
-
 
 .btn.is-loading:disabled {
   cursor: wait;
@@ -245,120 +240,12 @@ summary:focus-visible {
   text-transform: uppercase;
 }
 
-.count-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: var(--axiom-radius-pill);
-  background: var(--axiom-surface-sunken);
-  color: var(--axiom-ink-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--axiom-border);
-}
-
-
-.pager-status {
-  color: var(--axiom-ink-secondary);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-
-
    筛选工具栏
    ========================================================= */
 
-.filter-bar {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  border: 1px solid var(--axiom-border);
-  border-radius: var(--axiom-radius-lg);
-  background: var(--axiom-surface);
-  box-shadow: var(--axiom-shadow-1);
-}
-
-.filter-field {
-  min-width: 160px;
-}
-
-.filter-field-grow {
-  flex: 1 1 280px;
-}
-
-.filter-bar .form-label {
-  margin-bottom: 5px;
-}
-
-.filter-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 /* 搜索框内嵌图标 */
-.search-field {
-  position: relative;
-}
-
-.search-field > svg {
-  position: absolute;
-  top: 50%;
-  left: 11px;
-  transform: translateY(-50%);
-  color: var(--axiom-ink-faint);
-  pointer-events: none;
-}
-
-.search-field .form-control {
-  padding-left: 33px;
-}
 
 /* 分段筛选器 */
-.segmented {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--axiom-border);
-  border-radius: var(--axiom-radius-md);
-  background: var(--axiom-surface-sunken);
-}
-
-.segmented a {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: var(--axiom-radius-sm);
-  color: var(--axiom-ink-mute);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-
-.segmented a.active {
-  background: var(--axiom-surface);
-  color: var(--axiom-ink);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(13, 37, 61, 0.08);
-}
 
 /* =========================================================
    表格
@@ -403,35 +290,12 @@ summary:focus-visible {
   transition: background-color 0.12s ease;
 }
 
-
 .table tbody tr:last-child > * {
   border-bottom: 0;
 }
 
 .table td {
   font-variant-numeric: tabular-nums;
-}
-
-.data-table {
-  /* 窄屏下宁可横向滚动，也不把名称列压成多行导致行高失控。 */
-  min-width: 640px;
-}
-
-.data-table td:first-child {
-  color: var(--axiom-ink);
-  font-weight: 600;
-}
-
-.data-table .cell-muted {
-  color: var(--axiom-ink-mute);
-}
-
-.data-table .cell-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--axiom-ink-secondary);
 }
 
 .row-actions {
@@ -469,11 +333,13 @@ summary:focus-visible {
 }
 
 .status-draft,
+.status-draft,
 .level-default {
   background: #f1f5f9;
   color: #52606d;
 }
 
+.status-published,
 .status-published,
 .level-2 {
   background: var(--axiom-success-soft);
@@ -499,108 +365,17 @@ summary:focus-visible {
    详情描述列表
    ========================================================= */
 
-.detail-list {
-  margin: 0;
-}
-
-.detail-row {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 16px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--axiom-divider);
-}
-
-.detail-row:first-child {
-  padding-top: 0;
-}
-
-.detail-row:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-.detail-label {
-  margin: 0;
-  padding-top: 1px;
-  color: var(--axiom-ink-mute);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.detail-value {
-  margin: 0;
-  color: var(--axiom-ink);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
-.detail-value code {
-  background: transparent;
-  padding: 0;
-}
-
 /* 两列详情网格 */
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 32px;
-}
 
 /* 侧栏元信息 */
-.meta-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 0;
-}
-
-.meta-item {
-  min-width: 0;
-}
-
-.meta-item-label {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--axiom-ink-faint);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.meta-item-value {
-  display: block;
-  color: var(--axiom-ink);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
 
 /* 详情页双栏布局 */
-.detail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 20px;
-  align-items: start;
-}
-
-.detail-main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
-
-.detail-side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
 .section-heading {
   margin-bottom: 16px;
 }
 
+.section-heading h2,
 .section-heading h2,
 .section-heading h3 {
   margin: 0;
@@ -627,6 +402,7 @@ summary:focus-visible {
 }
 
 .form-control,
+.form-control,
 .form-select {
   min-height: 36px;
   padding: 8px 12px;
@@ -643,13 +419,15 @@ summary:focus-visible {
   opacity: 1;
 }
 
-
+.form-control:focus,
 .form-control:focus,
 .form-select:focus {
   border-color: var(--axiom-accent);
   box-shadow: 0 0 0 3px var(--axiom-accent-ring);
 }
 
+.form-control:disabled,
+.form-control[readonly],
 .form-control:disabled,
 .form-control[readonly],
 .form-select:disabled {
@@ -660,10 +438,12 @@ summary:focus-visible {
 }
 
 .form-control.input-validation-error,
+.form-control.input-validation-error,
 .form-select.input-validation-error {
   border-color: var(--axiom-danger);
 }
 
+.form-control.input-validation-error:focus,
 .form-control.input-validation-error:focus,
 .form-select.input-validation-error:focus {
   box-shadow: 0 0 0 3px rgba(217, 39, 92, 0.16);
@@ -675,6 +455,7 @@ summary:focus-visible {
   font-size: 12px;
 }
 
+.field-validation-error,
 .field-validation-error,
 .text-danger.field-validation-error {
   display: block;
@@ -854,7 +635,6 @@ textarea.form-control {
   font-weight: 500;
 }
 
-
 .translation-tabs .nav-link.active {
   border-color: transparent;
   border-bottom-color: var(--axiom-accent);
@@ -912,7 +692,6 @@ textarea.form-control {
   font-size: 12px;
   cursor: pointer;
 }
-
 
 .translation-source-input {
   background: var(--axiom-surface-soft);
@@ -988,6 +767,7 @@ textarea.form-control {
   color: var(--axiom-ink-secondary);
 }
 
+.dropdown-item:hover,
 .dropdown-item:hover,
 .dropdown-item:focus {
   background: var(--axiom-surface-hover);
@@ -1227,7 +1007,6 @@ dialog::backdrop {
   background: var(--axiom-border-strong);
 }
 
-
 /* 子级列表不再承担缩进（margin/padding 会使高亮块随层级右移）；
    缩进改由下方按嵌套深度的行内 padding 实现，高亮始终通铺到面板边缘。 */
 .tree-select-children {
@@ -1265,6 +1044,7 @@ dialog::backdrop {
 }
 
 .tree-select-expand,
+.tree-select-expand,
 .tree-select-expand-spacer {
   flex: 0 0 22px;
   width: 22px;
@@ -1295,11 +1075,13 @@ dialog::backdrop {
 }
 
 .tree-select-expand:hover,
+.tree-select-expand:hover,
 .tree-select-expand:focus-visible {
   background: var(--axiom-surface-hover);
   outline: none;
 }
 
+.tree-select-expand:hover::before,
 .tree-select-expand:hover::before,
 .tree-select-expand:focus-visible::before {
   border-color: var(--axiom-accent);
@@ -1342,6 +1124,7 @@ dialog::backdrop {
 
 /* 静态首项（根）无行包装：高亮落在选项自身。 */
 .tree-select-item > .tree-select-option:hover,
+.tree-select-item > .tree-select-option:hover,
 .tree-select-item > .tree-select-option:focus-visible {
   background: var(--axiom-surface-hover);
   color: var(--axiom-accent);
@@ -1357,11 +1140,13 @@ dialog::backdrop {
 
 /* 行内选项：高亮整行（含展开按钮区），避免选中背景从箭头后才开始。 */
 .tree-select-row:hover,
+.tree-select-row:hover,
 .tree-select-row:focus-within {
   background: var(--axiom-surface-hover);
   border-radius: var(--axiom-radius-sm);
 }
 
+.tree-select-row:hover .tree-select-option:not(.is-selected),
 .tree-select-row:hover .tree-select-option:not(.is-selected),
 .tree-select-row:focus-within .tree-select-option:not(.is-selected) {
   color: var(--axiom-accent);
@@ -1403,11 +1188,9 @@ dialog::backdrop {
   font-size: 13px;
 }
 
-
 .region-row > a:not(.region-toggle) {
   color: var(--axiom-ink);
 }
-
 
 .region-toggle {
   display: inline-flex;
@@ -1420,7 +1203,6 @@ dialog::backdrop {
   color: var(--axiom-ink-faint);
   font-size: 9px;
 }
-
 
 .region-chevron {
   display: inline-block;
@@ -1505,7 +1287,6 @@ dialog::backdrop {
   font-size: 12px;
   cursor: pointer;
 }
-
 
 /* =========================================================
    工具类
@@ -1671,9 +1452,8 @@ dialog::backdrop {
   }
 }
 
-
-
 /* 树行代码：走主题 ink token，不用 Bootstrap .text-muted 的另一套灰。 */
+.region-row code,
 .region-row code,
 .region-row .text-muted {
   color: var(--axiom-ink-mute);
@@ -1702,7 +1482,7 @@ dialog::backdrop {
     min-height: 44px;
   }
 
-  .data-table .btn-ghost,
+  .table .btn-ghost,
   .dropdown-item {
     min-height: 44px;
     padding: 10px 12px;
@@ -1717,8 +1497,8 @@ dialog::backdrop {
 
 /* 小屏：表格横向滚动时操作列固定在右缘，主操作永远可达。 */
 @media (max-width: 767px) {
-  .table-responsive .data-table th:last-child,
-  .table-responsive .data-table td:last-child {
+  .table-responsive .table th:last-child,
+  .table-responsive .table td:last-child {
     position: sticky;
     right: 0;
     background: var(--axiom-surface);
@@ -1745,6 +1525,24 @@ dialog::backdrop {
   .region-row .row-actions {
     flex-shrink: 0;
   }
+}
+
+
+/* 表格卡内最小宽度：窄屏时横向滚动而不是把单元格挤成竖排。 */
+.table-responsive .table {
+  min-width: 640px;
+}
+
+/* 次要单元格文字 */
+.cell-muted {
+  color: var(--axiom-ink-mute);
+}
+
+/* 行内动作组 */
+.row-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
 }
 
 /* 跳到主内容：视觉隐藏，键盘聚焦时出现在页首（2.4.1 Bypass Blocks）。 */

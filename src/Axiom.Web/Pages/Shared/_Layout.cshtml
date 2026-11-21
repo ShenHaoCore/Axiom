@@ -10,7 +10,7 @@
 <body class="layout-fluid">
     <a class="skip-link" href="#content">@Localizer["Layout.SkipToContent"]</a>
 @{
-    // 依据当前路径高亮侧边栏功能模块。
+    // 依据当前路径高亮顶部一级导航。
     var path = ViewContext.HttpContext.Request.Path.Value?.ToLowerInvariant() ?? "/";
     var activeNav = path.StartsWith("/news") ? "news"
         : path.StartsWith("/geodivisions") ? "geo-divisions"
@@ -22,11 +22,24 @@
     var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
-    @* Tabler 布局：顶部工具栏（语言/用户） + 垂直侧边栏（品牌/导航） + page-wrapper。 *@
-    <header class="navbar navbar-expand-md d-print-none">
+    @* Tabler 预览同款壳：顶部品牌栏（语言/用户）+ 横向主导航（分组下拉、active 下划线）+ page-wrapper。 *@
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
         <div class="container-xl">
-            <h1 class="navbar-brand mb-0 lh-1 d-md-none">Axiom</h1>
-            <div class="ms-auto d-flex align-items-center gap-2">
+            <h1 class="navbar-brand mb-0 lh-1">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2 2 7.5 12 13 22 7.5Z" opacity=".9" />
+                    <path d="M2 12.5 12 18 22 12.5" opacity=".55" />
+                    <path d="M2 17 12 22.5 22 17" opacity=".25" />
+                </svg>
+                Axiom
+            </h1>
+            <button class="navbar-toggler d-lg-none ms-auto me-2" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#topnav-menu"
+                    aria-controls="topnav-menu" aria-expanded="false"
+                    aria-label="@Localizer["Layout.ToggleNavigation"]">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-nav flex-row align-items-center">
                 <!-- 界面语言切换：只展示语言名；切换前由 site.js 检查未保存表单。 -->
                 <form method="get" action="/culture" class="d-flex align-items-center gap-1 m-0">
                     <label class="text-secondary d-none d-md-inline-block pe-1" for="cultureSelect">@Localizer["Culture.UiLabel"]</label>
@@ -45,7 +58,7 @@
                 </form>
                 @if (isAuthenticated)
                 {
-                    <div class="nav-item dropdown">
+                    <div class="nav-item dropdown ms-2">
                         <button class="btn d-flex align-items-center gap-2 dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="avatar avatar-sm" aria-hidden="true">@userInitial</span>
@@ -70,80 +83,64 @@
         </div>
     </header>
 
-    <div class="page">
-        <aside class="navbar navbar-vertical navbar-expand-md">
-            <div class="container-xl">
-                <button class="navbar-toggler" type="button"
-                        data-bs-toggle="collapse" data-bs-target="#sidebar-menu"
-                        aria-controls="sidebar-menu" aria-expanded="false"
-                        aria-label="@Localizer["Layout.ToggleNavigation"]">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <a class="navbar-brand navbar-brand-autodark d-none d-md-inline-flex" asp-page="/Index">
-                    Axiom
-                </a>
-                <div class="collapse navbar-collapse" id="sidebar-menu">
-                    <ul class="navbar-nav pt-lg-3">
-                        <li class="nav-category">@Localizer["Layout.NavSectionData"]</li>
-                        <li class="nav-item @(activeNav == "airports" ? "active" : "")">
-                            <a class="nav-link" asp-page="/Index" aria-current="@(activeNav == "airports" ? "page" : null)">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-                                        <path d="M1.5 8.5 14.5 1.5 8.5 14.5 6 9.5 1.5 8.5Z" />
-                                    </svg>
-                                </span>
-                                <span class="nav-link-title">@Localizer["Nav.Airports"]</span>
-                            </a>
-                        </li>
-                        <li class="nav-item @(activeNav == "geo-divisions" ? "active" : "")">
-                            <a class="nav-link" asp-page="/GeoDivisions/Index" aria-current="@(activeNav == "geo-divisions" ? "page" : null)">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                                        <circle cx="8" cy="8" r="6.5" />
-                                        <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
-                                    </svg>
-                                </span>
-                                <span class="nav-link-title">@Localizer["Nav.GeoDivisions"]</span>
-                            </a>
-                        </li>
-                        <li class="nav-item @(activeNav == "enums" ? "active" : "")">
-                            <a class="nav-link" asp-page="/Enums/Index" aria-current="@(activeNav == "enums" ? "page" : null)">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                                        <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
-                                    </svg>
-                                </span>
-                                <span class="nav-link-title">@Localizer["Nav.Enums"]</span>
-                            </a>
-                        </li>
-                        <li class="nav-category">@Localizer["Layout.NavSectionContent"]</li>
-                        <li class="nav-item @(activeNav == "news" ? "active" : "")">
-                            <a class="nav-link" asp-page="/News/Index" aria-current="@(activeNav == "news" ? "page" : null)">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-                                        <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-                                        <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
-                                    </svg>
-                                </span>
-                                <span class="nav-link-title">@Localizer["Nav.News"]</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+    @* 横向主导航：一级分类下拉 + active 下划线，移动端收进 collapse。 *@
+    <div class="navbar navbar-expand-md navbar-light d-print-none border-bottom p-0">
+        <div class="container-xl">
+            <div class="collapse navbar-collapse m-0" id="topnav-menu">
+                <nav class="navbar-nav" aria-label="@Localizer["Layout.Aria.Main"]">
+                    <div class="nav-item dropdown @(activeNav != "news" ? "active" : "")">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false"
+                           aria-haspopup="true"
+                           aria-current="@(activeNav != "news" ? "page" : null)">
+                            <span class="nav-link-icon" aria-hidden="true">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+                                    <ellipse cx="8" cy="3.5" rx="5.5" ry="2" />
+                                    <path d="M2.5 3.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
+                                    <path d="M2.5 7.5v4c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-4" />
+                                </svg>
+                            </span>
+                            <span class="nav-link-title">@Localizer["Layout.NavSectionData"]</span>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item @(activeNav == "airports" ? "active" : "")" asp-page="/Index">@Localizer["Nav.Airports"]</a>
+                            <a class="dropdown-item @(activeNav == "geo-divisions" ? "active" : "")" asp-page="/GeoDivisions/Index">@Localizer["Nav.GeoDivisions"]</a>
+                            <a class="dropdown-item @(activeNav == "enums" ? "active" : "")" asp-page="/Enums/Index">@Localizer["Nav.Enums"]</a>
+                        </div>
+                    </div>
+                    <div class="nav-item dropdown @(activeNav == "news" ? "active" : "")">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false"
+                           aria-haspopup="true"
+                           aria-current="@(activeNav == "news" ? "page" : null)">
+                            <span class="nav-link-icon" aria-hidden="true">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+                                    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+                                    <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
+                                </svg>
+                            </span>
+                            <span class="nav-link-title">@Localizer["Layout.NavSectionContent"]</span>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item @(activeNav == "news" ? "active" : "")" asp-page="/News/Index">@Localizer["Nav.News"]</a>
+                        </div>
+                    </div>
+                </nav>
             </div>
-        </aside>
-        <div class="page-wrapper">
-            <main id="content" role="main" class="page-body">
-                <div class="container-xl">
-                    @RenderBody()
-                </div>
-            </main>
-            <footer class="footer footer-transparent d-print-none">
-                <div class="container-xl text-center">
-                    @Localizer["Layout.Footer"]
-                </div>
-            </footer>
         </div>
+    </div>
+
+    <div class="page-wrapper">
+        <main id="content" role="main" class="page-body">
+            <div class="container-xl">
+                @RenderBody()
+            </div>
+        </main>
+        <footer class="footer footer-transparent d-print-none">
+            <div class="container-xl text-center">
+                @Localizer["Layout.Footer"]
+            </div>
+        </footer>
     </div>
 
     <!-- 通用确认对话框：危险操作与未保存离开提示共用，文本由 site.js 动态填入 -->

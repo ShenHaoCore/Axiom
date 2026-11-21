@@ -27,14 +27,21 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<form method="get" class="filter-bar">
-    <div class="filter-field filter-field-grow">
-        <label class="form-label" for="Category">@Localizer["Field.Enum.Category"]</label>
-        <input class="form-control" id="Category" name="Category" value="@Model.Category"
-               placeholder="geo_division.kind" />
-    </div>
-    <div class="filter-actions">
-        <button type="submit" class="btn btn-primary">@Localizer["Common.Filter"]</button>
+<form method="get" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col">
+            <label class="form-label" for="Category">@Localizer["Field.Enum.Category"]</label>
+            <div class="input-group">
+                <span class="input-group-text" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                        <path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" />
+                    </svg>
+                </span>
+                <input class="form-control" id="Category" name="Category" value="@Model.Category"
+                       placeholder="geo_division.kind" />
+                <button type="submit" class="btn btn-primary">@Localizer["Common.Filter"]</button>
+            </div>
+        </div>
     </div>
 </form>
 

@@ -32,19 +32,16 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<div class="filter-bar">
-    <div class="filter-field">
-        <span class="form-label d-block">@Localizer["Common.Filter"]</span>
-        <nav class="segmented" aria-label="@Localizer["News.Column.Status"]">
-            <a class="@(string.IsNullOrEmpty(Model.StatusFilter) ? "active" : "")"
-               asp-page="/News/Index">@Localizer["News.Status.All"]</a>
-            <a class="@(Model.StatusFilter == "Draft" ? "active" : "")"
-               asp-page="/News/Index" asp-route-status="Draft">@Localizer["News.Status.Draft"]</a>
-            <a class="@(Model.StatusFilter == "Published" ? "active" : "")"
-               asp-page="/News/Index" asp-route-status="Published">@Localizer["News.Status.Published"]</a>
-            <a class="@(Model.StatusFilter == "Archived" ? "active" : "")"
-               asp-page="/News/Index" asp-route-status="Archived">@Localizer["News.Status.Archived"]</a>
-        </nav>
+<div class="mb-3">
+    <div class="btn-group" role="group" aria-label="@Localizer["News.Column.Status"]">
+        <a class="btn @(string.IsNullOrEmpty(Model.StatusFilter) ? "btn-primary" : "btn-outline-secondary")"
+           asp-page="/News/Index">@Localizer["News.Status.All"]</a>
+        <a class="btn @(Model.StatusFilter == "Draft" ? "btn-primary" : "btn-outline-secondary")"
+           asp-page="/News/Index" asp-route-status="Draft">@Localizer["News.Status.Draft"]</a>
+        <a class="btn @(Model.StatusFilter == "Published" ? "btn-primary" : "btn-outline-secondary")"
+           asp-page="/News/Index" asp-route-status="Published">@Localizer["News.Status.Published"]</a>
+        <a class="btn @(Model.StatusFilter == "Archived" ? "btn-primary" : "btn-outline-secondary")"
+           asp-page="/News/Index" asp-route-status="Archived">@Localizer["News.Status.Archived"]</a>
     </div>
 </div>
 
@@ -105,22 +102,20 @@
 
         @if (Model.TotalPages > 1)
         {
-            <nav class="pager" aria-label="@Localizer["Common.Pager.Label"]">
-                @if (Model.CurrentPage > 1)
-                {
-                    <a class="btn btn-ghost btn-sm"
-                       asp-page="/News/Index"
-                       asp-route-status="@Model.StatusFilter"
-                       asp-route-page="@(Model.CurrentPage - 1)">@Localizer["Common.Pager.Previous"]</a>
-                }
-                <span class="pager-status">@Localizer["Common.Pager.PageOf", Model.CurrentPage, Model.TotalPages]</span>
-                @if (Model.CurrentPage < Model.TotalPages)
-                {
-                    <a class="btn btn-ghost btn-sm"
-                       asp-page="/News/Index"
-                       asp-route-status="@Model.StatusFilter"
-                       asp-route-page="@(Model.CurrentPage + 1)">@Localizer["Common.Pager.Next"]</a>
-                }
+            <nav aria-label="@Localizer["Common.Pager.Label"]">
+                <ul class="pagination m-0">
+                    <li class="page-item @(Model.CurrentPage > 1 ? "" : "disabled")">
+                        <a class="page-link" asp-page="/News/Index" asp-route-status="@Model.StatusFilter"
+                           asp-route-page="@(Model.CurrentPage - 1)" tabindex="@(Model.CurrentPage > 1 ? null : -1)"
+                           aria-disabled="@(Model.CurrentPage > 1 ? null : "true")">@Localizer["Common.Pager.Previous"]</a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">@Localizer["Common.Pager.PageOf", Model.CurrentPage, Model.TotalPages]</span></li>
+                    <li class="page-item @(Model.CurrentPage < Model.TotalPages ? "" : "disabled")">
+                        <a class="page-link" asp-page="/News/Index" asp-route-status="@Model.StatusFilter"
+                           asp-route-page="@(Model.CurrentPage + 1)" tabindex="@(Model.CurrentPage < Model.TotalPages ? null : -1)"
+                           aria-disabled="@(Model.CurrentPage < Model.TotalPages ? null : "true")">@Localizer["Common.Pager.Next"]</a>
+                    </li>
+                </ul>
             </nav>
         }
     }
