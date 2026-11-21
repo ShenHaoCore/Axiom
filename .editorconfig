@@ -39,6 +39,12 @@ dotnet_diagnostic.CA1861.severity = none
 dotnet_diagnostic.CA1819.severity = none
 
 # 测试代码：放宽与正确性无关的风格/性能规则（断言可读性优先）。
+# EF Core 查询必须用 ToLower（可翻译为 SQL LOWER）；ToLowerInvariant 无 SQL 翻译，
+# 会在 PostgreSQL 上抛 500（本仓库 CI 才跑真实 PG，本地 InMemory 不可见）。
+[**/EfCore/*.cs]
+dotnet_diagnostic.CA1311.severity = none
+dotnet_diagnostic.CA1304.severity = none
+
 [tests/**/*.cs]
 dotnet_diagnostic.CA2263.severity = none
 dotnet_diagnostic.CA1826.severity = none

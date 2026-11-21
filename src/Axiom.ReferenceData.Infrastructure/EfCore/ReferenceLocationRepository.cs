@@ -35,7 +35,7 @@ public sealed class ReferenceLocationRepository(ReferenceDataDbContext dbContext
             // 双侧 Lower + LIKE：PostgreSQL 下实现大小写不敏感（等价 ILIKE），InMemory 测试同样可翻译；
             // 通配符转义后用户输入不再被解释为模式。
             var pattern = $"%{LikePattern.Escape(n.Trim().ToLowerInvariant())}%";
-            query = query.Where(l => EF.Functions.Like(l.Name.ToLowerInvariant(), pattern));
+            query = query.Where(l => EF.Functions.Like(l.Name.ToLower(), pattern));
         }
 
         var totalCount = await query.CountAsync(ct);

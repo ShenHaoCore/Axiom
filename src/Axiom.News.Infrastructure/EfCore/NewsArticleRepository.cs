@@ -30,13 +30,13 @@ public sealed class NewsArticleRepository(NewsDbContext dbContext) : INewsArticl
         if (status.HasValue) query = query.Where(a => a.Status == status.Value);
         if (keyword is { } kw)
         {
-            // 双侧 Lower + LIKE：大小写不敏感（等价 ILIKE），InMemory 测试同样可翻译。
+            // 双侧 Lower + LIKE：EF 将 ToLower 翻译为 SQL LOWER（等价 ILIKE）且 InMemory 亦可翻译。
             // 搜索限定在 Title/Summary（短文本列）；Content 是 50k 大字段，避免逐行全扫。
             // 通配符转义后用户输入不再被解释为模式。
             var pattern = $"%{LikePattern.Escape(kw.Trim().ToLowerInvariant())}%";
             query = query.Where(a =>
-                EF.Functions.Like(a.Title.ToLowerInvariant(), pattern) ||
-                (a.Summary != null && EF.Functions.Like(a.Summary.ToLowerInvariant(), pattern)));
+                EF.Functions.Like(a.Title.ToLower(), pattern) ||
+                (a.Summary != null && EF.Functions.Like(a.Summary.ToLower(), pattern)));
         }
 
         var totalCount = await query.CountAsync(ct);

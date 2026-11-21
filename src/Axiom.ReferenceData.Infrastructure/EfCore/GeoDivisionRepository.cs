@@ -34,8 +34,8 @@ public sealed class GeoDivisionRepository(ReferenceDataDbContext dbContext) : IG
             // 双侧 Lower + LIKE：大小写不敏感（等价 ILIKE），InMemory 测试同样可翻译；
             // 通配符转义后用户输入不再被解释为模式。
             var pattern = $"%{LikePattern.Escape(kw.Trim().ToLowerInvariant())}%";
-            query = query.Where(r => EF.Functions.Like(r.Name.ToLowerInvariant(), pattern)
-                                     || (r.AsciiName != null && EF.Functions.Like(r.AsciiName.ToLowerInvariant(), pattern)));
+            query = query.Where(r => EF.Functions.Like(r.Name.ToLower(), pattern)
+                                     || (r.AsciiName != null && EF.Functions.Like(r.AsciiName.ToLower(), pattern)));
         }
 
         var totalCount = await query.CountAsync(ct);
