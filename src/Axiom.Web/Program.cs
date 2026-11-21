@@ -51,7 +51,9 @@ builder.Services.AddHttpContextAccessor();
 // Data Protection：认证 Cookie 与防伪造令牌的密钥持久化到磁盘（容器内挂卷），
 // 重启不掉线、多副本可共享；路径可按部署环境覆盖。
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
-    ?? (builder.Environment.IsDevelopment() ? null : "/keys");
+    ?? (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
+        ? null
+        : "/keys");
 if (dataProtectionKeysPath is not null)
 {
     builder.Services.AddDataProtection()
