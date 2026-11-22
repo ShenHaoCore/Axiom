@@ -110,19 +110,13 @@ a:focus-visible,
    按钮
    ========================================================= */
 
+/* 按钮视觉全部交给 Tabler 原生（4px 圆角、14px 字号、标准内边距）；
+   此处只保留布局细节（flex 排列、gap、防折行）。 */
 .btn {
-  --bs-btn-font-size: 13px;
-  --bs-btn-font-weight: 500;
-  --bs-btn-line-height: 1.4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--axiom-radius-pill);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
   white-space: nowrap;
   transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
@@ -135,17 +129,6 @@ a:focus-visible,
 .btn:disabled,
 .btn.disabled {
   opacity: 0.6;
-}
-
-.btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
-  gap: 4px;
-}
-
-.btn-lg {
-  padding: 9px 18px;
-  font-size: 14px;
 }
 
 .btn-primary {
