@@ -21,6 +21,10 @@
     var userInitial = userName.Length > 0 ? userName[..1] : "?";
     var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    // 顶栏按钮显示语言缩写（中文/EN），完整语言名放在下拉菜单里。
+    var cultureShort = currentCulture.StartsWith("zh", StringComparison.OrdinalIgnoreCase)
+        ? "中文"
+        : currentCulture.Split('-')[0].ToUpperInvariant();
 }
     @* Tabler 预览同款壳：顶部品牌栏（语言/用户）+ 横向主导航（分组下拉、active 下划线）+ page-wrapper。 *@
     <header class="navbar navbar-expand-md navbar-light d-print-none border-bottom">
@@ -40,22 +44,31 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="navbar-nav flex-row align-items-center order-md-2">
-                <!-- 界面语言切换：只展示语言名；切换前由 site.js 检查未保存表单。 -->
-                <form method="get" action="/culture" class="d-flex align-items-center gap-1 ms-2 m-0">
-                    <label class="text-secondary d-none d-md-inline-block pe-1" for="cultureSelect">@Localizer["Culture.UiLabel"]</label>
-                    <select id="cultureSelect" name="culture" class="form-select form-select-sm w-auto"
-                            aria-label="@Localizer["Culture.Select"]"
-                            data-language-select
-                            data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">
+                <!-- 界面语言切换：下拉菜单链接（/culture 写 Cookie 后回跳）；切换前由 site.js 检查未保存表单。 -->
+                <div class="nav-item dropdown">
+                    <a class="btn dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false"
+                       aria-label="@Localizer["Culture.Select"]"
+                       data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">
+                        <span class="nav-link-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                                <circle cx="8" cy="8" r="6.5" />
+                                <path d="M1.5 8h13M8 1.5c-3.8 4.2-3.8 8.8 0 13M8 1.5c3.8 4.2 3.8 8.8 0 13" />
+                            </svg>
+                        </span>
+                        @cultureShort
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
                         @foreach (var culture in LocalizationOptions.SupportedCultures)
                         {
                             var cultureResource = Localizer[$"Culture.{culture}"];
                             var cultureName = cultureResource.ResourceNotFound ? culture : cultureResource.Value;
-                            <option value="@culture" selected="@(culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@cultureName</option>
+                            <a class="dropdown-item @(culture.Equals(currentCulture, StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+                               href="/culture?culture=@culture&returnUrl=@returnUrl"
+                               data-language-link data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">@cultureName</a>
                         }
-                    </select>
-                    <input type="hidden" name="returnUrl" value="@returnUrl" />
-                </form>
+                    </div>
+                </div>
                 @if (isAuthenticated)
                 {
                     <div class="nav-item dropdown ms-2">

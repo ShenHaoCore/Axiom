@@ -516,62 +516,26 @@
     document.addEventListener('input', markFormDirty, true);
     document.addEventListener('change', markFormDirty, true);
 
-    var languageSelect = document.querySelector('select[data-language-select]');
-    if (languageSelect && languageSelect.form) {
-        var languageForm = languageSelect.form;
-        var initialCulture = languageSelect.value;
-
-        languageSelect.addEventListener('change', function () {
-            if (languageSelect.value === initialCulture) {
-                return;
-            }
-
-            var dirtyForm = document.querySelector('form[method="post"][data-dirty="1"]');
-            var message = languageSelect.getAttribute('data-unsaved-message');
-            if (dirtyForm && message) {
-                showConfirm(message).then(function (confirmed) {
-                    if (!confirmed) {
-                        // 取消切换：恢复原语言，避免界面与服务端状态不一致。
-                        languageSelect.value = initialCulture;
-                        return;
-                    }
-
-                    languageForm.requestSubmit();
-                });
-                return;
-            }
-
-            languageForm.requestSubmit();
-        });
-    }
-
-    // ---------- 侧边栏折叠 ----------
-
-    // 桌面端切换折叠宽度并记住状态；移动端打开抽屉导航。
-    var navToggle = document.getElementById('navToggle');
-    if (navToggle) {
-        try {
-            if (window.localStorage.getItem('axiom-sidebar-collapsed') === '1') {
-                document.body.classList.add('sidebar-collapsed');
-            }
-        } catch (e) {
-            // localStorage 不可用时忽略，仅本次会话不记忆折叠状态。
+    // 语言下拉为链接：有未保存修改的表单时先确认，确认后导航到 /culture。
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest('a[data-language-link]');
+        if (!link) {
+            return;
         }
 
-        navToggle.addEventListener('click', function () {
-            if (window.matchMedia('(min-width: 768px)').matches) {
-                var collapsed = !document.body.classList.contains('sidebar-collapsed');
-                document.body.classList.toggle('sidebar-collapsed', collapsed);
-                try {
-                    window.localStorage.setItem('axiom-sidebar-collapsed', collapsed ? '1' : '0');
-                } catch (e) {
-                    // 忽略存储异常。
-                }
-            } else if (window.bootstrap && window.bootstrap.Offcanvas) {
-                window.bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('mobileNav')).show();
+        var dirtyForm = document.querySelector('form[method="post"][data-dirty="1"]');
+        var message = link.getAttribute('data-unsaved-message');
+        if (!dirtyForm || !message) {
+            return; // 无未保存内容：直接导航。
+        }
+
+        event.preventDefault();
+        showConfirm(message).then(function (confirmed) {
+            if (confirmed) {
+                window.location.href = link.href;
             }
         });
-    }
+    });
 
     // ---------- 行政区树：按级惰性加载 ----------
 
