@@ -23,7 +23,7 @@
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
     @* Tabler 预览同款壳：顶部品牌栏（语言/用户）+ 横向主导航（分组下拉、active 下划线）+ page-wrapper。 *@
-    <header class="navbar navbar-expand-md navbar-light d-print-none">
+    <header class="navbar navbar-expand-md navbar-light d-print-none border-bottom">
         <div class="container-xl">
             <h1 class="navbar-brand mb-0 lh-1">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -33,7 +33,7 @@
                 </svg>
                 Axiom
             </h1>
-            <button class="navbar-toggler d-lg-none ms-auto me-2" type="button"
+            <button class="navbar-toggler ms-auto" type="button"
                     data-bs-toggle="collapse" data-bs-target="#topnav-menu"
                     aria-controls="topnav-menu" aria-expanded="false"
                     aria-label="@Localizer["Layout.ToggleNavigation"]">
@@ -41,7 +41,7 @@
             </button>
             <div class="navbar-nav flex-row align-items-center">
                 <!-- 界面语言切换：只展示语言名；切换前由 site.js 检查未保存表单。 -->
-                <form method="get" action="/culture" class="d-flex align-items-center gap-1 m-0">
+                <form method="get" action="/culture" class="d-flex align-items-center gap-1 ms-2 m-0">
                     <label class="text-secondary d-none d-md-inline-block pe-1" for="cultureSelect">@Localizer["Culture.UiLabel"]</label>
                     <select id="cultureSelect" name="culture" class="form-select form-select-sm w-auto"
                             aria-label="@Localizer["Culture.Select"]"
@@ -80,13 +80,7 @@
                     </div>
                 }
             </div>
-        </div>
-    </header>
-
-    @* 横向主导航：一级分类下拉 + active 下划线，移动端收进 collapse。 *@
-    <div class="navbar navbar-expand-md navbar-light d-print-none border-bottom p-0">
-        <div class="container-xl">
-            <div class="collapse navbar-collapse m-0" id="topnav-menu">
+            <div class="collapse navbar-collapse" id="topnav-menu">
                 <nav class="navbar-nav" aria-label="@Localizer["Layout.Aria.Main"]">
                     <div class="nav-item dropdown @(activeNav != "news" ? "active" : "")">
                         <a class="nav-link dropdown-toggle" href="#" role="button"
@@ -128,7 +122,7 @@
                 </nav>
             </div>
         </div>
-    </div>
+    </header>
 
     <div class="page-wrapper">
         <main id="content" role="main" class="page-body">
