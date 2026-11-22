@@ -93,6 +93,7 @@ hr {
 .form-select:focus-visible,
 .form-check-input:focus-visible,
 .dropdown-item:focus-visible,
+.dropdown-toggle:focus-visible,
 .region-toggle:focus-visible,
 .segmented a:focus-visible,
 a:focus-visible,
@@ -1409,11 +1410,6 @@ dialog::backdrop {
   .form-control,
   .form-select {
     min-height: 44px;
-    font-size: 16px;
-  }
-
-  .topbar-language-select {
-    height: 36px;
     font-size: 16px;
   }
 
