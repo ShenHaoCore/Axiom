@@ -1550,6 +1550,39 @@ dialog::backdrop {
 }
 
 
+
+/* 状态筛选条：轻量 chip（active 实底主色，inactive 灰字 hover 浅底）。 */
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: var(--axiom-radius-pill);
+  color: var(--axiom-ink-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.filter-chip:hover {
+  background: var(--axiom-surface-sunken);
+  color: var(--axiom-ink);
+}
+
+.filter-chip.active {
+  background: var(--axiom-accent);
+  color: #fff;
+}
+
+.filter-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--axiom-accent-ring);
+}
+
 /* 跳到主内容：视觉隐藏，键盘聚焦时出现在页首（2.4.1 Bypass Blocks）。 */
 .skip-link {
   position: absolute;

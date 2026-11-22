@@ -134,6 +134,8 @@
   <data name="News.Column.Author" xml:space="preserve"><value>作者</value></data>
   <data name="News.Column.PublishedAt" xml:space="preserve"><value>发布时间</value></data>
   <data name="News.Empty" xml:space="preserve"><value>暂无新闻。</value></data>
+  <data name="News.FilteredEmpty" xml:space="preserve"><value>没有符合条件的新闻</value></data>
+  <data name="News.FilteredEmptyHint" xml:space="preserve"><value>状态“{0}”下没有新闻，试试其他状态或查看全部。</value></data>
   <data name="News.LoadFailed" xml:space="preserve"><value>无法加载新闻列表，请稍后重试。</value></data>
   <data name="News.Detail.Title" xml:space="preserve"><value>新闻详情</value></data>
   <data name="News.Detail.Summary" xml:space="preserve"><value>摘要</value></data>
