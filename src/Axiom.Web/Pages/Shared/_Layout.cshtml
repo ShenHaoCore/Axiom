@@ -46,7 +46,7 @@
             <div class="navbar-nav flex-row align-items-center order-md-2">
                 <!-- 界面语言切换：下拉菜单链接（/culture 写 Cookie 后回跳）；切换前由 site.js 检查未保存表单。 -->
                 <div class="nav-item dropdown">
-                    <a class="btn dropdown-toggle" href="#" role="button"
+                    <a class="btn border shadow-none dropdown-toggle" href="#" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false"
                        aria-label="@Localizer["Culture.Select"]"
                        data-unsaved-message="@Localizer["Layout.UnsavedChanges"]">
@@ -72,7 +72,7 @@
                 @if (isAuthenticated)
                 {
                     <div class="nav-item dropdown ms-2">
-                        <button class="btn d-flex align-items-center gap-2 dropdown-toggle" type="button"
+                        <button class="btn border shadow-none d-flex align-items-center gap-2 dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="avatar avatar-sm" aria-hidden="true">@userInitial</span>
                             <span class="d-none d-lg-inline">@userName</span>
