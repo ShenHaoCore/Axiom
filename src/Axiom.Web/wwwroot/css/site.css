@@ -1556,8 +1556,8 @@ dialog::backdrop {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 2px;
-  background: var(--axiom-ink-faint);
+  width: 1px;
+  background: var(--axiom-border-strong);
   pointer-events: none;
 }
 
