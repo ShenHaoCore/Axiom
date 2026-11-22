@@ -1497,14 +1497,6 @@ dialog::backdrop {
 
 /* 小屏：表格横向滚动时操作列固定在右缘，主操作永远可达。 */
 @media (max-width: 767px) {
-  .table-responsive .table th:last-child,
-  .table-responsive .table td:last-child {
-    position: sticky;
-    right: 0;
-    background: var(--axiom-surface);
-    box-shadow: -10px 0 10px -10px rgba(13, 37, 61, 0.28);
-  }
-
   /* 树行：名称是信息主体，独占首行；徽章/代码/动作换到次行，不再挤压缩名称。 */
   .region-row {
     flex-wrap: wrap;
@@ -1528,11 +1520,6 @@ dialog::backdrop {
 }
 
 
-/* 表格卡内最小宽度：窄屏时横向滚动而不是把单元格挤成竖排。 */
-.table-responsive .table {
-  min-width: 640px;
-}
-
 /* 次要单元格文字 */
 .cell-muted {
   color: var(--axiom-ink-mute);
@@ -1544,6 +1531,45 @@ dialog::backdrop {
   gap: 4px;
   justify-content: flex-end;
 }
+
+
+/* 操作列 sticky：表格必须 separate 边框模型——collapse 下 Chromium 不渲染
+   单元格的 position:sticky 与 box-shadow（阴影=遮挡提示，窄屏滚动时可见）。 */
+.table-responsive .table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-responsive .table th:last-child,
+.table-responsive .table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--axiom-surface);
+  box-shadow: -10px 0 10px -10px rgba(13, 37, 61, 0.28);
+}
+
+/* 左缘 2px 分隔线：明确标示操作列为固定列（渐变/阴影在白底上过淡，不易察觉）。 */
+.table-responsive .table th:last-child::after,
+.table-responsive .table td:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--axiom-ink-faint);
+  pointer-events: none;
+}
+
+.table-responsive .table thead th:last-child {
+  background: var(--axiom-surface);
+}
+
+/* 表格卡内最小宽度：窄屏时横向滚动而不是把单元格挤成竖排。 */
+.table-responsive .table {
+  min-width: 640px;
+}
+
 
 /* 跳到主内容：视觉隐藏，键盘聚焦时出现在页首（2.4.1 Bypass Blocks）。 */
 .skip-link {
