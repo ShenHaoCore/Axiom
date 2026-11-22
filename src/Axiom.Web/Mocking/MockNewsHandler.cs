@@ -18,9 +18,22 @@ internal sealed class MockNewsHandler(MockLocalizer localizer)
         {
             if (request.Method == HttpMethod.Get)
             {
+                // 与真实网关一致：按 category/status 查询参数过滤（大小写不敏感）。
+                var query = ParseQuery(request.RequestUri?.Query);
+                query.TryGetValue(GatewayFields.CATEGORY, out var category);
+                query.TryGetValue(GatewayFields.STATUS, out var statusFilter);
+
                 var requestCulture = localizer.ResolveCulture(request);
                 List<NewsArticleView> snapshot;
-                lock (MockDataStore.Gate) { snapshot = [.. MockDataStore.Articles]; }
+                lock (MockDataStore.Gate)
+                {
+                    snapshot = MockDataStore.Articles
+                        .Where(a => string.IsNullOrWhiteSpace(category)
+                            || a.Category.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .Where(a => string.IsNullOrWhiteSpace(statusFilter)
+                            || a.Status.Equals(statusFilter.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
                 return Json(Paged(snapshot.Select(article => localizer.Localize(article, requestCulture)).ToList()), HttpStatusCode.OK);
             }
 

@@ -32,17 +32,15 @@
     <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
 }
 
-<div class="mb-3">
-    <div class="btn-group" role="group" aria-label="@Localizer["News.Column.Status"]">
-        <a class="btn @(string.IsNullOrEmpty(Model.StatusFilter) ? "btn-primary" : "btn-outline-secondary")"
-           asp-page="/News/Index">@Localizer["News.Status.All"]</a>
-        <a class="btn @(Model.StatusFilter == "Draft" ? "btn-primary" : "btn-outline-secondary")"
-           asp-page="/News/Index" asp-route-status="Draft">@Localizer["News.Status.Draft"]</a>
-        <a class="btn @(Model.StatusFilter == "Published" ? "btn-primary" : "btn-outline-secondary")"
-           asp-page="/News/Index" asp-route-status="Published">@Localizer["News.Status.Published"]</a>
-        <a class="btn @(Model.StatusFilter == "Archived" ? "btn-primary" : "btn-outline-secondary")"
-           asp-page="/News/Index" asp-route-status="Archived">@Localizer["News.Status.Archived"]</a>
-    </div>
+<div class="mb-3 filter-chips" role="group" aria-label="@Localizer["News.Column.Status"]">
+    <a class="filter-chip @(string.IsNullOrEmpty(Model.StatusFilter) ? "active" : "")"
+       asp-page="/News/Index" aria-current="@(string.IsNullOrEmpty(Model.StatusFilter) ? "page" : null)">@Localizer["News.Status.All"]</a>
+    <a class="filter-chip @(Model.StatusFilter == "Draft" ? "active" : "")"
+       asp-page="/News/Index" asp-route-status="Draft" aria-current="@(Model.StatusFilter == "Draft" ? "page" : null)">@Localizer["News.Status.Draft"]</a>
+    <a class="filter-chip @(Model.StatusFilter == "Published" ? "active" : "")"
+       asp-page="/News/Index" asp-route-status="Published" aria-current="@(Model.StatusFilter == "Published" ? "page" : null)">@Localizer["News.Status.Published"]</a>
+    <a class="filter-chip @(Model.StatusFilter == "Archived" ? "active" : "")"
+       asp-page="/News/Index" asp-route-status="Archived" aria-current="@(Model.StatusFilter == "Archived" ? "page" : null)">@Localizer["News.Status.Archived"]</a>
 </div>
 
 <div class="card" aria-labelledby="news-list-title">
@@ -52,6 +50,7 @@
 
     @if (Model.Articles.Count == 0)
     {
+        @* 筛选无结果与真正无内容是两种状态：前者给“清除筛选”出口。 *@
         <div class="empty">
             <span class="empty-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
@@ -59,9 +58,18 @@
                     <path d="M4.5 6h4.5M4.5 8.5h7M4.5 11h7" />
                 </svg>
             </span>
-            <p class="empty-title">@Localizer["News.Empty"]</p>
-            <p class="empty-subtitle text-secondary">@Localizer["News.EmptyHint"]</p>
-            <a class="btn btn-primary btn-sm" asp-page="/News/Edit">@Localizer["News.New"]</a>
+            @if (Model.StatusFilter is not null)
+            {
+                <p class="empty-title">@Localizer["News.FilteredEmpty"]</p>
+                <p class="empty-subtitle text-secondary">@Localizer["News.FilteredEmptyHint", Model.StatusFilter]</p>
+                <a class="btn btn-outline-secondary btn-sm" asp-page="/News/Index">@Localizer["News.Status.All"]</a>
+            }
+            else
+            {
+                <p class="empty-title">@Localizer["News.Empty"]</p>
+                <p class="empty-subtitle text-secondary">@Localizer["News.EmptyHint"]</p>
+                <a class="btn btn-primary btn-sm" asp-page="/News/Edit">@Localizer["News.New"]</a>
+            }
         </div>
     }
     else
