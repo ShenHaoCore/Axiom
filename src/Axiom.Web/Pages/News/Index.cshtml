@@ -83,7 +83,7 @@
                     {
                         <tr>
                             <td>@article.Title</td>
-                            <td class="cell-muted">@article.Category</td>
+                            <td class="cell-muted text-nowrap">@article.Category</td>
                             <td><span class="badge-soft status-@article.Status.ToString().ToLowerInvariant()">@Localizer[$"News.Status.{article.Status}"]</span></td>
                             <td class="cell-muted">@article.Author</td>
                             <td class="cell-num">@(article.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
