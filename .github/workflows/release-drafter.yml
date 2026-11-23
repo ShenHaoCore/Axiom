@@ -26,10 +26,9 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
           echo "发布版本号：$version"
 
-      - uses: release-drafter/release-drafter@v6
+      - uses: release-drafter/release-drafter@v7
         with:
           config-name: release-drafter.yml
-          disable-autolabeler: true
           version: ${{ steps.version.outputs.value }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
